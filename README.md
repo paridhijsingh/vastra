@@ -21,8 +21,11 @@ A working demo is not yet available.
 | **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Planned |
 | **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Planned |
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Planned |
+| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Planned |
 | **Emergency Fit**                      | Recommend an outfit for an occasion and time limit using available owned items                  | Planned |
 | **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
+| **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
+| **Saved events and outfits**           | Save occasions and outfits for later recall                                                     | Planned |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
 | **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
 | **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
@@ -32,6 +35,28 @@ A working demo is not yet available.
 Support Indian, Western, and fusion styles, with men, women, and unisex styling preferences.
 
 Cultural styling choices will reflect the user's preferences and context rather than assume universal dress-code rules.
+
+### Style Dictionary (planned)
+
+Core feature: searchable fashion terms with pairing guidance, occasion notes, and comfort-aware alternatives.
+
+- Start with curated entries.
+- AI-generated additions remain drafts until reviewed.
+
+### Weather-aware styling (planned)
+
+Optional location permission is requested only when the user clicks **Use my location**.
+
+- If permission is denied, the user may enter weather conditions manually or continue without weather guidance.
+- Precise coordinates are request-only: do not persist them by default, and do not include them in logs, analytics, saved events, or model prompts.
+- Obtain a fresh location only after the user clicks **Use my location**.
+- Coordinates may be sent to the weather provider for that lookup. Permission duration and wording are controlled by the browser or OS — do not promise “allow once” or “always allow” options.
+- Do not send precise coordinates to Nemotron; send relevant weather conditions instead.
+- Display: “Weather can change. You can also check your preferred weather app to verify conditions before heading out.”
+
+### Saved events and outfits (planned)
+
+Deferred to a later milestone after the core wardrobe and styling workflows.
 
 ## Emergency Fit
 
@@ -102,26 +127,27 @@ Unconfirmed or dismissed proposals will not become lasting instructions. Deleted
 
 ### Outside the MVP
 
-- Smart Shopping
+- Smart Shopping (remains excluded)
 - Store links, product prices, and thrift inventory
 - Automatic purchases
 - Photo-based wardrobe recognition
 - Virtual try-on
 - Native iOS application
 - Occasion Translator and One Item, Three Ways
+- MCP tooling (deferred; continue with FastAPI)
 
 ### Stretch feature
 
 **Trend Stylist** may be considered only after the core workflow is reliable and deployed.
 
-Claims about current trends must use retrieved sources.
+Claims about current trends must use dated, retrieved sources. Retrieval and permitted scraping remain stretch work.
 
 ## Proposed technology
 
 | Component          | Technology                                |
 | ------------------ | ----------------------------------------- |
 | Interface          | Streamlit                                 |
-| Backend            | Python and FastAPI                        |
+| Backend            | Python and FastAPI (MCP deferred)         |
 | Local storage      | SQLite via SQLAlchemy                     |
 | Validation         | Pydantic and deterministic backend checks |
 | Authentication     | Authenticated, owner-scoped access        |
@@ -160,6 +186,7 @@ These are planned requirements, not claims of completed protection:
 - Let users inspect, edit, and delete confirmed preferences.
 - Document backup and provider-retention limitations.
 - Use synthetic data in the public demonstration.
+- Location is request-only: do not persist precise coordinates by default, and do not include them in logs, analytics, saved events, or model prompts. Obtain a fresh location only after **Use my location**. Coordinates may be sent to the weather provider for that lookup; send weather conditions (not coordinates) to Nemotron.
 
 Vastra uses external model inference and is not entirely on-device.
 

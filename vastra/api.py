@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from vastra.auth import create_access_token, get_current_user, hash_password, verify_password
 from vastra.db import get_db, init_db
-from vastra.models import StyleProfile, User
+from vastra.models import StyleProfile, User, WardrobeItem
 from vastra.schemas import (
     LoginRequest,
     ProfilePublic,
@@ -20,6 +20,9 @@ from vastra.schemas import (
     RegisterRequest,
     TokenResponse,
     UserPublic,
+    WardrobeItemCreate,
+    WardrobeItemPublic,
+    WardrobeItemUpdate,
 )
 
 
@@ -161,4 +164,93 @@ def delete_profile(
     if profile is not None:
         db.delete(profile)
         db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def _get_owned_wardrobe_item(
+    db: Session,
+    *,
+    owner_id: str,
+    item_id: str,
+) -> WardrobeItem | None:
+    return db.scalar(
+        select(WardrobeItem).where(
+            WardrobeItem.id == item_id,
+            WardrobeItem.owner_id == owner_id,
+        )
+    )
+
+
+@app.get("/wardrobe", response_model=list[WardrobeItemPublic])
+def list_wardrobe(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[WardrobeItem]:
+    return list(
+        db.scalars(
+            select(WardrobeItem)
+            .where(WardrobeItem.owner_id == current_user.id)
+            .order_by(WardrobeItem.created_at.asc())
+        ).all()
+    )
+
+
+@app.post("/wardrobe", response_model=WardrobeItemPublic, status_code=status.HTTP_201_CREATED)
+def create_wardrobe_item(
+    body: WardrobeItemCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> WardrobeItem:
+    item = WardrobeItem(owner_id=current_user.id, **body.model_dump())
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@app.get("/wardrobe/{item_id}", response_model=WardrobeItemPublic)
+def get_wardrobe_item(
+    item_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> WardrobeItem:
+    item = _get_owned_wardrobe_item(db, owner_id=current_user.id, item_id=item_id)
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Wardrobe item not found")
+    return item
+
+
+@app.patch("/wardrobe/{item_id}", response_model=WardrobeItemPublic)
+def patch_wardrobe_item(
+    item_id: str,
+    body: WardrobeItemUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> WardrobeItem:
+    item = _get_owned_wardrobe_item(db, owner_id=current_user.id, item_id=item_id)
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Wardrobe item not found")
+    updates = body.model_dump(exclude_unset=True)
+    for key, value in updates.items():
+        setattr(item, key, value)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@app.delete(
+    "/wardrobe/{item_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+def delete_wardrobe_item(
+    item_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    item = _get_owned_wardrobe_item(db, owner_id=current_user.id, item_id=item_id)
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Wardrobe item not found")
+    db.delete(item)
+    db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

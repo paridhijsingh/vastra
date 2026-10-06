@@ -94,3 +94,57 @@ class ProfilePublic(BaseModel):
     clothing_to_avoid: list[str]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+AvailabilityStatus = Literal["available", "in_laundry", "packed_away"]
+
+ItemName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=128),
+]
+ItemCategory = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=64),
+]
+ItemColor = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=64),
+]
+ItemNotes = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, max_length=512),
+]
+
+
+class WardrobeItemCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: ItemName
+    category: ItemCategory
+    color: ItemColor
+    notes: ItemNotes = ""
+    availability: AvailabilityStatus = "available"
+
+
+class WardrobeItemUpdate(BaseModel):
+    """Partial update; omit fields that should stay unchanged."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: ItemName | None = None
+    category: ItemCategory | None = None
+    color: ItemColor | None = None
+    notes: ItemNotes | None = None
+    availability: AvailabilityStatus | None = None
+
+
+class WardrobeItemPublic(BaseModel):
+    id: str
+    owner_id: str
+    name: str
+    category: str
+    color: str
+    notes: str
+    availability: AvailabilityStatus
+
+    model_config = ConfigDict(from_attributes=True)

@@ -31,8 +31,11 @@ The first release should complete these workflows reliably before adding more fe
 | Style profile         | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid             |
 | Wardrobe              | Manually add, view, edit, and delete clothing and accessories                              |
 | Wardrobe availability | Mark items available, in the laundry, or packed away                                       |
+| Style Dictionary      | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives      |
 | Emergency Fit         | Recommend an outfit for an occasion and time limit using available owned items             |
 | Rescue My Outfit      | Replace a selected piece while preserving the rest of the outfit                           |
+| Weather-aware styling | Optional weather context; location requested only via "Use my location"                    |
+| Saved events/outfits  | Save occasions and outfits for later recall (later milestone)                              |
 | Explanations          | Explain outfit choices and offer optional hair or makeup tips                              |
 | Outfit feedback       | Save ratings and explicit comments separately from lasting preferences                     |
 | Confirmed memory      | Ask before saving a lasting preference; support approval, editing, dismissal, and deletion |
@@ -43,19 +46,37 @@ Support Indian, Western, and fusion styles, with men, women, and unisex styling 
 
 Cultural styling choices should reflect the user's preferences and context rather than assume universal dress-code rules.
 
+### Style Dictionary (planned)
+
+Core feature. Start with curated searchable entries covering fashion terms, pairing guidance, occasions, and comfort-aware alternatives. AI-generated additions remain drafts until reviewed.
+
+### Weather-aware styling (planned)
+
+- Request optional location permission only when the user clicks **Use my location**.
+- If permission is denied, allow manual weather conditions or continuing without weather guidance.
+- Precise coordinates are request-only: do not persist them by default; do not include them in logs, analytics, saved events, or model prompts.
+- Obtain a fresh location only after **Use my location**. Permission duration and wording are controlled by the browser/OS — do not promise “allow once” or “always allow.”
+- Explain that coordinates are sent to the weather provider for the lookup. Do not send precise coordinates to Nemotron; send relevant weather conditions instead.
+- Display: “Weather can change. You can also check your preferred weather app to verify conditions before heading out.”
+
+### Saved events and outfits (planned)
+
+Deferred to a later milestone after the core wardrobe and styling workflows.
+
 ### Stretch feature
 
-Trend Stylist may be considered only after the MVP is reliable and deployed. Claims about current trends must use retrieved sources.
+Trend Stylist may be considered only after the MVP is reliable and deployed. Claims about current trends must use dated, retrieved sources. Retrieval and permitted scraping remain stretch work.
 
 ### Excluded
 
-- Smart Shopping
+- Smart Shopping (remains excluded)
 - Store links, product prices, and thrift inventory
 - Automatic purchases
 - Photo-based wardrobe recognition
 - Virtual try-on
 - Native iOS application
 - Other brainstormed features, including Occasion Translator and One Item, Three Ways
+- MCP tooling (deferred; continue with FastAPI)
 
 ## 3. First complete demonstration
 
@@ -82,7 +103,7 @@ A successful demo must show real persistence and a real model call.
 | Layer         | Choice                            | Responsibility                                                          |
 | ------------- | --------------------------------- | ----------------------------------------------------------------------- |
 | Interface     | Streamlit                         | Forms, wardrobe management, outfit display, rescue, and memory controls |
-| Backend       | FastAPI                           | Authenticated endpoints and reusable styling workflows                  |
+| Backend       | FastAPI (MCP deferred)            | Authenticated endpoints and reusable styling workflows                  |
 | Validation    | Pydantic and deterministic checks | Validate inputs, outputs, ownership, availability, and locked items     |
 | Local storage | SQLite via SQLAlchemy             | Persist user records                                                    |
 | Model         | NVIDIA Nemotron                   | Propose structured outfits, revisions, and explanations                 |
@@ -175,6 +196,7 @@ Unconfirmed or dismissed proposals must not become lasting instructions. Do not 
 - Keep optional hair and makeup tips separate from owned items.
 - Never turn feedback into lasting memory without confirmation.
 - Do not claim current weather or trends without a verified source.
+- For weather guidance, send weather conditions to the model — never precise coordinates.
 - Report model failures clearly instead of fabricating success.
 
 ## 8. Privacy requirements
@@ -190,6 +212,7 @@ Unconfirmed or dismissed proposals must not become lasting instructions. Do not 
 - Document limitations involving backups and provider retention.
 - Use synthetic data for the public demonstration.
 - Do not infer sensitive personal traits from clothing choices.
+- Location is request-only: do not persist precise coordinates by default; do not include them in logs, analytics, saved events, or model prompts. Obtain a fresh location only after the user clicks **Use my location**. Coordinates may be sent to the weather provider for that lookup; browser/OS controls permission duration and wording.
 
 Vastra uses external inference and is not entirely on-device.
 
@@ -406,6 +429,6 @@ If behind schedule:
 
 ## Next action
 
-Implement Milestone 1 only: the environment and minimal FastAPI backend.
+Continue Milestone 2: authenticated wardrobe create/list/edit/delete with availability statuses, then Streamlit forms.
 
-Verify that it runs before adding storage, the interface, or inference.
+Do not implement Style Dictionary, weather lookups, saved events, trends retrieval, or MCP yet.
