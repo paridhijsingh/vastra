@@ -51,6 +51,7 @@ def test_create_list_patch_and_delete_wardrobe_item(client: TestClient) -> None:
     body = created.json()
     assert body["owner_id"] == user_id
     assert body["name"] == "Navy kurta"
+    assert body["category"] == "top"
     assert body["availability"] == "available"
     item_id = body["id"]
 
@@ -116,6 +117,95 @@ def test_unauthenticated_wardrobe_access_rejected(client: TestClient) -> None:
     assert client.delete("/wardrobe/fake-id").status_code == 401
 
 
+def test_invalid_category_rejected_on_post_and_patch(client: TestClient) -> None:
+    _, headers = _register_and_login(client, "wardcat")
+
+    bad_create = client.post(
+        "/wardrobe",
+        headers=headers,
+        json={**ITEM_A, "category": "string"},
+    )
+    assert bad_create.status_code == 422
+    assert any(
+        isinstance(err, dict) and "category" in err.get("loc", [])
+        for err in bad_create.json()["detail"]
+    )
+
+    created = client.post("/wardrobe", headers=headers, json=ITEM_A)
+    assert created.status_code == 201
+    item_id = created.json()["id"]
+
+    bad_patch = client.patch(
+        f"/wardrobe/{item_id}",
+        headers=headers,
+        json={"category": "dress"},
+    )
+    assert bad_patch.status_code == 422
+    assert any(
+        isinstance(err, dict) and "category" in err.get("loc", [])
+        for err in bad_patch.json()["detail"]
+    )
+
+
+def test_availability_filter_is_owner_scoped(client: TestClient) -> None:
+    _, headers_a = _register_and_login(client, "wardfiltera")
+    _, headers_b = _register_and_login(client, "wardfilterb")
+
+    available_a = client.post("/wardrobe", headers=headers_a, json=ITEM_A).json()
+    laundry_a = client.post(
+        "/wardrobe",
+        headers=headers_a,
+        json={
+            "name": "Grey trousers",
+            "category": "bottom",
+            "color": "grey",
+            "notes": "",
+            "availability": "in_laundry",
+        },
+    ).json()
+    packed_b = client.post(
+        "/wardrobe",
+        headers=headers_b,
+        json={
+            "name": "Winter coat",
+            "category": "outerwear",
+            "color": "black",
+            "notes": "",
+            "availability": "packed_away",
+        },
+    ).json()
+
+    filtered_a = client.get("/wardrobe", headers=headers_a, params={"availability": "available"})
+    assert filtered_a.status_code == 200
+    ids_a = {item["id"] for item in filtered_a.json()}
+    assert ids_a == {available_a["id"]}
+    assert laundry_a["id"] not in ids_a
+    assert packed_b["id"] not in ids_a
+
+    laundry_only = client.get(
+        "/wardrobe",
+        headers=headers_a,
+        params={"availability": "in_laundry"},
+    )
+    assert {item["id"] for item in laundry_only.json()} == {laundry_a["id"]}
+
+    filtered_b = client.get(
+        "/wardrobe",
+        headers=headers_b,
+        params={"availability": "packed_away"},
+    )
+    assert filtered_b.status_code == 200
+    assert {item["id"] for item in filtered_b.json()} == {packed_b["id"]}
+    assert available_a["id"] not in {item["id"] for item in filtered_b.json()}
+
+    bad_filter = client.get(
+        "/wardrobe",
+        headers=headers_a,
+        params={"availability": "missing"},
+    )
+    assert bad_filter.status_code == 422
+
+
 def test_invalid_availability_and_blank_fields_rejected(client: TestClient) -> None:
     _, headers = _register_and_login(client, "wardvalid")
 
@@ -166,7 +256,7 @@ def test_wardrobe_item_persists_across_new_db_session(client: TestClient) -> Non
         headers=headers,
         json={
             "name": "  Emerald saree  ",
-            "category": " dress ",
+            "category": "one_piece",
             "color": " emerald ",
             "notes": " festive ",
             "availability": "packed_away",
@@ -175,7 +265,7 @@ def test_wardrobe_item_persists_across_new_db_session(client: TestClient) -> Non
     assert created.status_code == 201
     item_id = created.json()["id"]
     assert created.json()["name"] == "Emerald saree"
-    assert created.json()["category"] == "dress"
+    assert created.json()["category"] == "one_piece"
     assert created.json()["color"] == "emerald"
     assert created.json()["notes"] == "festive"
 
@@ -189,7 +279,7 @@ def test_wardrobe_item_persists_across_new_db_session(client: TestClient) -> Non
         )
         assert row is not None
         assert row.name == "Emerald saree"
-        assert row.category == "dress"
+        assert row.category == "one_piece"
         assert row.color == "emerald"
         assert row.notes == "festive"
         assert row.availability == "packed_away"

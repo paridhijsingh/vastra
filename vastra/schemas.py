@@ -97,14 +97,19 @@ class ProfilePublic(BaseModel):
 
 
 AvailabilityStatus = Literal["available", "in_laundry", "packed_away"]
+ItemCategory = Literal[
+    "top",
+    "bottom",
+    "one_piece",
+    "outerwear",
+    "shoes",
+    "accessory",
+    "other",
+]
 
 ItemName = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=128),
-]
-ItemCategory = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=1, max_length=64),
 ]
 ItemColor = Annotated[
     str,
@@ -142,7 +147,7 @@ class WardrobeItemPublic(BaseModel):
     id: str
     owner_id: str
     name: str
-    category: str
+    category: ItemCategory
     color: str
     notes: str
     availability: AvailabilityStatus

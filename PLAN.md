@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 6, 2026  
-Status: rebuilding from scratch; implementation not yet verified  
+Status: FastAPI auth/profile/wardrobe in progress; Next.js frontend shell implemented; auth/API integration next  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -100,16 +100,18 @@ A successful demo must show real persistence and a real model call.
 
 ## 4. Proposed architecture
 
-| Layer         | Choice                            | Responsibility                                                          |
-| ------------- | --------------------------------- | ----------------------------------------------------------------------- |
-| Interface     | Streamlit                         | Forms, wardrobe management, outfit display, rescue, and memory controls |
-| Backend       | FastAPI (MCP deferred)            | Authenticated endpoints and reusable styling workflows                  |
-| Validation    | Pydantic and deterministic checks | Validate inputs, outputs, ownership, availability, and locked items     |
-| Local storage | SQLite via SQLAlchemy             | Persist user records                                                    |
-| Model         | NVIDIA Nemotron                   | Propose structured outfits, revisions, and explanations                 |
-| Inference     | Nebius Token Factory              | Serve the selected model                                                |
+| Layer         | Choice                                     | Responsibility                                                          |
+| ------------- | ------------------------------------------ | ----------------------------------------------------------------------- |
+| Interface     | Next.js (App Router), TypeScript, Tailwind | Navigation, forms, wardrobe, outfit display, rescue, and memory controls |
+| Backend       | FastAPI (MCP deferred)                     | Authenticated endpoints and reusable styling workflows                  |
+| Validation    | Pydantic and deterministic checks          | Validate inputs, outputs, ownership, availability, and locked items     |
+| Local storage | SQLite via SQLAlchemy                      | Persist user records                                                    |
+| Model         | NVIDIA Nemotron                            | Propose structured outfits, revisions, and explanations                 |
+| Inference     | Nebius Token Factory                       | Serve the selected model                                                |
 
-Streamlit communicates with FastAPI. The backend owns database access and model credentials.
+The Next.js frontend communicates with FastAPI. The backend owns database access and model credentials. Do not expose Nebius keys or other secrets to the browser.
+
+Frontend shell status: navigation and placeholder pages are implemented. Auth and API integration are next. Smart Shopping remains excluded.
 
 Choose the exact Nemotron model identifier during integration based on verified availability and a working test call.
 
@@ -248,7 +250,8 @@ Tasks:
 - Implement profile save, edit, and delete.
 - Implement wardrobe create, list, edit, and delete.
 - Add available, in laundry, and packed away statuses.
-- Build Streamlit forms and empty states.
+- Build the Next.js frontend shell (navigation and placeholder pages).
+- Connect the frontend to auth, profile, and wardrobe APIs.
 
 Done when:
 
@@ -429,6 +432,6 @@ If behind schedule:
 
 ## Next action
 
-Continue Milestone 2: authenticated wardrobe create/list/edit/delete with availability statuses, then Streamlit forms.
+Frontend shell is in place. Next: wire Next.js auth and API integration to the existing FastAPI profile and wardrobe endpoints.
 
-Do not implement Style Dictionary, weather lookups, saved events, trends retrieval, or MCP yet.
+Do not implement Style Dictionary, weather lookups, saved events, trends retrieval, shopping, or MCP yet.

@@ -10,9 +10,12 @@ Built for the **NVIDIA × Nebius Global AI Hackathon — Personal AI track**.
 
 ## Project status
 
-Rebuilding from scratch. All features below are **planned** and will be marked as working only after implementation and verification.
+Rebuilding from scratch. Features below are **planned** unless noted.
 
-A working demo is not yet available.
+- **Frontend shell** (Next.js): navigation and placeholder pages implemented; auth and API integration next.
+- Backend auth, style profile, and wardrobe APIs exist; the UI does not claim them as connected yet.
+
+A working end-to-end demo is not yet available.
 
 ## Planned features
 
@@ -146,7 +149,7 @@ Claims about current trends must use dated, retrieved sources. Retrieval and per
 
 | Component          | Technology                                |
 | ------------------ | ----------------------------------------- |
-| Interface          | Streamlit                                 |
+| Interface          | Next.js (App Router), TypeScript, Tailwind |
 | Backend            | Python and FastAPI (MCP deferred)         |
 | Local storage      | SQLite via SQLAlchemy                     |
 | Validation         | Pydantic and deterministic backend checks |
@@ -158,7 +161,7 @@ Claims about current trends must use dated, retrieved sources. Retrieval and per
 
 The exact model identifier and API configuration will be verified during integration.
 
-The backend will own database access and model credentials. Shared deployment requires verified authentication, user isolation, and durable storage.
+The backend will own database access and model credentials. Shared deployment requires verified authentication, user isolation, and durable storage. Do not put Nebius keys or other backend secrets in the Next.js frontend.
 
 ## Personal AI workflows
 
@@ -197,17 +200,18 @@ See [PLAN.md](PLAN.md) for milestones and acceptance checks.
 Build order:
 
 1. Minimal backend and verified local environment
-2. Profile, wardrobe, availability, authentication, and basic interface
-3. Nebius integration and Emergency Fit
-4. Rescue My Outfit
-5. Confirmed memory and data controls
-6. Deployment and submission preparation
+2. Profile, wardrobe, availability, authentication, and frontend shell
+3. Frontend auth/API integration
+4. Nebius integration and Emergency Fit
+5. Rescue My Outfit
+6. Confirmed memory and data controls
+7. Deployment and submission preparation
 
 Each milestone will be implemented, run, and debugged before moving ahead.
 
 ## Local setup
 
-Verified for the FastAPI foundation and authentication endpoints:
+### Backend (FastAPI)
 
 ```bash
 python3 -m venv .venv
@@ -237,16 +241,33 @@ Required configuration in `.env`:
 
 Optional: `JWT_EXPIRE_HOURS` (default `72`).
 
-Run auth tests:
+Run backend tests:
 
 ```bash
 source .venv/bin/activate
-python -m pytest tests/test_auth.py -q
+python -m pytest tests/ -q
 ```
 
-Later milestones will add Nebius / Nemotron settings (`NEBIUS_API_KEY`, `NEBIUS_BASE_URL`, `NEMOTRON_MODEL`).
+### Frontend (Next.js shell)
 
-Never commit `.env`, API keys, authentication secrets, or personal database files.
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Open http://localhost:3000
+
+Frontend configuration:
+
+- `NEXT_PUBLIC_API_URL` — FastAPI base URL (default `http://127.0.0.1:8000`)
+
+Backend secrets and Nebius credentials must stay on the server. Do not add them to frontend env files.
+
+Later milestones will use Nebius / Nemotron settings on the backend (`NEBIUS_API_KEY`, `NEBIUS_BASE_URL`, `NEMOTRON_MODEL`).
+
+Never commit `.env`, `.env.local`, API keys, authentication secrets, or personal database files.
 
 ## Verification goals
 

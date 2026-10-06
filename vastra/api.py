@@ -3,7 +3,7 @@
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
@@ -14,6 +14,7 @@ from vastra.auth import create_access_token, get_current_user, hash_password, ve
 from vastra.db import get_db, init_db
 from vastra.models import StyleProfile, User, WardrobeItem
 from vastra.schemas import (
+    AvailabilityStatus,
     LoginRequest,
     ProfilePublic,
     ProfileUpsert,
@@ -185,14 +186,12 @@ def _get_owned_wardrobe_item(
 def list_wardrobe(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    availability: Annotated[AvailabilityStatus | None, Query()] = None,
 ) -> list[WardrobeItem]:
-    return list(
-        db.scalars(
-            select(WardrobeItem)
-            .where(WardrobeItem.owner_id == current_user.id)
-            .order_by(WardrobeItem.created_at.asc())
-        ).all()
-    )
+    query = select(WardrobeItem).where(WardrobeItem.owner_id == current_user.id)
+    if availability is not None:
+        query = query.where(WardrobeItem.availability == availability)
+    return list(db.scalars(query.order_by(WardrobeItem.created_at.asc())).all())
 
 
 @app.post("/wardrobe", response_model=WardrobeItemPublic, status_code=status.HTTP_201_CREATED)
