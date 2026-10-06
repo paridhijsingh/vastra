@@ -180,13 +180,15 @@ Each milestone will be implemented, run, and debugged before moving ahead.
 
 ## Local setup
 
-Verified for Milestone 1 (minimal FastAPI backend only):
+Verified for the FastAPI foundation and authentication endpoints:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+cp .env.example .env
+# Edit .env and set SECRET_KEY to a long random string (required).
 uvicorn vastra.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -195,13 +197,27 @@ Then open:
 - http://127.0.0.1:8000/ → `{"name": "Vastra AI", "status": "running"}`
 - http://127.0.0.1:8000/health → `{"status": "ok"}`
 
-Later milestones will use additional configuration such as:
+Auth endpoints (JWT bearer tokens):
 
-- `NEBIUS_API_KEY`
-- `NEBIUS_BASE_URL`
-- `NEMOTRON_MODEL`
-- `DATABASE_URL`
-- Authentication settings
+- `POST /auth/register` — create an account
+- `POST /auth/login` — receive an access token
+- `GET /auth/me` — current user (requires `Authorization: Bearer <token>`)
+
+Required configuration in `.env`:
+
+- `SECRET_KEY` — JWT signing secret (no default; required)
+- `DATABASE_URL` — defaults to `sqlite:///./data/vastra.db` (directory created automatically)
+
+Optional: `JWT_EXPIRE_HOURS` (default `72`).
+
+Run auth tests:
+
+```bash
+source .venv/bin/activate
+python -m pytest tests/test_auth.py -q
+```
+
+Later milestones will add Nebius / Nemotron settings (`NEBIUS_API_KEY`, `NEBIUS_BASE_URL`, `NEMOTRON_MODEL`).
 
 Never commit `.env`, API keys, authentication secrets, or personal database files.
 
