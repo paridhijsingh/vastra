@@ -2,108 +2,175 @@
 
 **Ready, set, styled.**
 
-Your AI stylist for every occasion and budget.
+Your personal AI stylist for the clothes you already own.
 
-Vastra (Sanskrit for clothing) helps you choose outfits for everyday occasions, celebrations, and festivities — based on your style, budget, and the clothes you already have.
+Vastra (Sanskrit for clothing) helps you choose outfits for everyday occasions, celebrations, and festivities based on your preferences and saved wardrobe. It remembers your explicit feedback to personalize future suggestions.
 
-> **Model choice:** Use **Nemotron via Nebius Token Factory** (`NEBIUS_API_KEY`), not Gemini, for future outfit recommendations.
+Built for the **NVIDIA × Nebius Global AI Hackathon — Personal AI track**.
 
-## Features and current status
+## Project status
 
-| Area | Status |
-|------|--------|
-| **Style profile** | Working — preferred styles (Indian / Western / fusion), colours, optional USD budget, comfort prefs; save / edit / delete |
-| **Wardrobe** | Working — manual items (name, category, colour, notes); list / edit / delete; empty state |
-| **Auth + private storage** | Working — register / sign-in; SQLite records scoped to the owner; API rejects unauthenticated access |
-| **Export** | Working — download profile + wardrobe JSON |
-| **Emergency Fit / Trend Stylist / Smart Shopping** | Shell only — Nemotron recommendations are the next milestone |
+The features below are planned and will be marked as working only after implementation and verification.
 
-**Not claimed yet:** trend retrieval, product links/prices, local thrift inventory, or AI outfit generation.
+A working demo is not yet available.
 
-## How it works
+## Planned features
 
-1. Start the **FastAPI** backend (SQLite-backed profile & wardrobe).
-2. Start the **Streamlit** UI and create an account (or sign in).
-3. Save your style profile and wardrobe pieces — data survives refreshes and restarts.
-4. Export JSON anytime from the sidebar.
-5. Later milestones will call Nemotron using your saved profile/wardrobe.
+| Feature                                | What it does                                                                                                         | Status  |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------- |
+| **Style profile**                      | Save preferred styles such as Indian, Western, or fusion; colors; fit and comfort preferences; and clothing to avoid | Planned |
+| **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                                        | Planned |
+| **Emergency Fit**                      | Recommend an outfit for an occasion and time limit using only confirmed wardrobe items                               | Planned |
+| **Styling explanations**               | Explain outfit choices and provide optional accessory, hair, or makeup tips                                          | Planned |
+| **Feedback memory**                    | Save outfit ratings and explicit likes or dislikes to inform later recommendations                                   | Planned |
+| **Authentication and private storage** | Keep saved records scoped to their owner                                                                             | Planned |
+| **Data controls**                      | Export and delete saved profile, wardrobe, outfit history, and feedback                                              | Planned |
 
-## Tech stack and project structure
+Styling preferences will support men, women, and unisex options.
 
-- **UI:** Streamlit (existing interface, extended with Profile + Wardrobe tabs)
-- **API:** FastAPI + JWT bearer auth
-- **DB:** SQLite via SQLAlchemy (smallest durable option; no external DB service)
-- **Validation:** Pydantic on API requests
-- **LLM (next):** Nemotron via Nebius Token Factory
+**Trend Stylist** is a stretch feature, considered only after the core workflow is reliable.
 
-```
-app.py                         Streamlit UI
-scripts/run_api.sh             Start API
-scripts/check_nemotron.py      Manual Nemotron probe (paid call)
-data/vastra.db                 Created at runtime (gitignored)
-vastra/
-  api.py                       Auth + profile/wardrobe endpoints
-  auth.py                      Passwords + JWT
-  client.py                    Streamlit → API client
-  config.py                    Env settings
-  db.py                        SQLAlchemy engine / sessions
-  models.py                    User, StyleProfile, WardrobeItem
-  store.py                     Owner-scoped persistence helpers
-  schemas.py                   Request/response models
-  nemotron.py                  Token Factory client (next milestone)
-```
+## Example workflow
+
+> “I have dinner in 20 minutes and no shopping budget. What can I wear?”
+
+1. Create an account and save your style preferences.
+2. Add clothing and accessories to your wardrobe.
+3. Enter the occasion, time available, and any relevant constraints.
+4. Vastra retrieves your profile, wardrobe, and saved feedback.
+5. Nemotron proposes an outfit.
+6. The backend validates recommended wardrobe items before displaying the result.
+7. Rate the outfit or explain what you would change.
+8. Vastra uses that saved feedback in future requests.
+
+If your wardrobe lacks suitable pieces, Vastra will ask a follow-up question or explain the limitation.
+
+## Recommendation rules
+
+- Recommend only clothing and accessories the user confirms they own.
+- Validate item ownership using saved wardrobe IDs.
+- Respect explicit clothing exclusions and preferences.
+- Ask for clarification when constraints conflict.
+- Never present missing items as owned.
+- Keep optional hair and makeup suggestions separate from wardrobe items.
+- Show useful errors when inference fails rather than fabricating a recommendation.
+
+## Outside the MVP
+
+- Smart Shopping, retailer links, and product prices
+- Local thrift inventory
+- Automatic purchases
+- Photo-based wardrobe recognition
+- Virtual try-on
+- Native iOS application
+
+The MVP focuses on making useful outfit decisions from an existing wardrobe.
+
+## Proposed technology
+
+| Component          | Technology                                  |
+| ------------------ | ------------------------------------------- |
+| Interface          | Streamlit                                   |
+| Backend            | Python and FastAPI                          |
+| Storage            | SQLite via SQLAlchemy for local development |
+| Validation         | Pydantic and deterministic backend checks   |
+| Authentication     | Planned authenticated, owner-scoped access  |
+| AI model           | NVIDIA Nemotron                             |
+| Inference provider | Nebius Token Factory                        |
+
+**Model choice:** Use Nemotron through Nebius Token Factory, not Gemini, for outfit recommendations.
+
+The exact model identifier and API configuration will be verified during integration.
+
+## Personal memory and reusable skills
+
+Vastra will store an editable style profile, wardrobe, outfit history, and explicit feedback.
+
+Its reusable styling workflow will:
+
+1. Retrieve relevant personal context.
+2. Select suitable wardrobe candidates.
+3. Request a structured outfit recommendation.
+4. Validate ownership and constraints.
+5. Explain the result.
+6. Save user feedback when provided.
+
+The model will propose outfits; the backend will enforce ownership and data-access rules.
+
+## Privacy and data controls
+
+These are planned requirements, not claims of completed protection:
+
+- Keep API keys and authentication secrets server-side.
+- Exclude secrets and personal database files from Git.
+- Restrict saved records to their owner.
+- Explain what data is sent to Nebius before the first AI request.
+- Send only context needed for the recommendation.
+- Provide export and deletion of saved personal records.
+- Document backup and provider-retention limitations.
+- Use synthetic personal data in the public demo.
+
+Vastra uses external model inference and is not an entirely on-device assistant.
+
+## Development plan
+
+See [PLAN.md](PLAN.md) for milestones and acceptance checks.
+
+Build order:
+
+1. Minimal backend and verified local environment
+2. Style profile and wardrobe persistence
+3. Basic interface
+4. Nebius integration and Emergency Fit
+5. Feedback memory and data controls
+6. Authentication verification, deployment, and submission preparation
+
+Each milestone will be implemented, tested, and debugged before moving ahead.
 
 ## Local setup
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-```
+Setup instructions will be added once the application foundation is implemented and verified.
 
-Useful `.env` keys:
+Planned configuration includes:
 
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | Default `sqlite:///./data/vastra.db` |
-| `SECRET_KEY` | JWT signing secret (change for any shared deploy) |
-| `VASTRA_API_URL` | Streamlit → API base URL (default `http://127.0.0.1:8000`) |
-| `NEBIUS_*` / `NEMOTRON_MODEL` | Optional until outfit recommendations |
+- `NEBIUS_API_KEY`
+- `NEBIUS_BASE_URL`
+- `NEMOTRON_MODEL`
+- `DATABASE_URL`
+- Authentication configuration
 
-### Run
+Never commit `.env`, API keys, authentication secrets, or personal database files.
 
-Terminal 1 — API:
+## Verification goals
 
-```bash
-chmod +x scripts/run_api.sh
-./scripts/run_api.sh
-# or: python -m uvicorn vastra.api:app --reload --port 8000
-```
-
-Terminal 2 — UI:
-
-```bash
-streamlit run app.py
-```
-
-### Checks (no paid API calls)
-
-```bash
-python -m compileall app.py vastra scripts tests
-python -m unittest discover -s tests -v
-```
-
-## Roadmap
-
-- Emergency Fit quiz → Nemotron outfit from wardrobe + profile
-- Trend Stylist with optional retrieved trend context
-- Smart Shopping product / thrift sources
+- Saved data survives application restarts.
+- Users cannot access another user's records.
+- Recommendations contain only valid, owned wardrobe items.
+- Deleted items are excluded from new recommendations.
+- Explicit feedback is retrieved for later requests.
+- Insufficient wardrobe information produces a clear response.
+- Model errors and malformed responses are handled.
+- Export and deletion cover all stored personal record types.
 
 ## Demo
 
 Coming soon.
 
+The planned demo will show a saved wardrobe, an Emergency Fit request, a validated outfit recommendation, and feedback influencing a later suggestion.
+
+## Hackathon submission
+
+Planned submission materials:
+
+- Working demo or test-build URL
+- Public source repository with an open-source license
+- README with verified setup and run instructions
+- Project description explaining the Personal AI workflow
+- Public demonstration video under three minutes
+- Documentation of NVIDIA Nemotron and Nebius usage
+
+[Official hackathon rules](https://nebiusglobalaihackathon.devpost.com/rules)
+
 ## License
 
-MIT — see [LICENSE](LICENSE).
+See [LICENSE](LICENSE).
