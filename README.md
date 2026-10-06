@@ -180,9 +180,22 @@ Each milestone will be implemented, run, and debugged before moving ahead.
 
 ## Local setup
 
-Verified installation and startup instructions will be added after the application foundation is implemented.
+Verified for Milestone 1 (minimal FastAPI backend only):
 
-Planned configuration includes:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+uvicorn vastra.api:app --reload --host 127.0.0.1 --port 8000
+```
+
+Then open:
+
+- http://127.0.0.1:8000/ → `{"name": "Vastra AI", "status": "running"}`
+- http://127.0.0.1:8000/health → `{"status": "ok"}`
+
+Later milestones will use additional configuration such as:
 
 - `NEBIUS_API_KEY`
 - `NEBIUS_BASE_URL`
