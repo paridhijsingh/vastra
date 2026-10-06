@@ -6,82 +6,99 @@ Your AI stylist for every occasion and budget.
 
 Vastra (Sanskrit for clothing) helps you choose outfits for everyday occasions, celebrations, and festivities — based on your style, budget, and the clothes you already have.
 
+> **Model choice:** Use **Nemotron via Nebius Token Factory** (`NEBIUS_API_KEY`), not Gemini, for future outfit recommendations.
+
 ## Features and current status
 
-### MVP modes
+| Area | Status |
+|------|--------|
+| **Style profile** | Working — preferred styles (Indian / Western / fusion), colours, optional USD budget, comfort prefs; save / edit / delete |
+| **Wardrobe** | Working — manual items (name, category, colour, notes); list / edit / delete; empty state |
+| **Auth + private storage** | Working — register / sign-in; SQLite records scoped to the owner; API rejects unauthenticated access |
+| **Export** | Working — download profile + wardrobe JSON |
+| **Emergency Fit / Trend Stylist / Smart Shopping** | Shell only — Nemotron recommendations are the next milestone |
 
-| Mode | What it does | Status |
-|------|----------------|--------|
-| **Emergency Fit** | Short quiz that assembles an outfit from clothes you confirm you own. No photos, inventory setup, or account. Optional accessory, hair, and makeup tips. | UI + quiz questions ready; Nemotron outfit generation not wired yet |
-| **Trend Stylist** | Occasion, vibe, style preference, and budget → outfit advice grounded in retrieved trend references when available. | UI ready; prompt builder and Nemotron call not implemented |
-| **Smart Shopping** | Find new online items or thrift/local options, with verified links and prices when a shopping source is connected. | UI ready; product/thrift search stubs return no results yet |
-
-### Shared features
-
-- **Style preference** — men's, women's, or unisex (sidebar selector works today).
-- **Style dictionary** — plain-English fashion terms; lookup page works with a seeded glossary.
-
-### Not claimed yet
-
-Trends, product links, prices, and local inventory are **not** verified in the current code. Those depend on wiring Nemotron and a shopping/places source.
+**Not claimed yet:** trend retrieval, product links/prices, local thrift inventory, or AI outfit generation.
 
 ## How it works
 
-1. Pick a style preference and mode in the Streamlit sidebar.
-2. Answer a short quiz (Emergency Fit), set occasion/vibe/budget (Trend Stylist), or search for an item (Smart Shopping).
-3. When connected, **Nemotron** (via **Nebius Token Factory**) generates outfit advice from those inputs.
-4. Shopping mode will rank options by budget once a product or thrift source is connected.
-
-**Nemotron + Nebius Token Factory:** `vastra/nemotron.py` is the intended client. It uses the OpenAI-compatible Token Factory API (`NEBIUS_BASE_URL`, `NEBIUS_API_KEY`) and the model id from `NEMOTRON_MODEL`. The `complete()` call is still a stub.
+1. Start the **FastAPI** backend (SQLite-backed profile & wardrobe).
+2. Start the **Streamlit** UI and create an account (or sign in).
+3. Save your style profile and wardrobe pieces — data survives refreshes and restarts.
+4. Export JSON anytime from the sidebar.
+5. Later milestones will call Nemotron using your saved profile/wardrobe.
 
 ## Tech stack and project structure
 
-- **UI:** Streamlit (`app.py`)
-- **LLM:** Nemotron through Nebius Token Factory (OpenAI Python SDK)
-- **Config:** `python-dotenv` + env vars
+- **UI:** Streamlit (existing interface, extended with Profile + Wardrobe tabs)
+- **API:** FastAPI + JWT bearer auth
+- **DB:** SQLite via SQLAlchemy (smallest durable option; no external DB service)
+- **Validation:** Pydantic on API requests
+- **LLM (next):** Nemotron via Nebius Token Factory
 
 ```
-app.py                  Streamlit UI — mode selector and pages
+app.py                         Streamlit UI
+scripts/run_api.sh             Start API
+scripts/check_nemotron.py      Manual Nemotron probe (paid call)
+data/vastra.db                 Created at runtime (gitignored)
 vastra/
-  config.py             Env vars, style prefs, occasions
-  nemotron.py           Nemotron client via Nebius Token Factory (stub)
-  quiz.py               Emergency Fit questions + prompt builder (stub)
-  stylist.py            Trend Stylist prompts (stub)
-  shopping.py           Product / thrift search (stubs)
-  wardrobe.py            Plain-text wardrobe parsing (partial)
-  dictionary.py         Style glossary (seeded, working)
-.env.example            Required environment variables
-requirements.txt        Python dependencies
+  api.py                       Auth + profile/wardrobe endpoints
+  auth.py                      Passwords + JWT
+  client.py                    Streamlit → API client
+  config.py                    Env settings
+  db.py                        SQLAlchemy engine / sessions
+  models.py                    User, StyleProfile, WardrobeItem
+  store.py                     Owner-scoped persistence helpers
+  schemas.py                   Request/response models
+  nemotron.py                  Token Factory client (next milestone)
 ```
 
 ## Local setup
 
-1. Join the Nebius Builder Program and get Token Factory credentials.
-2. Copy env template and fill in values (never commit `.env`):
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
 
-   ```bash
-   cp .env.example .env
-   ```
+Useful `.env` keys:
 
-   Variables:
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | Default `sqlite:///./data/vastra.db` |
+| `SECRET_KEY` | JWT signing secret (change for any shared deploy) |
+| `VASTRA_API_URL` | Streamlit → API base URL (default `http://127.0.0.1:8000`) |
+| `NEBIUS_*` / `NEMOTRON_MODEL` | Optional until outfit recommendations |
 
-   - `NEBIUS_API_KEY` — Token Factory API key
-   - `NEBIUS_BASE_URL` — Token Factory base URL (see `.env.example`)
-   - `NEMOTRON_MODEL` — model id served by Token Factory (set from the dashboard / `/v1/models`; do not invent one)
+### Run
 
-3. Install and run:
+Terminal 1 — API:
 
-   ```bash
-   pip install -r requirements.txt
-   streamlit run app.py
-   ```
+```bash
+chmod +x scripts/run_api.sh
+./scripts/run_api.sh
+# or: python -m uvicorn vastra.api:app --reload --port 8000
+```
+
+Terminal 2 — UI:
+
+```bash
+streamlit run app.py
+```
+
+### Checks (no paid API calls)
+
+```bash
+python -m compileall app.py vastra scripts tests
+python -m unittest discover -s tests -v
+```
 
 ## Roadmap
 
-- Wire `nemotron.complete()` and connect Emergency Fit + Trend Stylist.
-- Ground Trend Stylist in retrieved trend references when available.
-- Connect Smart Shopping to a product source; thrift/local as a stretch.
-- Expand the style dictionary; optional plain-text wardrobe inventory.
+- Emergency Fit quiz → Nemotron outfit from wardrobe + profile
+- Trend Stylist with optional retrieved trend context
+- Smart Shopping product / thrift sources
 
 ## Demo
 
@@ -89,4 +106,4 @@ Coming soon.
 
 ## License
 
-No license file in this repository yet.
+MIT — see [LICENSE](LICENSE).

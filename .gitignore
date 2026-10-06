@@ -1,4 +1,16 @@
 .env
 .venv/
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.streamlit/secrets.toml
+.DS_Store
+*.egg-info/
+dist/
+build/
+data/*.db
+data/*.db-*
