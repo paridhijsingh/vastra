@@ -46,6 +46,19 @@ export const PROFILE_CREATED_MESSAGE =
 export const STYLING_PREFERENCE_REQUIRED_MESSAGE =
   "Choose a styling preference before saving.";
 
+/**
+ * Offer the wardrobe step after a profile exists and no clothes are saved.
+ * A null count means the wardrobe could not be checked; still offer the step.
+ */
+export function offerWardrobeNext(
+  profileExists: boolean,
+  wardrobeItemCount: number | null,
+): boolean {
+  if (!profileExists) return false;
+  if (wardrobeItemCount === null) return true;
+  return wardrobeItemCount === 0;
+}
+
 export function draftFromProfile(profile: ProfilePublic | null): ProfileFormDraft {
   if (!profile) {
     return {

@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 7, 2026  
-Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, and Wardrobe UI working; Emergency Fit next  
+Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, and Wardrobe UI working; Style Dictionary API is a read-only empty catalog; Emergency Fit next  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -31,7 +31,7 @@ The first release should complete these workflows reliably before adding more fe
 | Style profile         | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid             |
 | Wardrobe              | Manually add, view, edit, and delete clothing and accessories                              |
 | Wardrobe availability | Mark items available, in the laundry, or packed away                                       |
-| Style Dictionary      | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives      |
+| Style Dictionary      | Read-only curated terms, pairing suggestions, occasions, and comfort notes; catalog starts empty |
 | Emergency Fit         | Recommend an outfit for an occasion and time limit using available owned items             |
 | Rescue My Outfit      | Replace a selected piece while preserving the rest of the outfit                           |
 | Weather-aware styling | Optional weather context; location requested only via "Use my location"                    |
@@ -46,9 +46,17 @@ Support Indian, Western, and fusion styles, with men, women, and unisex styling 
 
 Cultural styling choices should reflect the user's preferences and context rather than assume universal dress-code rules.
 
-### Style Dictionary (planned)
+### Style Dictionary (empty foundation)
 
-Core feature. Start with curated searchable entries covering fashion terms, pairing guidance, occasions, and comfort-aware alternatives. AI-generated additions remain drafts until reviewed.
+The read-only API is in place. `GET /dictionary` and `GET /dictionary/{entry_id}` require authentication and serve a shared JSON catalog packaged with the backend. The file ships as an empty list, so the list endpoint returns `[]`. There is no dictionary table, and these routes do not read or change a user's profile or wardrobe.
+
+Each future entry is general guidance: a stable id, term, aliases, definition, kind (`garment`, `fabric`, `silhouette`, or `styling_technique`), profile-aligned `styles`, separate `style_tags`, optional `cultural_context`, pairing suggestions, occasions, weather notes, and comfort notes. `style_tags` can name cultural styles beyond Indian, Western, and fusion without changing the profile enum or saved profiles.
+
+Search (`q`), `style`, and `kind` filters combine with AND. Unknown ids return 404. Invalid filters use the existing sanitized 422 response.
+
+Entry text, when added, should be short and original. Pairings are suggestions. Do not restrict garments by gender or judge body shape. Weather and comfort depend on fabric weight, construction, fit, and preference; do not present them as guarantees. Do not claim an entry is currently trending, and do not invent citations, review dates, or product links.
+
+Pending: curated entry management, AI term suggestions, the Next.js dictionary page, and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
 
 ### Weather-aware styling (planned)
 
@@ -432,6 +440,8 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI is in place. Next: Nebius / Nemotron integration and Emergency Fit.
+Wardrobe UI and the empty Style Dictionary API are in place. Next: Nebius / Nemotron integration and Emergency Fit.
 
-Do not implement Style Dictionary, weather lookups, saved events, trends retrieval, shopping, or MCP yet.
+Pending for the dictionary: curated entry management, AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources), the Next.js dictionary UI, and live trend retrieval.
+
+Do not implement weather lookups, saved events, shopping, or MCP yet.

@@ -16,6 +16,7 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Frontend authentication** is implemented (register, sign in, HttpOnly session cookie).
 - **Style Profile UI** is implemented (load/save/delete).
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
+- **Style Dictionary API** is a read-only empty catalog. Entry management, AI term suggestions, the Next.js dictionary page, and live trend retrieval are pending.
 - Smart Shopping remains excluded.
 
 A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
@@ -27,7 +28,7 @@ A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
 | **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Working (API + UI) |
 | **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Working (API + UI) |
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
-| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Planned |
+| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | API foundation (empty catalog) |
 | **Emergency Fit**                      | Recommend an outfit for an occasion and time limit using available owned items                  | Planned |
 | **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
@@ -42,12 +43,27 @@ Support Indian, Western, and fusion styles, with men, women, and unisex styling 
 
 Cultural styling choices will reflect the user's preferences and context rather than assume universal dress-code rules.
 
-### Style Dictionary (planned)
+### Style Dictionary (empty foundation)
 
-Core feature: searchable fashion terms with pairing guidance, occasion notes, and comfort-aware alternatives.
+Read-only shared reference material for general styling guidance. The catalog is a version-controlled JSON file inside the `vastra` package and currently contains no entries. It is not stored in the user database.
 
-- Start with curated entries.
-- AI-generated additions remain drafts until reviewed.
+Authenticated endpoints:
+
+- `GET /dictionary` — optional `q` (case-insensitive search of term, aliases, and definition; blank means no search), `style` (`Indian`, `Western`, or `fusion`), and `kind` (`garment`, `fabric`, `silhouette`, or `styling_technique`). Supplied filters combine with AND. Results are alphabetical. No matches, and the empty catalog, return `[]`.
+- `GET /dictionary/{entry_id}` — one entry, or 404.
+
+Both routes require a bearer token. They do not read or change a user's profile or wardrobe.
+
+`styles` uses the same values as a profile. Separate `style_tags`, plus an optional `cultural_context`, can name additional cultural styles without changing saved profiles.
+
+Future entry text should stay short and original. Pairings are suggestions, not rules. Garments are not limited by gender, and entries do not judge body shape. Weather and comfort notes depend on fabric weight, construction, fit, and personal preference; they are not guarantees. Entries are not described as currently trending.
+
+Pending:
+
+- Adding and editing curated entries
+- AI term suggestions, which must stay drafts until reviewed and approved, and must not be labeled verified or currently trending without supporting sources
+- The Next.js dictionary page
+- Live trend retrieval
 
 ### Weather-aware styling (planned)
 
@@ -236,6 +252,11 @@ Auth endpoints (JWT bearer tokens):
 - `POST /auth/register` — create an account
 - `POST /auth/login` — receive an access token
 - `GET /auth/me` — current user (requires `Authorization: Bearer <token>`)
+
+Style Dictionary (requires `Authorization: Bearer <token>`):
+
+- `GET /dictionary` — list the shared catalog (empty until entries are added)
+- `GET /dictionary/{entry_id}` — one entry, or 404
 
 Required configuration in `.env`:
 

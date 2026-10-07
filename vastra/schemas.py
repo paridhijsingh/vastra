@@ -13,7 +13,12 @@ NonBlankTrimmedStr = Annotated[
 ]
 
 
-def _normalize_string_list(value: object, *, max_items: int) -> list[str]:
+def _normalize_string_list(
+    value: object,
+    *,
+    max_items: int,
+    max_length: int = 64,
+) -> list[str]:
     if value is None:
         return []
     if not isinstance(value, list):
@@ -27,8 +32,8 @@ def _normalize_string_list(value: object, *, max_items: int) -> list[str]:
         trimmed = item.strip()
         if not trimmed:
             raise ValueError("List entries must not be blank")
-        if len(trimmed) > 64:
-            raise ValueError("List entries must be at most 64 characters")
+        if len(trimmed) > max_length:
+            raise ValueError(f"List entries must be at most {max_length} characters")
         normalized.append(trimmed)
     return normalized
 
@@ -153,3 +158,81 @@ class WardrobeItemPublic(BaseModel):
     availability: AvailabilityStatus
 
     model_config = ConfigDict(from_attributes=True)
+
+
+DictionaryKind = Literal["garment", "fabric", "silhouette", "styling_technique"]
+DictionaryGuidanceType = Literal["general"]
+
+DictionarySlug = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=64, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$"),
+]
+DictionaryTerm = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=80),
+]
+DictionaryDefinition = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=600),
+]
+DictionaryNote = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=280),
+]
+
+
+class DictionaryEntry(BaseModel):
+    """Approved general guidance. Not a trend claim and not a user record.
+
+    `styles` uses the profile style values. `style_tags` is a separate list so
+    cultural coverage can grow without changing saved profiles. Optional
+    `cultural_context` names a more specific setting when one applies.
+
+    Pairing, weather, and comfort notes are suggestions. They are not rules,
+    guarantees, or gender or body-shape judgments.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: DictionarySlug
+    term: DictionaryTerm
+    aliases: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+    definition: DictionaryDefinition
+    kind: DictionaryKind
+    styles: list[PreferredStyle] = Field(default_factory=list, max_length=3)
+    style_tags: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+    cultural_context: str | None = None
+    pairing_suggestions: list[DictionaryNote] = Field(default_factory=list, max_length=12)
+    occasions: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+    weather_notes: list[DictionaryNote] = Field(default_factory=list, max_length=12)
+    comfort_notes: list[DictionaryNote] = Field(default_factory=list, max_length=12)
+    guidance_type: DictionaryGuidanceType
+
+    @field_validator("aliases", "style_tags", "occasions", mode="before")
+    @classmethod
+    def normalize_short_lists(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=16)
+
+    @field_validator("styles", mode="before")
+    @classmethod
+    def normalize_styles(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=3)
+
+    @field_validator("pairing_suggestions", "weather_notes", "comfort_notes", mode="before")
+    @classmethod
+    def normalize_notes(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=12, max_length=280)
+
+    @field_validator("cultural_context", mode="before")
+    @classmethod
+    def normalize_cultural_context(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("cultural_context must be a string")
+        trimmed = value.strip()
+        if not trimmed:
+            return None
+        if len(trimmed) > 200:
+            raise ValueError("cultural_context must be at most 200 characters")
+        return trimmed

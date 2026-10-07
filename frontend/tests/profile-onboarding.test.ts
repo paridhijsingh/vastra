@@ -5,6 +5,7 @@ import {
   PROFILE_CREATED_MESSAGE,
   STYLING_PREFERENCE_REQUIRED_MESSAGE,
   draftFromProfile,
+  offerWardrobeNext,
   toProfilePayload,
   type ProfilePublic,
 } from "@/lib/profile/types";
@@ -50,5 +51,12 @@ describe("new profile styling preference", () => {
   it("uses the create-success copy that points people to the wardrobe", () => {
     expect(PROFILE_CREATED_MESSAGE).toContain("style profile is saved");
     expect(PROFILE_CREATED_MESSAGE).toContain("clothes you own");
+  });
+
+  it("keeps the wardrobe step while a saved profile has no clothes", () => {
+    expect(offerWardrobeNext(false, 0)).toBe(false);
+    expect(offerWardrobeNext(true, 0)).toBe(true);
+    expect(offerWardrobeNext(true, null)).toBe(true);
+    expect(offerWardrobeNext(true, 2)).toBe(false);
   });
 });

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
   EMPTY_PROFILE_FORM,
@@ -13,6 +13,7 @@ import {
   draftFromProfile,
   linesToList,
   listToLines,
+  offerWardrobeNext,
   toProfilePayload,
   type PreferredStyle,
   type ProfileFormDraft,
@@ -21,6 +22,23 @@ import {
 } from "@/lib/profile/types";
 
 type LoadState = "loading" | "ready" | "error";
+
+async function fetchWardrobeItemCount(): Promise<number | null> {
+  try {
+    const response = await fetch("/api/wardrobe", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const body = (await response.json().catch(() => ({}))) as {
+      items?: unknown;
+    };
+    return Array.isArray(body.items) ? body.items.length : null;
+  } catch {
+    return null;
+  }
+}
 
 export function ProfileForm() {
   const router = useRouter();
@@ -37,8 +55,11 @@ export function ProfileForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showWardrobeNext, setShowWardrobeNext] = useState(false);
+  const [wardrobeItemCount, setWardrobeItemCount] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const wardrobeNextRef = useRef<HTMLDivElement>(null);
+  const scrollWardrobeNext = useRef(false);
 
   function applyDraft(draft: ProfileFormDraft, profileExists: boolean) {
     setExists(profileExists);
@@ -64,6 +85,12 @@ export function ProfileForm() {
     );
     setShowWardrobeNext(false);
   }
+
+  useEffect(() => {
+    if (!showWardrobeNext || !scrollWardrobeNext.current) return;
+    scrollWardrobeNext.current = false;
+    wardrobeNextRef.current?.scrollIntoView({ block: "center" });
+  }, [showWardrobeNext, success]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +134,15 @@ export function ProfileForm() {
 
         const profile = body.profile ?? null;
         applyDraft(draftFromProfile(profile), profile !== null);
-        setShowWardrobeNext(false);
+        const itemCount = profile ? await fetchWardrobeItemCount() : 0;
+        if (cancelled) return;
+        setWardrobeItemCount(itemCount);
+        const offerNext = offerWardrobeNext(profile !== null, itemCount);
+        setShowWardrobeNext(offerNext);
+        if (offerNext) {
+          scrollWardrobeNext.current = true;
+          setSuccess(PROFILE_CREATED_MESSAGE);
+        }
         setLoadState("ready");
       } catch {
         if (!cancelled) {
@@ -149,8 +184,6 @@ export function ProfileForm() {
     if (saving || deleting) return;
 
     setError(null);
-    setSuccess(null);
-    setShowWardrobeNext(false);
 
     const payload = toProfilePayload(currentDraft());
     if (!payload) {
@@ -199,7 +232,8 @@ export function ProfileForm() {
       } else {
         setExists(true);
       }
-      if (creating) {
+      if (creating || offerWardrobeNext(true, wardrobeItemCount)) {
+        scrollWardrobeNext.current = true;
         setSuccess(PROFILE_CREATED_MESSAGE);
         setShowWardrobeNext(true);
       } else {
@@ -282,6 +316,7 @@ export function ProfileForm() {
 
       {success ? (
         <div
+          ref={wardrobeNextRef}
           className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-3"
           role="status"
         >

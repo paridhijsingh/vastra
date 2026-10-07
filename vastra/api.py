@@ -12,10 +12,14 @@ from sqlalchemy.orm import Session
 
 from vastra.auth import create_access_token, get_current_user, hash_password, verify_password
 from vastra.db import get_db, init_db
+from vastra.dictionary import find_dictionary_entry, load_dictionary, search_dictionary
 from vastra.models import StyleProfile, User, WardrobeItem
 from vastra.schemas import (
     AvailabilityStatus,
+    DictionaryEntry,
+    DictionaryKind,
     LoginRequest,
+    PreferredStyle,
     ProfilePublic,
     ProfileUpsert,
     RegisterRequest,
@@ -253,3 +257,30 @@ def delete_wardrobe_item(
     db.delete(item)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.get("/dictionary", response_model=list[DictionaryEntry])
+def list_dictionary(
+    current_user: Annotated[User, Depends(get_current_user)],
+    q: Annotated[str | None, Query()] = None,
+    style: Annotated[PreferredStyle | None, Query()] = None,
+    kind: Annotated[DictionaryKind | None, Query()] = None,
+) -> list[DictionaryEntry]:
+    """Shared reference catalog. Does not read or change profile or wardrobe data."""
+    del current_user
+    return search_dictionary(load_dictionary(), q=q, style=style, kind=kind)
+
+
+@app.get("/dictionary/{entry_id}", response_model=DictionaryEntry)
+def get_dictionary_entry(
+    entry_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> DictionaryEntry:
+    del current_user
+    entry = find_dictionary_entry(load_dictionary(), entry_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dictionary entry not found",
+        )
+    return entry
