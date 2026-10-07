@@ -7,6 +7,7 @@ export type BackendErrorKind =
   | "invalid_credentials"
   | "unauthorized"
   | "unavailable"
+  | "not_found"
   | "unknown";
 
 export type BackendResult<T> =

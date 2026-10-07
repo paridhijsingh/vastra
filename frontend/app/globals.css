@@ -12,6 +12,9 @@
   --accent-wardrobe: #b58a3a;
   /* Darker gold for readable text on ivory; keep --accent-wardrobe decorative */
   --accent-wardrobe-text: #6e5218;
+  /* Muted plum; dark enough for text and the dictionary nav mark on ivory */
+  --accent-dictionary: #7a4e72;
+  --accent-dictionary-text: #7a4e72;
   --muted: #5c5852;
   --border: #e4ddd0;
   --surface: #ffffff;
@@ -29,6 +32,8 @@
   --color-accent-profile-text: var(--accent-profile-text);
   --color-accent-wardrobe: var(--accent-wardrobe);
   --color-accent-wardrobe-text: var(--accent-wardrobe-text);
+  --color-accent-dictionary: var(--accent-dictionary);
+  --color-accent-dictionary-text: var(--accent-dictionary-text);
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-surface: var(--surface);

@@ -16,7 +16,7 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Frontend authentication** is implemented (register, sign in, HttpOnly session cookie).
 - **Style Profile UI** is implemented (load/save/delete).
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
-- **Style Dictionary API** is a read-only empty catalog. Entry management, AI term suggestions, the Next.js dictionary page, and live trend retrieval are pending.
+- **Style Dictionary** has a read-only API and a Next.js page. The catalog is empty. Entry management, AI term suggestions, and live trend retrieval are pending.
 - Smart Shopping remains excluded.
 
 A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
@@ -28,7 +28,7 @@ A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
 | **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Working (API + UI) |
 | **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Working (API + UI) |
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
-| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | API foundation (empty catalog) |
+| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Working (empty catalog, API + page) |
 | **Emergency Fit**                      | Recommend an outfit for an occasion and time limit using available owned items                  | Planned |
 | **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
@@ -43,7 +43,7 @@ Support Indian, Western, and fusion styles, with men, women, and unisex styling 
 
 Cultural styling choices will reflect the user's preferences and context rather than assume universal dress-code rules.
 
-### Style Dictionary (empty foundation)
+### Style Dictionary (empty catalog, page available)
 
 Read-only shared reference material for general styling guidance. The catalog is a version-controlled JSON file inside the `vastra` package and currently contains no entries. It is not stored in the user database.
 
@@ -58,11 +58,12 @@ Both routes require a bearer token. They do not read or change a user's profile 
 
 Future entry text should stay short and original. Pairings are suggestions, not rules. Garments are not limited by gender, and entries do not judge body shape. Weather and comfort notes depend on fabric weight, construction, fit, and personal preference; they are not guarantees. Entries are not described as currently trending.
 
+The signed-in Next.js page is `/dictionary`. It searches and filters the live catalog and links each term to `/dictionary/[entry_id]`. The style filter offers only Indian, Western, and fusion, because those are the values `GET /dictionary` accepts. Other cultural styles can appear as entry `style_tags`, but they are not filter options. The page does not add entries or call a model.
+
 Pending:
 
 - Adding and editing curated entries
 - AI term suggestions, which must stay drafts until reviewed and approved, and must not be labeled verified or currently trending without supporting sources
-- The Next.js dictionary page
 - Live trend retrieval
 
 ### Weather-aware styling (planned)
@@ -289,6 +290,7 @@ Frontend auth pages:
 - `/signin` — establish a browser session
 - `/profile` — style profile form (requires sign-in)
 - `/wardrobe` — wardrobe manager with availability filters (requires sign-in)
+- `/dictionary` — style dictionary search (requires sign-in; catalog is empty)
 
 Frontend configuration (server-only in `.env.local`):
 

@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 7, 2026  
-Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, and Wardrobe UI working; Style Dictionary API is a read-only empty catalog; Emergency Fit next  
+Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, Wardrobe UI, and Style Dictionary page working; dictionary catalog is empty; Emergency Fit next  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -46,7 +46,7 @@ Support Indian, Western, and fusion styles, with men, women, and unisex styling 
 
 Cultural styling choices should reflect the user's preferences and context rather than assume universal dress-code rules.
 
-### Style Dictionary (empty foundation)
+### Style Dictionary (empty catalog, page available)
 
 The read-only API is in place. `GET /dictionary` and `GET /dictionary/{entry_id}` require authentication and serve a shared JSON catalog packaged with the backend. The file ships as an empty list, so the list endpoint returns `[]`. There is no dictionary table, and these routes do not read or change a user's profile or wardrobe.
 
@@ -56,7 +56,9 @@ Search (`q`), `style`, and `kind` filters combine with AND. Unknown ids return 4
 
 Entry text, when added, should be short and original. Pairings are suggestions. Do not restrict garments by gender or judge body shape. Weather and comfort depend on fabric weight, construction, fit, and preference; do not present them as guarantees. Do not claim an entry is currently trending, and do not invent citations, review dates, or product links.
 
-Pending: curated entry management, AI term suggestions, the Next.js dictionary page, and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
+The Next.js page at `/dictionary` is signed-in and read-only. It loads `GET /dictionary`, keeps submitted filters in the URL, and opens `/dictionary/[entry_id]` for a term. Style filters are Indian, Western, and fusion only. Broader cultural coverage stays on each entry's `style_tags` and is not mapped onto those three values. The catalog is still empty. There is no add or suggest action on the page.
+
+Pending: curated entry management, AI term suggestions, and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
 
 ### Weather-aware styling (planned)
 
@@ -440,8 +442,8 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI and the empty Style Dictionary API are in place. Next: Nebius / Nemotron integration and Emergency Fit.
+Wardrobe UI and the Style Dictionary page are in place. The dictionary catalog is still empty. Next: Nebius / Nemotron integration and Emergency Fit.
 
-Pending for the dictionary: curated entry management, AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources), the Next.js dictionary UI, and live trend retrieval.
+Pending for the dictionary: curated entry management, AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources), and live trend retrieval.
 
 Do not implement weather lookups, saved events, shopping, or MCP yet.

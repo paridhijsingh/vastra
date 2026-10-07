@@ -11,11 +11,6 @@ const COMING_SOON = [
     description:
       "Replace one piece that is not working while keeping the rest of the outfit locked in place.",
   },
-  {
-    title: "Style Dictionary",
-    description:
-      "Look up fashion terms, pairing guidance, occasions, and comfort-aware alternatives from curated entries.",
-  },
 ] as const;
 
 export default function HomePage() {
@@ -46,6 +41,12 @@ export default function HomePage() {
           >
             Wardrobe
           </Link>
+          <Link
+            href="/dictionary"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
+          >
+            Style Dictionary
+          </Link>
         </div>
       </section>
 
@@ -63,7 +64,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <ul className="grid min-w-0 gap-6 sm:grid-cols-3 sm:gap-4">
+        <ul className="grid min-w-0 gap-6 sm:grid-cols-2 sm:gap-4">
           {COMING_SOON.map((feature) => (
             <li
               key={feature.title}
