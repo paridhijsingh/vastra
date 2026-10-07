@@ -1,42 +1,34 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import {
-  EMPTY_PROFILE,
+  EMPTY_PROFILE_FORM,
   PREFERRED_STYLES,
+  PROFILE_CREATED_MESSAGE,
   STYLING_PREFERENCES,
+  STYLING_PREFERENCE_REQUIRED_MESSAGE,
+  draftFromProfile,
   linesToList,
   listToLines,
+  toProfilePayload,
   type PreferredStyle,
-  type ProfilePayload,
+  type ProfileFormDraft,
   type ProfilePublic,
   type StylingPreference,
 } from "@/lib/profile/types";
 
 type LoadState = "loading" | "ready" | "error";
 
-function payloadFromProfile(profile: ProfilePublic | null): ProfilePayload {
-  if (!profile) {
-    return { ...EMPTY_PROFILE };
-  }
-  return {
-    styling_preference: profile.styling_preference,
-    preferred_styles: [...profile.preferred_styles],
-    preferred_colors: [...profile.preferred_colors],
-    fit_preferences: [...profile.fit_preferences],
-    comfort_preferences: [...profile.comfort_preferences],
-    clothing_to_avoid: [...profile.clothing_to_avoid],
-  };
-}
-
 export function ProfileForm() {
   const router = useRouter();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [exists, setExists] = useState(false);
-  const [stylingPreference, setStylingPreference] =
-    useState<StylingPreference>(EMPTY_PROFILE.styling_preference);
+  const [stylingPreference, setStylingPreference] = useState<StylingPreference | "">(
+    EMPTY_PROFILE_FORM.styling_preference,
+  );
   const [preferredStyles, setPreferredStyles] = useState<PreferredStyle[]>([]);
   const [preferredColorsText, setPreferredColorsText] = useState("");
   const [fitText, setFitText] = useState("");
@@ -44,21 +36,33 @@ export function ProfileForm() {
   const [avoidText, setAvoidText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showWardrobeNext, setShowWardrobeNext] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  function applyPayload(payload: ProfilePayload, profileExists: boolean) {
+  function applyDraft(draft: ProfileFormDraft, profileExists: boolean) {
     setExists(profileExists);
-    setStylingPreference(payload.styling_preference);
-    setPreferredStyles([...payload.preferred_styles]);
-    setPreferredColorsText(listToLines(payload.preferred_colors));
-    setFitText(listToLines(payload.fit_preferences));
-    setComfortText(listToLines(payload.comfort_preferences));
-    setAvoidText(listToLines(payload.clothing_to_avoid));
+    setStylingPreference(draft.styling_preference);
+    setPreferredStyles([...draft.preferred_styles]);
+    setPreferredColorsText(listToLines(draft.preferred_colors));
+    setFitText(listToLines(draft.fit_preferences));
+    setComfortText(listToLines(draft.comfort_preferences));
+    setAvoidText(listToLines(draft.clothing_to_avoid));
   }
 
   function clearToEmptyState() {
-    applyPayload({ ...EMPTY_PROFILE }, false);
+    applyDraft(
+      {
+        ...EMPTY_PROFILE_FORM,
+        preferred_styles: [],
+        preferred_colors: [],
+        fit_preferences: [],
+        comfort_preferences: [],
+        clothing_to_avoid: [],
+      },
+      false,
+    );
+    setShowWardrobeNext(false);
   }
 
   useEffect(() => {
@@ -102,7 +106,8 @@ export function ProfileForm() {
         }
 
         const profile = body.profile ?? null;
-        applyPayload(payloadFromProfile(profile), profile !== null);
+        applyDraft(draftFromProfile(profile), profile !== null);
+        setShowWardrobeNext(false);
         setLoadState("ready");
       } catch {
         if (!cancelled) {
@@ -128,7 +133,7 @@ export function ProfileForm() {
     );
   }
 
-  function buildPayload(): ProfilePayload {
+  function currentDraft(): ProfileFormDraft {
     return {
       styling_preference: stylingPreference,
       preferred_styles: preferredStyles,
@@ -145,9 +150,16 @@ export function ProfileForm() {
 
     setError(null);
     setSuccess(null);
-    setSaving(true);
+    setShowWardrobeNext(false);
 
-    const payload = buildPayload();
+    const payload = toProfilePayload(currentDraft());
+    if (!payload) {
+      setError(STYLING_PREFERENCE_REQUIRED_MESSAGE);
+      return;
+    }
+
+    const creating = !exists;
+    setSaving(true);
 
     try {
       const response = await fetch("/api/profile", {
@@ -183,11 +195,17 @@ export function ProfileForm() {
       }
 
       if (body.profile) {
-        applyPayload(payloadFromProfile(body.profile), true);
+        applyDraft(draftFromProfile(body.profile), true);
       } else {
         setExists(true);
       }
-      setSuccess("Profile saved.");
+      if (creating) {
+        setSuccess(PROFILE_CREATED_MESSAGE);
+        setShowWardrobeNext(true);
+      } else {
+        setSuccess("Profile saved.");
+        setShowWardrobeNext(false);
+      }
       router.refresh();
     } catch {
       setError("The profile service is unavailable. Please try again later.");
@@ -263,12 +281,20 @@ export function ProfileForm() {
       ) : null}
 
       {success ? (
-        <p
-          className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground"
+        <div
+          className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-3"
           role="status"
         >
-          {success}
-        </p>
+          <p className="text-sm text-foreground">{success}</p>
+          {showWardrobeNext ? (
+            <Link
+              href="/wardrobe"
+              className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+            >
+              Continue to wardrobe
+            </Link>
+          ) : null}
+        </div>
       ) : null}
 
       {error ? (
@@ -289,12 +315,19 @@ export function ProfileForm() {
             id="styling_preference"
             name="styling_preference"
             value={stylingPreference}
+            required
             disabled={busy}
-            onChange={(event) =>
-              setStylingPreference(event.target.value as StylingPreference)
-            }
+            onChange={(event) => {
+              const value = event.target.value;
+              setStylingPreference(
+                value === "men" || value === "women" || value === "unisex" ? value : "",
+              );
+            }}
             className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
           >
+            <option value="" disabled>
+              Choose a styling preference
+            </option>
             {STYLING_PREFERENCES.map((value) => (
               <option key={value} value={value}>
                 {value}

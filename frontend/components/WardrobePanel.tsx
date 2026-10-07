@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
   AVAILABILITY_LABELS,
@@ -42,6 +42,8 @@ export function WardrobePanel({ userId }: Props) {
   const [form, setForm] = useState<WardrobeItemCreate>({ ...EMPTY_ITEM_FORM });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = useCallback(() => {
     setEditingId(null);
@@ -328,9 +330,26 @@ export function WardrobePanel({ userId }: Props) {
         ) : null}
 
         {emptyWardrobe ? (
-          <p className="rounded-md border border-border bg-surface px-4 py-4 text-base text-muted" role="status">
-            Your wardrobe is empty. Add your first item below.
-          </p>
+          <div
+            className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4"
+            role="status"
+          >
+            <p className="text-base text-muted">
+              Your wardrobe is empty. Your style profile stores your preferences;
+              add your clothing and accessories here.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                resetForm();
+                formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                nameInputRef.current?.focus();
+              }}
+              className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+            >
+              Add your first item
+            </button>
+          </div>
         ) : null}
 
         {emptyFilter ? (
@@ -423,12 +442,19 @@ export function WardrobePanel({ userId }: Props) {
           )}
         </div>
 
-        <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+        <form
+          ref={formRef}
+          id="wardrobe-item-form"
+          className="flex flex-col gap-4"
+          onSubmit={onSubmit}
+          noValidate
+        >
           <div className="flex flex-col gap-2">
             <label htmlFor="item-name" className="text-sm font-semibold text-foreground">
               Name
             </label>
             <input
+              ref={nameInputRef}
               id="item-name"
               name="name"
               type="text"
