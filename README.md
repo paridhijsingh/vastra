@@ -12,16 +12,19 @@ Built for the **NVIDIA × Nebius Global AI Hackathon — Personal AI track**.
 
 Rebuilding from scratch. Features below are **planned** unless noted.
 
-- **Frontend shell** (Next.js): navigation and placeholder pages implemented; auth and API integration next.
-- Backend auth, style profile, and wardrobe APIs exist; the UI does not claim them as connected yet.
+- **Backend auth, style profile, and wardrobe APIs** are implemented and tested.
+- **Frontend authentication** is implemented (register, sign in, HttpOnly session cookie).
+- **Style Profile UI** is implemented: load/save/delete against `GET`/`PUT`/`DELETE /profile` via the Next.js proxy.
+- **Wardrobe UI** is still a signed-in placeholder (CRUD not connected yet).
+- Smart Shopping remains excluded.
 
-A working end-to-end demo is not yet available.
+A full end-to-end styling demo is not yet available.
 
 ## Planned features
 
 | Feature                                | What it does                                                                                    | Status  |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------- | ------- |
-| **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Planned |
+| **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Working (API + UI) |
 | **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Planned |
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Planned |
 | **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Planned |
@@ -32,7 +35,7 @@ A working end-to-end demo is not yet available.
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
 | **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
 | **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
-| **Authentication and private storage** | Restrict saved records to their owner                                                           | Planned |
+| **Authentication and private storage** | Restrict saved records to their owner                                                           | Working (API + frontend sign-in) |
 | **Data controls**                      | Export and delete saved personal records                                                        | Planned |
 
 Support Indian, Western, and fusion styles, with men, women, and unisex styling preferences.
@@ -248,7 +251,7 @@ source .venv/bin/activate
 python -m pytest tests/ -q
 ```
 
-### Frontend (Next.js shell)
+### Frontend (Next.js)
 
 ```bash
 cd frontend
@@ -259,11 +262,31 @@ npm run dev
 
 Open http://localhost:3000
 
-Frontend configuration:
+Frontend auth pages:
 
-- `NEXT_PUBLIC_API_URL` — FastAPI base URL (default `http://127.0.0.1:8000`)
+- `/register` — create an account (then sign in)
+- `/signin` — establish a browser session
+- `/profile` — style profile form (requires sign-in)
+- `/wardrobe` — signed-in placeholder (CRUD UI coming next)
 
-Backend secrets and Nebius credentials must stay on the server. Do not add them to frontend env files.
+Frontend configuration (server-only in `.env.local`):
+
+- `API_URL` — FastAPI base URL (default `http://127.0.0.1:8000`)
+- `AUTH_COOKIE_MAX_AGE_HOURS` — session cookie lifetime; keep aligned with backend `JWT_EXPIRE_HOURS` (default `72`)
+
+The access token is stored only in an HttpOnly, SameSite=Lax cookie set by Next.js route handlers. It is not placed in `localStorage`, `sessionStorage`, client JavaScript, URLs, or client response bodies. Logout clears the browser cookie; it does **not** revoke the JWT on the FastAPI backend.
+
+Backend secrets and Nebius credentials must stay on the FastAPI server. Do not add them to frontend env files.
+
+Run frontend checks:
+
+```bash
+cd frontend
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
 
 Later milestones will use Nebius / Nemotron settings on the backend (`NEBIUS_API_KEY`, `NEBIUS_BASE_URL`, `NEMOTRON_MODEL`).
 

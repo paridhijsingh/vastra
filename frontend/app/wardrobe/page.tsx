@@ -1,4 +1,8 @@
-export default function WardrobePage() {
+import { requireUser } from "@/lib/auth/require-user";
+
+export default async function WardrobePage() {
+  await requireUser("/wardrobe");
+
   return (
     <div className="flex max-w-2xl min-w-0 flex-col gap-5">
       <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-wardrobe-text">

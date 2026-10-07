@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 
 import { SiteHeader } from "@/components/SiteHeader";
+import { getCurrentUser } from "@/lib/auth/session";
 
 import "./globals.css";
 
@@ -23,17 +24,19 @@ export const metadata: Metadata = {
     "Your personal AI stylist for the clothes you already own. Ready, set, styled.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="en">
       <body
         className={`${sourceSans.variable} ${fraunces.variable} min-h-screen antialiased`}
       >
-        <SiteHeader />
+        <SiteHeader user={user} />
         <main className="mx-auto w-full min-w-0 max-w-5xl px-4 py-8 sm:px-8 sm:py-12">
           {children}
         </main>
