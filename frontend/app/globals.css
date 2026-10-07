@@ -5,9 +5,13 @@
   --foreground: #242424;
   --primary: #245447;
   --primary-hover: #1c4036;
+  --primary-foreground: #ffffff;
   --accent-home: #245447;
   --accent-profile: #b94732;
+  --accent-profile-text: #9a3a28;
   --accent-wardrobe: #b58a3a;
+  /* Darker gold for readable text on ivory; keep --accent-wardrobe decorative */
+  --accent-wardrobe-text: #6e5218;
   --muted: #5c5852;
   --border: #e4ddd0;
   --surface: #ffffff;
@@ -19,9 +23,12 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
   --color-accent-home: var(--accent-home);
   --color-accent-profile: var(--accent-profile);
+  --color-accent-profile-text: var(--accent-profile-text);
   --color-accent-wardrobe: var(--accent-wardrobe);
+  --color-accent-wardrobe-text: var(--accent-wardrobe-text);
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-surface: var(--surface);
@@ -40,6 +47,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(ellipse 80% 50% at 10% -10%, rgba(36, 84, 71, 0.08), transparent 55%),
     radial-gradient(ellipse 60% 40% at 100% 0%, rgba(181, 138, 58, 0.07), transparent 50%),
@@ -61,4 +69,15 @@ a {
 
 .font-display {
   font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background-color: var(--primary-hover);
+  color: var(--primary-foreground);
 }

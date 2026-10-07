@@ -1,13 +1,10 @@
 export default function WardrobePage() {
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <p
-        className="text-sm font-semibold uppercase tracking-[0.14em]"
-        style={{ color: "var(--accent-wardrobe)" }}
-      >
+    <div className="flex max-w-2xl min-w-0 flex-col gap-5">
+      <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-wardrobe-text">
         Wardrobe
       </p>
-      <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground break-words sm:text-4xl md:text-5xl">
         Clothes you already own
       </h1>
       <p className="text-lg text-muted">

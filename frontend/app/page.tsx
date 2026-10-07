@@ -20,12 +20,12 @@ const COMING_SOON = [
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col gap-12">
-      <section className="flex max-w-2xl flex-col gap-5">
+    <div className="flex min-w-0 flex-col gap-12">
+      <section className="flex max-w-2xl min-w-0 flex-col gap-5">
         <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted">
           Personal AI stylist
         </p>
-        <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
+        <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-foreground break-words sm:text-4xl md:text-5xl">
           Style the clothes you already own.
         </h1>
         <p className="text-lg text-muted sm:text-xl">
@@ -33,23 +33,23 @@ export default function HomePage() {
           festivities using your preferences and saved wardrobe—across Indian,
           Western, fusion, and other styles, for every gender.
         </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
           <Link
             href="/profile"
-            className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-5 text-base font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
           >
             Style Profile
           </Link>
           <Link
             href="/wardrobe"
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
           >
             Wardrobe
           </Link>
         </div>
       </section>
 
-      <section aria-labelledby="coming-soon-heading" className="flex flex-col gap-5">
+      <section aria-labelledby="coming-soon-heading" className="flex min-w-0 flex-col gap-5">
         <div className="flex flex-col gap-2">
           <h2
             id="coming-soon-heading"
@@ -63,14 +63,14 @@ export default function HomePage() {
           </p>
         </div>
 
-        <ul className="grid gap-4 sm:grid-cols-3">
+        <ul className="grid min-w-0 gap-6 sm:grid-cols-3 sm:gap-4">
           {COMING_SOON.map((feature) => (
             <li
               key={feature.title}
-              className="flex flex-col gap-3 border-t-[3px] border-border pt-4"
+              className="flex min-w-0 flex-col gap-3 border-t-[3px] border-border pt-4"
             >
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="font-display text-xl font-semibold text-foreground">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h3 className="font-display min-w-0 text-xl font-semibold text-foreground break-words">
                   {feature.title}
                 </h3>
                 <span className="shrink-0 rounded-sm bg-black/5 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted">
