@@ -2,10 +2,12 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 StylingPreference = Literal["men", "women", "unisex"]
 PreferredStyle = Literal["Indian", "Western", "fusion"]
+# Dictionary broad styles are a separate enum from saved profile styles.
+DictionaryStyle = Literal["Indian", "Western", "fusion"]
 
 NonBlankTrimmedStr = Annotated[
     str,
@@ -181,12 +183,42 @@ DictionaryNote = Annotated[
 ]
 
 
-class DictionaryEntry(BaseModel):
-    """Approved general guidance. Not a trend claim and not a user record.
+DictionaryOrigin = Literal["shared", "personal"]
 
-    `styles` uses the profile style values. `style_tags` is a separate list so
-    cultural coverage can grow without changing saved profiles. Optional
-    `cultural_context` names a more specific setting when one applies.
+_DICTIONARY_NULL_FORBIDDEN = (
+    "term",
+    "definition",
+    "kind",
+    "guidance_type",
+    "aliases",
+    "styles",
+    "style_tags",
+    "pairing_suggestions",
+    "occasions",
+    "weather_notes",
+    "comfort_notes",
+)
+
+
+def _normalize_cultural_context(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("cultural_context must be a string")
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+    if len(trimmed) > 200:
+        raise ValueError("cultural_context must be at most 200 characters")
+    return trimmed
+
+
+class DictionaryEntry(BaseModel):
+    """Approved general guidance. Not a trend claim.
+
+    `styles` uses the dictionary style enum, which is separate from saved
+    profile styles. `style_tags` can name additional cultural styles.
+    Optional `cultural_context` names a more specific setting when one applies.
 
     Pairing, weather, and comfort notes are suggestions. They are not rules,
     guarantees, or gender or body-shape judgments.
@@ -195,11 +227,12 @@ class DictionaryEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: DictionarySlug
+    origin: DictionaryOrigin = "shared"
     term: DictionaryTerm
     aliases: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
     definition: DictionaryDefinition
     kind: DictionaryKind
-    styles: list[PreferredStyle] = Field(default_factory=list, max_length=3)
+    styles: list[DictionaryStyle] = Field(default_factory=list, max_length=3)
     style_tags: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
     cultural_context: str | None = None
     pairing_suggestions: list[DictionaryNote] = Field(default_factory=list, max_length=12)
@@ -226,13 +259,104 @@ class DictionaryEntry(BaseModel):
     @field_validator("cultural_context", mode="before")
     @classmethod
     def normalize_cultural_context(cls, value: object) -> str | None:
+        return _normalize_cultural_context(value)
+
+
+class DictionaryEntryCreate(BaseModel):
+    """Personal entry payload. Identity and origin are assigned by the server."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    term: DictionaryTerm
+    definition: DictionaryDefinition
+    kind: DictionaryKind
+    aliases: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+    styles: list[DictionaryStyle] = Field(default_factory=list, max_length=3)
+    style_tags: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+    cultural_context: str | None = None
+    pairing_suggestions: list[DictionaryNote] = Field(default_factory=list, max_length=12)
+    occasions: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+    weather_notes: list[DictionaryNote] = Field(default_factory=list, max_length=12)
+    comfort_notes: list[DictionaryNote] = Field(default_factory=list, max_length=12)
+    guidance_type: DictionaryGuidanceType = "general"
+
+    @field_validator("aliases", "style_tags", "occasions", mode="before")
+    @classmethod
+    def normalize_short_lists(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=16)
+
+    @field_validator("styles", mode="before")
+    @classmethod
+    def normalize_styles(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=3)
+
+    @field_validator("pairing_suggestions", "weather_notes", "comfort_notes", mode="before")
+    @classmethod
+    def normalize_notes(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=12, max_length=280)
+
+    @field_validator("cultural_context", mode="before")
+    @classmethod
+    def normalize_cultural_context(cls, value: object) -> str | None:
+        return _normalize_cultural_context(value)
+
+
+class DictionaryEntryUpdate(BaseModel):
+    """Partial personal-entry update. Omitted fields stay unchanged."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    term: DictionaryTerm | None = None
+    definition: DictionaryDefinition | None = None
+    kind: DictionaryKind | None = None
+    aliases: list[NonBlankTrimmedStr] | None = None
+    styles: list[DictionaryStyle] | None = None
+    style_tags: list[NonBlankTrimmedStr] | None = None
+    cultural_context: str | None = None
+    pairing_suggestions: list[DictionaryNote] | None = None
+    occasions: list[NonBlankTrimmedStr] | None = None
+    weather_notes: list[DictionaryNote] | None = None
+    comfort_notes: list[DictionaryNote] | None = None
+    guidance_type: DictionaryGuidanceType | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_required_fields(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        for field in _DICTIONARY_NULL_FORBIDDEN:
+            if field in value and value[field] is None:
+                raise ValueError(f"{field} must not be null")
+        return value
+
+    @model_validator(mode="after")
+    def reject_empty_update(self) -> "DictionaryEntryUpdate":
+        if not self.model_fields_set:
+            raise ValueError("At least one field is required")
+        return self
+
+    @field_validator("aliases", "style_tags", "occasions", mode="before")
+    @classmethod
+    def normalize_short_lists(cls, value: object) -> object:
         if value is None:
-            return None
-        if not isinstance(value, str):
-            raise ValueError("cultural_context must be a string")
-        trimmed = value.strip()
-        if not trimmed:
-            return None
-        if len(trimmed) > 200:
-            raise ValueError("cultural_context must be at most 200 characters")
-        return trimmed
+            return value
+        return _normalize_string_list(value, max_items=16)
+
+    @field_validator("styles", mode="before")
+    @classmethod
+    def normalize_styles(cls, value: object) -> object:
+        if value is None:
+            return value
+        return _normalize_string_list(value, max_items=3)
+
+    @field_validator("pairing_suggestions", "weather_notes", "comfort_notes", mode="before")
+    @classmethod
+    def normalize_notes(cls, value: object) -> object:
+        if value is None:
+            return value
+        return _normalize_string_list(value, max_items=12, max_length=280)
+
+    @field_validator("cultural_context", mode="before")
+    @classmethod
+    def normalize_cultural_context(cls, value: object) -> str | None:
+        return _normalize_cultural_context(value)

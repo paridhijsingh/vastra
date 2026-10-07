@@ -7,8 +7,11 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
+from vastra.db import get_session_factory
 from vastra.dictionary import DictionaryLoadError, load_dictionary, packaged_dictionary_path
+from vastra.models import PersonalDictionaryEntry
 
 KURTA = {
     "id": "kurta",
@@ -309,3 +312,196 @@ def test_dictionary_does_not_touch_profile_or_wardrobe(
         },
     )
     assert rejected.status_code == 422
+
+
+PERSONAL_ENTRY = {
+    "term": "  Agbada  ",
+    "aliases": ["grand boubou"],
+    "definition": " A flowing robe worn by people of any gender. ",
+    "kind": "garment",
+    "styles": ["fusion"],
+    "style_tags": ["Yoruba", "West African"],
+    "cultural_context": " Worn in parts of West Africa. ",
+    "pairing_suggestions": ["One option is a fitted cap."],
+    "occasions": ["celebration"],
+    "weather_notes": ["A lighter cloth is often easier in heat."],
+    "comfort_notes": ["Choose the weight you prefer."],
+}
+
+
+def test_personal_dictionary_entry_crud_and_persistence(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _use_fixture(monkeypatch, tmp_path)
+    headers = _register_and_login(client, "dictowner")
+
+    created = client.post("/dictionary", headers=headers, json=PERSONAL_ENTRY)
+    assert created.status_code == 201
+    body = created.json()
+    assert body["origin"] == "personal"
+    assert body["id"].startswith("personal-")
+    assert body["term"] == "Agbada"
+    assert body["definition"] == "A flowing robe worn by people of any gender."
+    assert body["cultural_context"] == "Worn in parts of West Africa."
+    assert body["guidance_type"] == "general"
+    assert body["style_tags"] == ["Yoruba", "West African"]
+    assert "owner_id" not in body
+    entry_id = body["id"]
+
+    listed = client.get("/dictionary", headers=headers)
+    ids = [entry["id"] for entry in listed.json()]
+    assert entry_id in ids
+    assert "kurta" in ids
+    assert listed.json()[ids.index(entry_id)]["origin"] == "personal"
+    assert listed.json()[ids.index("kurta")]["origin"] == "shared"
+
+    fetched = client.get(f"/dictionary/{entry_id}", headers=headers)
+    assert fetched.status_code == 200
+    assert fetched.json()["aliases"] == ["grand boubou"]
+
+    patched = client.patch(
+        f"/dictionary/{entry_id}",
+        headers=headers,
+        json={"term": "Agbada robe", "cultural_context": None, "aliases": []},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["term"] == "Agbada robe"
+    assert patched.json()["cultural_context"] is None
+    assert patched.json()["aliases"] == []
+    assert patched.json()["style_tags"] == ["Yoruba", "West African"]
+    assert patched.json()["definition"].startswith("A flowing robe")
+
+    filtered = client.get(
+        "/dictionary",
+        headers=headers,
+        params={"tag": " west african ", "style": "fusion", "kind": "garment", "q": "robe"},
+    )
+    assert [entry["id"] for entry in filtered.json()] == [entry_id]
+
+    session = get_session_factory()()
+    try:
+        row = session.scalar(select(PersonalDictionaryEntry).where(PersonalDictionaryEntry.id == entry_id))
+        assert row is not None
+        assert row.term == "Agbada robe"
+        assert row.aliases == []
+        assert row.cultural_context is None
+        assert row.owner_id
+    finally:
+        session.close()
+
+    again = client.get(f"/dictionary/{entry_id}", headers=headers)
+    assert again.status_code == 200
+    assert again.json()["term"] == "Agbada robe"
+
+    deleted = client.delete(f"/dictionary/{entry_id}", headers=headers)
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+    assert client.get(f"/dictionary/{entry_id}", headers=headers).status_code == 404
+    assert entry_id not in [entry["id"] for entry in client.get("/dictionary", headers=headers).json()]
+    assert client.get("/wardrobe", headers=headers).json() == []
+    assert client.get("/profile", headers=headers).status_code == 404
+
+
+def test_personal_dictionary_entries_are_private(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _use_fixture(monkeypatch, tmp_path)
+    headers_a = _register_and_login(client, "dictuser-a")
+    headers_b = _register_and_login(client, "dictuser-b")
+    created = client.post("/dictionary", headers=headers_a, json=PERSONAL_ENTRY)
+    entry_id = created.json()["id"]
+
+    listed_b = client.get("/dictionary", headers=headers_b)
+    assert entry_id not in [entry["id"] for entry in listed_b.json()]
+    assert client.get(f"/dictionary/{entry_id}", headers=headers_b).status_code == 404
+    assert (
+        client.patch(
+            f"/dictionary/{entry_id}",
+            headers=headers_b,
+            json={"term": "Taken"},
+        ).status_code
+        == 404
+    )
+    assert client.delete(f"/dictionary/{entry_id}", headers=headers_b).status_code == 404
+    assert client.get(f"/dictionary/{entry_id}", headers=headers_a).json()["term"] == "Agbada"
+
+
+def test_shared_dictionary_entries_are_read_only(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _use_fixture(monkeypatch, tmp_path)
+    headers = _register_and_login(client, "dictshared")
+
+    patched = client.patch("/dictionary/kurta", headers=headers, json={"term": "Changed"})
+    assert patched.status_code == 403
+    assert patched.json()["detail"] == "Shared dictionary entries are read-only"
+    assert client.get("/dictionary/kurta", headers=headers).json()["term"] == "Kurta"
+
+    deleted = client.delete("/dictionary/kurta", headers=headers)
+    assert deleted.status_code == 403
+    assert client.get("/dictionary/kurta", headers=headers).status_code == 200
+
+
+def test_personal_dictionary_validation(
+    client: TestClient,
+) -> None:
+    headers = _register_and_login(client, "dictvalid")
+
+    blank = client.post(
+        "/dictionary",
+        headers=headers,
+        json={**PERSONAL_ENTRY, "term": "   "},
+    )
+    assert blank.status_code == 422
+    assert "   " not in blank.text
+    for err in blank.json()["detail"]:
+        assert "input" not in err
+        assert "ctx" not in err
+
+    blank_tag = client.post(
+        "/dictionary",
+        headers=headers,
+        json={**PERSONAL_ENTRY, "style_tags": ["  "]},
+    )
+    assert blank_tag.status_code == 422
+
+    profile_style = client.post(
+        "/dictionary",
+        headers=headers,
+        json={**PERSONAL_ENTRY, "styles": ["Yoruba"]},
+    )
+    assert profile_style.status_code == 422
+
+    spoofed = client.post(
+        "/dictionary",
+        headers=headers,
+        json={**PERSONAL_ENTRY, "owner_id": "someone-else", "origin": "shared", "id": "kurta"},
+    )
+    assert spoofed.status_code == 422
+    assert any("owner_id" in err.get("loc", []) for err in spoofed.json()["detail"])
+
+    created = client.post("/dictionary", headers=headers, json=PERSONAL_ENTRY)
+    entry_id = created.json()["id"]
+
+    empty_patch = client.patch(f"/dictionary/{entry_id}", headers=headers, json={})
+    assert empty_patch.status_code == 422
+
+    null_term = client.patch(f"/dictionary/{entry_id}", headers=headers, json={"term": None})
+    assert null_term.status_code == 422
+    assert client.get(f"/dictionary/{entry_id}", headers=headers).json()["term"] == "Agbada"
+
+    cleared = client.patch(
+        f"/dictionary/{entry_id}",
+        headers=headers,
+        json={"style_tags": [], "pairing_suggestions": []},
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["style_tags"] == []
+    assert cleared.json()["pairing_suggestions"] == []
+    assert cleared.json()["occasions"] == ["celebration"]

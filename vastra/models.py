@@ -94,3 +94,40 @@ class WardrobeItem(Base):
         onupdate=_utc_now,
         nullable=False,
     )
+
+
+class PersonalDictionaryEntry(Base):
+    """A private dictionary entry. The shared catalog stays in JSON."""
+
+    __tablename__ = "personal_dictionary_entries"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+    term: Mapped[str] = mapped_column(String(80), nullable=False)
+    aliases: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    definition: Mapped[str] = mapped_column(String(600), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    styles: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    style_tags: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    cultural_context: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    pairing_suggestions: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    occasions: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    weather_notes: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    comfort_notes: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    guidance_type: Mapped[str] = mapped_column(String(16), nullable=False, default="general")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=_utc_now,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=_utc_now,
+        onupdate=_utc_now,
+        nullable=False,
+    )

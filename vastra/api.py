@@ -1,6 +1,7 @@
 """FastAPI application for Vastra AI."""
 
 from contextlib import asynccontextmanager
+import uuid
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
@@ -13,13 +14,15 @@ from sqlalchemy.orm import Session
 from vastra.auth import create_access_token, get_current_user, hash_password, verify_password
 from vastra.db import get_db, init_db
 from vastra.dictionary import find_dictionary_entry, load_dictionary, search_dictionary
-from vastra.models import StyleProfile, User, WardrobeItem
+from vastra.models import PersonalDictionaryEntry, StyleProfile, User, WardrobeItem
 from vastra.schemas import (
     AvailabilityStatus,
     DictionaryEntry,
+    DictionaryEntryCreate,
+    DictionaryEntryUpdate,
     DictionaryKind,
+    DictionaryStyle,
     LoginRequest,
-    PreferredStyle,
     ProfilePublic,
     ProfileUpsert,
     RegisterRequest,
@@ -259,29 +262,151 @@ def delete_wardrobe_item(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+def _personal_dictionary_id(shared_ids: set[str]) -> str:
+    while True:
+        entry_id = f"personal-{uuid.uuid4()}"
+        if entry_id not in shared_ids:
+            return entry_id
+
+
+def _public_personal_entry(row: PersonalDictionaryEntry) -> DictionaryEntry:
+    return DictionaryEntry.model_validate(
+        {
+            "id": row.id,
+            "origin": "personal",
+            "term": row.term,
+            "aliases": list(row.aliases or []),
+            "definition": row.definition,
+            "kind": row.kind,
+            "styles": list(row.styles or []),
+            "style_tags": list(row.style_tags or []),
+            "cultural_context": row.cultural_context,
+            "pairing_suggestions": list(row.pairing_suggestions or []),
+            "occasions": list(row.occasions or []),
+            "weather_notes": list(row.weather_notes or []),
+            "comfort_notes": list(row.comfort_notes or []),
+            "guidance_type": row.guidance_type,
+        }
+    )
+
+
+def _owned_personal_entry(
+    db: Session,
+    *,
+    owner_id: str,
+    entry_id: str,
+) -> PersonalDictionaryEntry | None:
+    return db.scalar(
+        select(PersonalDictionaryEntry).where(
+            PersonalDictionaryEntry.id == entry_id,
+            PersonalDictionaryEntry.owner_id == owner_id,
+        )
+    )
+
+
+def _list_owned_personal_entries(db: Session, owner_id: str) -> list[DictionaryEntry]:
+    rows = db.scalars(
+        select(PersonalDictionaryEntry).where(PersonalDictionaryEntry.owner_id == owner_id)
+    ).all()
+    return [_public_personal_entry(row) for row in rows]
+
+
 @app.get("/dictionary", response_model=list[DictionaryEntry])
 def list_dictionary(
     current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
     q: Annotated[str | None, Query()] = None,
-    style: Annotated[PreferredStyle | None, Query()] = None,
+    style: Annotated[DictionaryStyle | None, Query()] = None,
     kind: Annotated[DictionaryKind | None, Query()] = None,
     tag: Annotated[str | None, Query()] = None,
 ) -> list[DictionaryEntry]:
-    """Shared reference catalog. Does not read or change profile or wardrobe data."""
-    del current_user
-    return search_dictionary(load_dictionary(), q=q, style=style, kind=kind, tag=tag)
+    """Shared catalog plus the signed-in user's personal entries."""
+    entries = load_dictionary() + _list_owned_personal_entries(db, current_user.id)
+    return search_dictionary(entries, q=q, style=style, kind=kind, tag=tag)
+
+
+@app.post("/dictionary", response_model=DictionaryEntry, status_code=status.HTTP_201_CREATED)
+def create_dictionary_entry(
+    body: DictionaryEntryCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DictionaryEntry:
+    shared_ids = {entry.id for entry in load_dictionary()}
+    row = PersonalDictionaryEntry(
+        id=_personal_dictionary_id(shared_ids),
+        owner_id=current_user.id,
+        **body.model_dump(),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _public_personal_entry(row)
 
 
 @app.get("/dictionary/{entry_id}", response_model=DictionaryEntry)
 def get_dictionary_entry(
     entry_id: str,
     current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> DictionaryEntry:
-    del current_user
-    entry = find_dictionary_entry(load_dictionary(), entry_id)
-    if entry is None:
+    shared = find_dictionary_entry(load_dictionary(), entry_id)
+    if shared is not None:
+        return shared
+    row = _owned_personal_entry(db, owner_id=current_user.id, entry_id=entry_id)
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Dictionary entry not found",
         )
-    return entry
+    return _public_personal_entry(row)
+
+
+@app.patch("/dictionary/{entry_id}", response_model=DictionaryEntry)
+def patch_dictionary_entry(
+    entry_id: str,
+    body: DictionaryEntryUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DictionaryEntry:
+    if find_dictionary_entry(load_dictionary(), entry_id) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Shared dictionary entries are read-only",
+        )
+    row = _owned_personal_entry(db, owner_id=current_user.id, entry_id=entry_id)
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dictionary entry not found",
+        )
+    for key, value in body.model_dump(exclude_unset=True).items():
+        setattr(row, key, value)
+    db.commit()
+    db.refresh(row)
+    return _public_personal_entry(row)
+
+
+@app.delete(
+    "/dictionary/{entry_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+def delete_dictionary_entry(
+    entry_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    if find_dictionary_entry(load_dictionary(), entry_id) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Shared dictionary entries are read-only",
+        )
+    row = _owned_personal_entry(db, owner_id=current_user.id, entry_id=entry_id)
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dictionary entry not found",
+        )
+    db.delete(row)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

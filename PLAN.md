@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 7, 2026  
-Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, Wardrobe UI, and Style Dictionary page working; dictionary catalog is empty; Emergency Fit next  
+Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, Wardrobe UI, and read-only Style Dictionary page working; personal dictionary entries can be managed through the API; shared catalog is empty; Emergency Fit next  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -31,7 +31,7 @@ The first release should complete these workflows reliably before adding more fe
 | Style profile         | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid             |
 | Wardrobe              | Manually add, view, edit, and delete clothing and accessories                              |
 | Wardrobe availability | Mark items available, in the laundry, or packed away                                       |
-| Style Dictionary      | Read-only curated terms, pairing suggestions, occasions, and comfort notes; catalog starts empty |
+| Style Dictionary      | Shared read-only catalog plus private entries the owner can create, edit, and delete |
 | Emergency Fit         | Recommend an outfit for an occasion and time limit using available owned items             |
 | Rescue My Outfit      | Replace a selected piece while preserving the rest of the outfit                           |
 | Weather-aware styling | Optional weather context; location requested only via "Use my location"                    |
@@ -46,19 +46,21 @@ Support Indian, Western, and fusion styles, with men, women, and unisex styling 
 
 Cultural styling choices should reflect the user's preferences and context rather than assume universal dress-code rules.
 
-### Style Dictionary (empty catalog, page available)
+### Style Dictionary (private API entries, read-only page)
 
-The read-only API is in place. `GET /dictionary` and `GET /dictionary/{entry_id}` require authentication and serve a shared JSON catalog packaged with the backend. The file ships as an empty list, so the list endpoint returns `[]`. There is no dictionary table, and these routes do not read or change a user's profile or wardrobe.
+The shared catalog is still the empty JSON file packaged with the backend. Personal entries are stored in SQLite and owned by the authenticated user. `create_all` adds that table without deleting existing data.
 
-Each future entry is general guidance: a stable id, term, aliases, definition, kind (`garment`, `fabric`, `silhouette`, or `styling_technique`), profile-aligned `styles`, separate `style_tags`, optional `cultural_context`, pairing suggestions, occasions, weather notes, and comfort notes. `style_tags` can name cultural styles beyond Indian, Western, and fusion without changing the profile enum or saved profiles.
+`GET /dictionary` returns shared entries plus the current user's personal entries. `GET /dictionary/{entry_id}` returns a shared entry or that user's personal entry, otherwise 404. `POST /dictionary` creates a personal entry and returns 201. `PATCH` updates only supplied fields. `DELETE` returns 204. The server assigns ids prefixed with `personal-`. Responses include `origin` (`shared` or `personal`) and never include an owner id. Another user's entry is 404 and is left out of lists. Shared entries reject PATCH and DELETE. These routes do not read or change a profile or wardrobe.
 
-Search (`q`), `style`, `kind`, and `tag` filters combine with AND. `tag` is a case-insensitive exact match on `style_tags`. A blank tag does not filter. An unknown tag returns `[]`. Invalid `style` or `kind` values still use the sanitized 422 response. Unknown ids return 404.
+Each entry is general guidance: term, aliases, definition, kind (`garment`, `fabric`, `silhouette`, or `styling_technique`), dictionary `styles` (`Indian`, `Western`, `fusion`), flexible `style_tags`, optional `cultural_context`, pairing suggestions, occasions, weather notes, and comfort notes. The dictionary style enum is separate from the profile style enum. `style_tags` can name other cultural styles without changing saved profiles.
+
+Search (`q`), `style`, `kind`, and `tag` filters combine with AND across both sources. `tag` is a case-insensitive exact match on `style_tags`. A blank tag does not filter. An unknown tag returns `[]`. Invalid `style` or `kind` values still use the sanitized 422 response.
 
 Entry text, when added, should be short and original. Pairings are suggestions. Do not restrict garments by gender or judge body shape. Weather and comfort depend on fabric weight, construction, fit, and preference; do not present them as guarantees. Do not claim an entry is currently trending, and do not invent citations, review dates, or product links.
 
-The Next.js page at `/dictionary` is signed-in and read-only. It loads `GET /dictionary`, keeps submitted filters in the URL, and opens `/dictionary/[entry_id]` for a term. Broad style filters are Indian, Western, and fusion. Cultural or style tags are a free-text filter on `style_tags`, not extra values in the profile style list. The catalog is still empty. There is no add or suggest action on the page.
+The Next.js page at `/dictionary` is signed-in and read-only. It loads `GET /dictionary`, keeps submitted filters in the URL, and opens `/dictionary/[entry_id]` for a term. It does not yet create, edit, or delete entries.
 
-Pending: curated entry management, AI term suggestions, and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
+Pending: the manual-entry UI, AI term suggestions, and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
 
 ### Weather-aware styling (planned)
 
@@ -444,6 +446,6 @@ If behind schedule:
 
 Wardrobe UI and the Style Dictionary page are in place. The dictionary catalog is still empty. Next: Nebius / Nemotron integration and Emergency Fit.
 
-Pending for the dictionary: curated entry management, AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources), and live trend retrieval.
+Pending for the dictionary: the manual-entry UI, AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources), and live trend retrieval.
 
 Do not implement weather lookups, saved events, shopping, or MCP yet.

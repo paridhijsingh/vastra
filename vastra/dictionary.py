@@ -21,7 +21,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from vastra.schemas import DictionaryEntry, DictionaryKind, PreferredStyle
+from vastra.schemas import DictionaryEntry, DictionaryKind, DictionaryStyle
 
 
 class DictionaryLoadError(ValueError):
@@ -52,7 +52,7 @@ def load_dictionary(path: Path | None = None) -> list[DictionaryEntry]:
     seen: set[str] = set()
     for index, item in enumerate(raw):
         try:
-            entry = DictionaryEntry.model_validate(item)
+            entry = DictionaryEntry.model_validate(item).model_copy(update={"origin": "shared"})
         except ValidationError as exc:
             raise DictionaryLoadError(
                 f"Dictionary entry at index {index} does not match the schema"
@@ -69,7 +69,7 @@ def search_dictionary(
     entries: list[DictionaryEntry],
     *,
     q: str | None = None,
-    style: PreferredStyle | None = None,
+    style: DictionaryStyle | None = None,
     kind: DictionaryKind | None = None,
     tag: str | None = None,
 ) -> list[DictionaryEntry]:
