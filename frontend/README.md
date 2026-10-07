@@ -20,7 +20,7 @@ Do not put backend secrets or Nebius credentials in frontend env files.
 
 Sessions use an HttpOnly cookie set by `/api/auth/*` route handlers. Logout clears the cookie; it does not revoke the backend JWT.
 
-Style Profile uses `/api/profile` (GET/PUT/DELETE) with the same cookie session. Wardrobe CRUD UI is not connected yet.
+Style Profile uses `/api/profile` (GET/PUT/DELETE) with the same cookie session. Wardrobe uses `/api/wardrobe` and `/api/wardrobe/[itemId]` for list/create/update/delete with availability filters.
 
 ## Scripts
 

@@ -14,19 +14,19 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 
 - **Backend auth, style profile, and wardrobe APIs** are implemented and tested.
 - **Frontend authentication** is implemented (register, sign in, HttpOnly session cookie).
-- **Style Profile UI** is implemented: load/save/delete against `GET`/`PUT`/`DELETE /profile` via the Next.js proxy.
-- **Wardrobe UI** is still a signed-in placeholder (CRUD not connected yet).
+- **Style Profile UI** is implemented (load/save/delete).
+- **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
 - Smart Shopping remains excluded.
 
-A full end-to-end styling demo is not yet available.
+A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
 
 ## Planned features
 
 | Feature                                | What it does                                                                                    | Status  |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------- | ------- |
 | **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Working (API + UI) |
-| **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Planned |
-| **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Planned |
+| **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Working (API + UI) |
+| **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
 | **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Planned |
 | **Emergency Fit**                      | Recommend an outfit for an occasion and time limit using available owned items                  | Planned |
 | **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
@@ -267,7 +267,7 @@ Frontend auth pages:
 - `/register` — create an account (then sign in)
 - `/signin` — establish a browser session
 - `/profile` — style profile form (requires sign-in)
-- `/wardrobe` — signed-in placeholder (CRUD UI coming next)
+- `/wardrobe` — wardrobe manager with availability filters (requires sign-in)
 
 Frontend configuration (server-only in `.env.local`):
 

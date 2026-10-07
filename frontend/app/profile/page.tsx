@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth/require-user";
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  await requireUser("/profile");
+  const user = await requireUser("/profile");
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -20,7 +20,7 @@ export default async function ProfilePage() {
           avoid. Changes are stored for your signed-in account only.
         </p>
       </div>
-      <ProfileForm />
+      <ProfileForm key={user.id} />
     </div>
   );
 }

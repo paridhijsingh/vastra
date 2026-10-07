@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 7, 2026  
-Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth + Style Profile UI working; wardrobe UI next  
+Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, and Wardrobe UI working; Emergency Fit next  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -111,7 +111,7 @@ A successful demo must show real persistence and a real model call.
 
 The Next.js frontend communicates with FastAPI. The backend owns database access and model credentials. Do not expose Nebius keys or other secrets to the browser.
 
-Frontend auth status: register/sign-in work through Next.js route handlers that store the bearer token in an HttpOnly cookie. Logout clears the browser cookie and does not revoke tokens on the backend. Style Profile UI can load, save, and delete the signed-in user's profile. Wardrobe remains a signed-in placeholder until CRUD is wired. Smart Shopping remains excluded.
+Frontend auth status: register/sign-in work through Next.js route handlers that store the bearer token in an HttpOnly cookie. Logout clears the browser cookie and does not revoke tokens on the backend. Style Profile and Wardrobe UIs are connected to their FastAPI endpoints. Smart Shopping remains excluded.
 
 Choose the exact Nemotron model identifier during integration based on verified availability and a working test call.
 
@@ -432,6 +432,6 @@ If behind schedule:
 
 ## Next action
 
-Style Profile UI is in place. Next: connect the Wardrobe UI to the existing FastAPI wardrobe endpoints.
+Wardrobe UI is in place. Next: Nebius / Nemotron integration and Emergency Fit.
 
 Do not implement Style Dictionary, weather lookups, saved events, trends retrieval, shopping, or MCP yet.
