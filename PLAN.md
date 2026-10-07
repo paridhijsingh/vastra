@@ -52,11 +52,11 @@ The read-only API is in place. `GET /dictionary` and `GET /dictionary/{entry_id}
 
 Each future entry is general guidance: a stable id, term, aliases, definition, kind (`garment`, `fabric`, `silhouette`, or `styling_technique`), profile-aligned `styles`, separate `style_tags`, optional `cultural_context`, pairing suggestions, occasions, weather notes, and comfort notes. `style_tags` can name cultural styles beyond Indian, Western, and fusion without changing the profile enum or saved profiles.
 
-Search (`q`), `style`, and `kind` filters combine with AND. Unknown ids return 404. Invalid filters use the existing sanitized 422 response.
+Search (`q`), `style`, `kind`, and `tag` filters combine with AND. `tag` is a case-insensitive exact match on `style_tags`. A blank tag does not filter. An unknown tag returns `[]`. Invalid `style` or `kind` values still use the sanitized 422 response. Unknown ids return 404.
 
 Entry text, when added, should be short and original. Pairings are suggestions. Do not restrict garments by gender or judge body shape. Weather and comfort depend on fabric weight, construction, fit, and preference; do not present them as guarantees. Do not claim an entry is currently trending, and do not invent citations, review dates, or product links.
 
-The Next.js page at `/dictionary` is signed-in and read-only. It loads `GET /dictionary`, keeps submitted filters in the URL, and opens `/dictionary/[entry_id]` for a term. Style filters are Indian, Western, and fusion only. Broader cultural coverage stays on each entry's `style_tags` and is not mapped onto those three values. The catalog is still empty. There is no add or suggest action on the page.
+The Next.js page at `/dictionary` is signed-in and read-only. It loads `GET /dictionary`, keeps submitted filters in the URL, and opens `/dictionary/[entry_id]` for a term. Broad style filters are Indian, Western, and fusion. Cultural or style tags are a free-text filter on `style_tags`, not extra values in the profile style list. The catalog is still empty. There is no add or suggest action on the page.
 
 Pending: curated entry management, AI term suggestions, and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
 

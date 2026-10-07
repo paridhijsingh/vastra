@@ -7,12 +7,12 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   DICTIONARY_KIND_LABELS,
   DICTIONARY_KINDS,
+  DICTIONARY_FILTER_NOTE,
   DICTIONARY_LOAD_ERROR,
   DICTIONARY_STYLES,
   EMPTY_DICTIONARY_BODY,
   EMPTY_DICTIONARY_TITLE,
   NO_MATCH_TITLE,
-  STYLE_FILTER_LIMITATION,
   dictionaryListHref,
   hasActiveDictionaryFilters,
   parseDictionaryList,
@@ -39,6 +39,7 @@ export function DictionaryBrowser({
   const [q, setQ] = useState(initialFilters.q);
   const [style, setStyle] = useState<DictionaryStyle | "">(initialFilters.style);
   const [kind, setKind] = useState<DictionaryKind | "">(initialFilters.kind);
+  const [tag, setTag] = useState(initialFilters.tag);
   const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export function DictionaryBrowser({
   const submittedQ = initialFilters.q;
   const submittedStyle = initialFilters.style;
   const submittedKind = initialFilters.kind;
+  const submittedTag = initialFilters.tag;
 
   const load = useCallback(
     async (filters: DictionaryFilters) => {
@@ -96,31 +98,38 @@ export function DictionaryBrowser({
   );
 
   useEffect(() => {
-    const filters = { q: submittedQ, style: submittedStyle, kind: submittedKind };
+    const filters = {
+      q: submittedQ,
+      style: submittedStyle,
+      kind: submittedKind,
+      tag: submittedTag,
+    };
     setQ(submittedQ);
     setStyle(submittedStyle);
     setKind(submittedKind);
+    setTag(submittedTag);
     void load(filters);
-  }, [submittedQ, submittedStyle, submittedKind, load]);
+  }, [submittedQ, submittedStyle, submittedKind, submittedTag, load]);
 
   function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push(dictionaryListHref({ q, style, kind }));
+    router.push(dictionaryListHref({ q, style, kind, tag }));
   }
 
   const filtersActive = hasActiveDictionaryFilters({
     q: submittedQ,
     style: submittedStyle,
     kind: submittedKind,
+    tag: submittedTag,
   });
 
   return (
     <div className="flex max-w-3xl min-w-0 flex-col gap-6">
-      <p className="text-sm text-muted">{STYLE_FILTER_LIMITATION}</p>
+      <p className="text-sm text-muted">{DICTIONARY_FILTER_NOTE}</p>
 
       {unsupportedStyle ? (
         <p className="rounded-md border border-[#7a4e72]/40 bg-[#7a4e72]/10 px-4 py-3 text-sm text-accent-dictionary-text" role="alert">
-          “{unsupportedStyle}” is not a style filter. Filters are limited to Indian, Western, and fusion. Other cultural styles can appear as tags on an entry, but they cannot be selected here.
+          “{unsupportedStyle}” is not one of the broad styles. Those are Indian, Western, and fusion. Type a cultural or style tag in the tag field instead.
         </p>
       ) : null}
       {unsupportedKind ? (
@@ -140,6 +149,24 @@ export function DictionaryBrowser({
             type="search"
             value={q}
             onChange={(event) => setQ(event.target.value)}
+            className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="dictionary-tag" className="text-sm font-semibold text-foreground">
+            Cultural or style tag
+          </label>
+          <p id="dictionary-tag-hint" className="text-sm text-muted">
+            Filter by a tag used in the collection.
+          </p>
+          <input
+            id="dictionary-tag"
+            name="tag"
+            type="text"
+            value={tag}
+            aria-describedby="dictionary-tag-hint"
+            onChange={(event) => setTag(event.target.value)}
             className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
           />
         </div>
@@ -228,7 +255,12 @@ export function DictionaryBrowser({
           <button
             type="button"
             onClick={() =>
-              void load({ q: submittedQ, style: submittedStyle, kind: submittedKind })
+              void load({
+                q: submittedQ,
+                style: submittedStyle,
+                kind: submittedKind,
+                tag: submittedTag,
+              })
             }
             className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
           >

@@ -210,6 +210,49 @@ def test_list_detail_search_and_filters(
     assert no_match.json() == []
 
 
+def test_tag_filter_matches_style_tags(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _use_fixture(monkeypatch, tmp_path)
+    headers = _register_and_login(client, "dicttag")
+
+    assert client.get("/dictionary", params={"tag": "Yoruba"}).status_code == 401
+
+    exact = client.get("/dictionary", headers=headers, params={"tag": "  yOrUbA  "})
+    assert exact.status_code == 200
+    assert [entry["id"] for entry in exact.json()] == ["dupatta"]
+
+    spaced = client.get("/dictionary", headers=headers, params={"tag": "south asian"})
+    assert [entry["id"] for entry in spaced.json()] == ["kurta"]
+
+    blank = client.get("/dictionary", headers=headers, params={"tag": "   "})
+    assert len(blank.json()) == 4
+
+    unknown = client.get("/dictionary", headers=headers, params={"tag": "not-a-tag"})
+    assert unknown.status_code == 200
+    assert unknown.json() == []
+
+    combined = client.get(
+        "/dictionary",
+        headers=headers,
+        params={"tag": "Yoruba", "style": "Indian", "kind": "garment", "q": "dupatta"},
+    )
+    assert [entry["id"] for entry in combined.json()] == ["dupatta"]
+
+    blocked = client.get(
+        "/dictionary",
+        headers=headers,
+        params={"tag": "Yoruba", "style": "Western"},
+    )
+    assert blocked.status_code == 200
+    assert blocked.json() == []
+
+    partial = client.get("/dictionary", headers=headers, params={"tag": "south"})
+    assert partial.json() == []
+
+
 def test_invalid_dictionary_filters_are_sanitized_422(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,

@@ -265,10 +265,11 @@ def list_dictionary(
     q: Annotated[str | None, Query()] = None,
     style: Annotated[PreferredStyle | None, Query()] = None,
     kind: Annotated[DictionaryKind | None, Query()] = None,
+    tag: Annotated[str | None, Query()] = None,
 ) -> list[DictionaryEntry]:
     """Shared reference catalog. Does not read or change profile or wardrobe data."""
     del current_user
-    return search_dictionary(load_dictionary(), q=q, style=style, kind=kind)
+    return search_dictionary(load_dictionary(), q=q, style=style, kind=kind, tag=tag)
 
 
 @app.get("/dictionary/{entry_id}", response_model=DictionaryEntry)

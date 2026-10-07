@@ -16,6 +16,7 @@ vi.mock("next/headers", () => ({
 import { GET as getEntry } from "@/app/api/dictionary/[entryId]/route";
 import { GET as listDictionary } from "@/app/api/dictionary/route";
 import {
+  DICTIONARY_FILTER_NOTE,
   DICTIONARY_LOAD_ERROR,
   EMPTY_DICTIONARY_BODY,
   EMPTY_DICTIONARY_TITLE,
@@ -54,15 +55,24 @@ afterEach(() => {
 
 describe("dictionary filter URLs and empty copy", () => {
   it("omits all-styles and all-types from the page URL", () => {
-    expect(dictionaryListHref({ q: "  kurta  ", style: "", kind: "" })).toBe(
+    expect(dictionaryListHref({ q: "  kurta  ", style: "", kind: "", tag: "" })).toBe(
       "/dictionary?q=kurta",
     );
-    expect(dictionaryListHref({ q: "", style: "Indian", kind: "garment" })).toBe(
-      "/dictionary?style=Indian&kind=garment",
+    expect(
+      dictionaryListHref({ q: "", style: "Indian", kind: "garment", tag: "  Yoruba  " }),
+    ).toBe("/dictionary?style=Indian&kind=garment&tag=Yoruba");
+    expect(dictionaryListHref({ q: " ", style: "", kind: "", tag: "   " })).toBe(
+      "/dictionary",
     );
-    expect(dictionaryListHref({ q: " ", style: "", kind: "" })).toBe("/dictionary");
-    expect(hasActiveDictionaryFilters({ q: " ", style: "", kind: "" })).toBe(false);
-    expect(hasActiveDictionaryFilters({ q: "kurta", style: "", kind: "" })).toBe(true);
+    expect(hasActiveDictionaryFilters({ q: " ", style: "", kind: "", tag: " " })).toBe(
+      false,
+    );
+    expect(hasActiveDictionaryFilters({ q: "", style: "", kind: "", tag: "Yoruba" })).toBe(
+      true,
+    );
+    expect(DICTIONARY_FILTER_NOTE).toBe(
+      "Browse broad styles, or filter by a specific cultural or style tag.",
+    );
   });
 
   it("does not map an unsupported cultural style onto Indian", () => {
@@ -70,7 +80,12 @@ describe("dictionary filter URLs and empty copy", () => {
     expect(parsed.unsupportedStyle).toBe("Yoruba");
     expect(parsed.filters.style).toBe("");
     expect(parsed.filters.style).not.toBe("Indian");
+    expect(parsed.filters.tag).toBe("");
     expect(dictionaryListHref(parsed.filters)).toBe("/dictionary?q=scarf");
+    const tagged = filtersFromSearchParams({ tag: " Yoruba " });
+    expect(tagged.filters.tag).toBe(" Yoruba ");
+    expect(tagged.unsupportedStyle).toBeNull();
+    expect(dictionaryListHref(tagged.filters)).toBe("/dictionary?tag=Yoruba");
   });
 
   it("uses the empty, filtered, and missing-entry messages", () => {
@@ -134,6 +149,34 @@ describe("GET /api/dictionary", () => {
     expect(body.entries[0].id).toBe("kurta");
     expect(body.entries[0].style_tags).toEqual(["Indian", "South Asian"]);
     expect(JSON.stringify(body)).not.toContain("valid-token");
+  });
+
+  it("forwards a cultural tag and omits a blank tag", async () => {
+    cookieState.token = "valid-token";
+    const fetchMock = vi.fn(async (url: string) => {
+      const parsed = new URL(String(url));
+      expect(parsed.searchParams.get("tag")).toBe("South Asian");
+      expect(parsed.searchParams.get("style")).toBeNull();
+      return Response.json([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tagged = await listDictionary(
+      new Request("http://localhost:3000/api/dictionary?tag=%20South%20Asian%20"),
+    );
+    expect(tagged.status).toBe(200);
+    expect(await tagged.json()).toEqual({ entries: [] });
+
+    fetchMock.mockImplementation(async (url: string) => {
+      const parsed = new URL(String(url));
+      expect(parsed.searchParams.get("tag")).toBeNull();
+      return Response.json([]);
+    });
+    const blank = await listDictionary(
+      new Request("http://localhost:3000/api/dictionary?tag=%20%20"),
+    );
+    expect(blank.status).toBe(200);
+    expect(await blank.json()).toEqual({ entries: [] });
   });
 
   it("rejects an unsupported style filter without calling the backend", async () => {

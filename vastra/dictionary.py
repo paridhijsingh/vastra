@@ -71,9 +71,11 @@ def search_dictionary(
     q: str | None = None,
     style: PreferredStyle | None = None,
     kind: DictionaryKind | None = None,
+    tag: str | None = None,
 ) -> list[DictionaryEntry]:
-    """Apply optional filters with AND. Blank search text does not filter."""
+    """Apply optional filters with AND. Blank search text or tag does not filter."""
     query = (q or "").strip().casefold()
+    tag_filter = (tag or "").strip().casefold()
     matched: list[DictionaryEntry] = []
     for entry in entries:
         if style is not None and style not in entry.styles:
@@ -81,6 +83,8 @@ def search_dictionary(
         if kind is not None and entry.kind != kind:
             continue
         if query and not _matches_query(entry, query):
+            continue
+        if tag_filter and not _matches_tag(entry, tag_filter):
             continue
         matched.append(entry)
     return _sorted_entries(matched)
@@ -99,6 +103,11 @@ def find_dictionary_entry(
 def _matches_query(entry: DictionaryEntry, query: str) -> bool:
     haystack = [entry.term, entry.definition, *entry.aliases]
     return any(query in part.casefold() for part in haystack)
+
+
+def _matches_tag(entry: DictionaryEntry, tag: str) -> bool:
+    """Case-insensitive exact match against style_tags. Tag is already trimmed."""
+    return any(item.casefold() == tag for item in entry.style_tags)
 
 
 def _sorted_entries(entries: list[DictionaryEntry]) -> list[DictionaryEntry]:

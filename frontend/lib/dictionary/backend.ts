@@ -30,9 +30,11 @@ export async function backendListDictionary(
 ): Promise<BackendResult<DictionaryEntry[]>> {
   const url = new URL(`${getApiUrl()}/dictionary`);
   const q = filters.q.trim();
+  const tag = filters.tag.trim();
   if (q) url.searchParams.set("q", q);
   if (filters.style) url.searchParams.set("style", filters.style);
   if (filters.kind) url.searchParams.set("kind", filters.kind);
+  if (tag) url.searchParams.set("tag", tag);
 
   let response: Response;
   try {

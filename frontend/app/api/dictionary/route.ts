@@ -32,6 +32,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") ?? "";
+  const tag = searchParams.get("tag") ?? "";
   const styleRaw = searchParams.get("style");
   const kindRaw = searchParams.get("kind");
 
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
     q,
     style: styleRaw && isDictionaryStyle(styleRaw) ? styleRaw : "",
     kind: kindRaw && isDictionaryKind(kindRaw) ? kindRaw : "",
+    tag,
   };
 
   const result = await backendListDictionary(tokenOrResponse, filters);

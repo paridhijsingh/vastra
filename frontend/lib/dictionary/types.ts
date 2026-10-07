@@ -17,8 +17,8 @@ export const DICTIONARY_KIND_LABELS: Record<DictionaryKind, string> = {
   styling_technique: "Styling technique",
 };
 
-export const STYLE_FILTER_LIMITATION =
-  "The style filter matches Indian, Western, and fusion only. Entries may include other cultural style tags, which are not separate filters yet.";
+export const DICTIONARY_FILTER_NOTE =
+  "Browse broad styles, or filter by a specific cultural or style tag.";
 
 export const EMPTY_DICTIONARY_TITLE = "No dictionary entries yet.";
 export const EMPTY_DICTIONARY_BODY =
@@ -33,12 +33,14 @@ export type DictionaryFilters = {
   q: string;
   style: DictionaryStyle | "";
   kind: DictionaryKind | "";
+  tag: string;
 };
 
 export const EMPTY_DICTIONARY_FILTERS: DictionaryFilters = {
   q: "",
   style: "",
   kind: "",
+  tag: "",
 };
 
 export type DictionaryEntry = {
@@ -66,16 +68,18 @@ export function isDictionaryKind(value: string): value is DictionaryKind {
 }
 
 export function hasActiveDictionaryFilters(filters: DictionaryFilters): boolean {
-  return Boolean(filters.q.trim() || filters.style || filters.kind);
+  return Boolean(filters.q.trim() || filters.style || filters.kind || filters.tag.trim());
 }
 
 /** URL for submitted filters. All styles and All types omit those parameters. */
 export function dictionaryListHref(filters: DictionaryFilters): string {
   const params = new URLSearchParams();
   const q = filters.q.trim();
+  const tag = filters.tag.trim();
   if (q) params.set("q", q);
   if (filters.style) params.set("style", filters.style);
   if (filters.kind) params.set("kind", filters.kind);
+  if (tag) params.set("tag", tag);
   const query = params.toString();
   return query ? `/dictionary?${query}` : "/dictionary";
 }
@@ -93,6 +97,7 @@ export function filtersFromSearchParams(params: RawSearch): {
   unsupportedKind: string | null;
 } {
   const q = firstParam(params.q);
+  const tag = firstParam(params.tag);
   const styleRaw = firstParam(params.style).trim();
   const kindRaw = firstParam(params.kind).trim();
 
@@ -117,7 +122,7 @@ export function filtersFromSearchParams(params: RawSearch): {
   }
 
   return {
-    filters: { q, style, kind },
+    filters: { q, style, kind, tag },
     unsupportedStyle,
     unsupportedKind,
   };

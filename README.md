@@ -49,7 +49,7 @@ Read-only shared reference material for general styling guidance. The catalog is
 
 Authenticated endpoints:
 
-- `GET /dictionary` — optional `q` (case-insensitive search of term, aliases, and definition; blank means no search), `style` (`Indian`, `Western`, or `fusion`), and `kind` (`garment`, `fabric`, `silhouette`, or `styling_technique`). Supplied filters combine with AND. Results are alphabetical. No matches, and the empty catalog, return `[]`.
+- `GET /dictionary` — optional `q` (case-insensitive search of term, aliases, and definition; blank means no search), `style` (`Indian`, `Western`, or `fusion`), `kind` (`garment`, `fabric`, `silhouette`, or `styling_technique`), and `tag` (case-insensitive exact match against an entry's `style_tags`; blank means no tag filter). An unknown tag returns `[]`. Supplied filters combine with AND. Results are alphabetical. No matches, and the empty catalog, return `[]`.
 - `GET /dictionary/{entry_id}` — one entry, or 404.
 
 Both routes require a bearer token. They do not read or change a user's profile or wardrobe.
@@ -58,7 +58,7 @@ Both routes require a bearer token. They do not read or change a user's profile 
 
 Future entry text should stay short and original. Pairings are suggestions, not rules. Garments are not limited by gender, and entries do not judge body shape. Weather and comfort notes depend on fabric weight, construction, fit, and personal preference; they are not guarantees. Entries are not described as currently trending.
 
-The signed-in Next.js page is `/dictionary`. It searches and filters the live catalog and links each term to `/dictionary/[entry_id]`. The style filter offers only Indian, Western, and fusion, because those are the values `GET /dictionary` accepts. Other cultural styles can appear as entry `style_tags`, but they are not filter options. The page does not add entries or call a model.
+The signed-in Next.js page is `/dictionary`. It searches and filters the live catalog and links each term to `/dictionary/[entry_id]`. The style menu is Indian, Western, and fusion. A separate text field filters by a cultural or style tag already used on an entry. The page does not add entries or call a model.
 
 Pending:
 
