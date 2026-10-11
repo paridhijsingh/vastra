@@ -287,9 +287,54 @@ def test_incomplete_selection_does_not_claim_completeness() -> None:
     available = list(selected)
     text = limitations_for_selection("This is a complete outfit.", selected, available)
     assert text.startswith("This is not a complete outfit.")
+    assert "bottom" in text
     assert "shoes" in text
-    assert "one-piece" in text
     assert "Your available clothes do not include" in text
+
+
+def test_one_available_top_is_an_incomplete_outfit(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    headers = _login(client, "one-top")
+    top = _add_item(client, headers, name="Tank Top", category="top", notes="Everyday Wear")
+    captured = _patch_model(
+        monkeypatch,
+        _model_payload([str(top["id"])], limitations="No bottom is available."),
+    )
+    caplog.set_level("WARNING", logger="vastra.outfits")
+    response = client.post(
+        "/outfits/emergency",
+        headers=headers,
+        json={"occasion": "dinner with friends", "vibe": "relaxed", "comfort_needs": ["breathable"]},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["name"] for item in body["items"]] == ["Tank Top"]
+    assert "bottom" in body["limitations"].lower()
+    assert len(body["items"]) == 1
+    prompt = captured["messages"][0]["content"]
+    assert "styling_tips: array of 0 to 6 strings" in prompt
+    assert "limitations: string, 0 to 600 characters, not an array." in prompt
+    assert "If only a top is available, return that top's id." in prompt
+    assert "Everyday Wear" not in prompt
+    assert "Everyday Wear" in captured["messages"][1]["content"]
+    assert caplog.text == ""
+
+
+def test_schema_mismatch_is_logged_without_private_text(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    headers = _login(client, "schema-log")
+    top = _add_item(client, headers, name="Tank Top", category="top", notes="Everyday Wear")
+    _patch_model(
+        monkeypatch,
+        _model_payload([str(top["id"])], limitations=["missing a bottom"]),
+    )
+    caplog.set_level("WARNING", logger="vastra.outfits")
+    response = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner with friends"})
+    assert response.status_code == 502
+    assert response.json()["detail"] == "The outfit suggestion could not be used. Please try again."
+    assert "schema_validation" in caplog.text
+    assert "limitations:" in caplog.text
+    assert "Everyday Wear" not in caplog.text
+    assert "dinner with friends" not in caplog.text
+    assert "Tank Top" not in caplog.text
 
 
 def test_config_and_client_do_not_call_the_provider() -> None:

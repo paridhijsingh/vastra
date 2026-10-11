@@ -56,6 +56,10 @@ class NemotronCallError(Exception):
 class ChatResult:
     text: str
     truncated: bool
+    finish_reason: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -191,7 +195,15 @@ def request_chat_completion(
         content = choice.message.content.strip()
     if choice is not None:
         finish_reason = choice.finish_reason
-    return ChatResult(text=content, truncated=finish_reason == "length")
+    usage = _usage(getattr(response, "usage", None))
+    return ChatResult(
+        text=content,
+        truncated=finish_reason == "length",
+        finish_reason=finish_reason if isinstance(finish_reason, str) else None,
+        prompt_tokens=None if usage is None else usage.prompt_tokens,
+        completion_tokens=None if usage is None else usage.completion_tokens,
+        total_tokens=None if usage is None else usage.total_tokens,
+    )
 
 
 def run_styling_check(config: NemotronConfig, client: OpenAI | None = None) -> SmokeResult:
