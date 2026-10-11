@@ -406,7 +406,7 @@ export function ProfileForm() {
         <TextListField
           id="fit_preferences"
           label="Fit preferences"
-          hint="Enter one fit preference per line. Leave blank for none."
+          hint="Describe how you like clothes to fit—for example, relaxed, fitted, straight-leg, or wide-leg. Enter one preference per line."
           value={fitText}
           disabled={busy}
           onChange={setFitText}
