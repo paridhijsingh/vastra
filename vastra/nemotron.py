@@ -60,6 +60,7 @@ class ChatResult:
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     total_tokens: int | None = None
+    reasoning_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,7 @@ class TokenUsage:
     prompt_tokens: int | None
     completion_tokens: int | None
     total_tokens: int | None
+    reasoning_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -203,6 +205,7 @@ def request_chat_completion(
         prompt_tokens=None if usage is None else usage.prompt_tokens,
         completion_tokens=None if usage is None else usage.completion_tokens,
         total_tokens=None if usage is None else usage.total_tokens,
+        reasoning_tokens=None if usage is None else usage.reasoning_tokens,
     )
 
 
@@ -245,6 +248,8 @@ def format_usage(usage: TokenUsage | None) -> str | None:
         parts.append(f"completion_tokens={usage.completion_tokens}")
     if usage.total_tokens is not None:
         parts.append(f"total_tokens={usage.total_tokens}")
+    if usage.reasoning_tokens is not None:
+        parts.append(f"reasoning_tokens={usage.reasoning_tokens}")
     if not parts:
         return None
     return " ".join(parts)
@@ -276,7 +281,20 @@ def _usage(usage: object) -> TokenUsage | None:
         prompt_tokens=_int_or_none(getattr(usage, "prompt_tokens", None)),
         completion_tokens=_int_or_none(getattr(usage, "completion_tokens", None)),
         total_tokens=_int_or_none(getattr(usage, "total_tokens", None)),
+        reasoning_tokens=_reasoning_tokens(usage),
     )
+
+
+def _reasoning_tokens(usage: object) -> int | None:
+    """Read the integer reasoning count. Ignore any reasoning text."""
+    details = getattr(usage, "completion_tokens_details", None)
+    if isinstance(usage, dict) and details is None:
+        details = usage.get("completion_tokens_details")
+    if details is None:
+        return None
+    if isinstance(details, dict):
+        return _int_or_none(details.get("reasoning_tokens"))
+    return _int_or_none(getattr(details, "reasoning_tokens", None))
 
 
 def _int_or_none(value: object) -> int | None:

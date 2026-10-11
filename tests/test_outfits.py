@@ -18,7 +18,7 @@ from vastra.nemotron import (
     config_from_settings,
 )
 from vastra.outfits import OUTFIT_MAX_OUTPUT_TOKENS, config_from_settings as load_outfit_config
-from vastra.outfits import limitations_for_selection
+from vastra.outfits import limitations_for_selection, output_schema_instructions
 from vastra.schemas import EmergencyFitRequest
 
 PASSWORD = "securepass1"
@@ -55,13 +55,13 @@ def _add_item(
     return response.json()
 
 
+REASON = "These available pieces work for dinner. Fabric is unknown."
+
+
 def _model_payload(item_ids: list[str], **overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
-        "title": "Dinner outfit",
         "item_ids": item_ids,
-        "explanation": "These available pieces work together for dinner.",
-        "styling_tips": ["Keep the layers light."],
-        "limitations": "No additional limitations.",
+        "reason": REASON,
     }
     payload.update(overrides)
     return payload
@@ -129,6 +129,10 @@ def test_missing_profile_uses_the_request_and_only_available_items(client: TestC
     )
     assert response.status_code == 200
     body = response.json()
+    assert body["title"] == "dinner with friends"
+    assert body["explanation"] == REASON
+    assert body["styling_tips"] == []
+    assert body["limitations"] == ""
     assert [item["name"] for item in body["items"]] == ["Navy kurta", "Cream trousers", "Flat sandals"]
     assert all(item["availability"] == "available" for item in body["items"])
     assert "owner_id" not in body["items"][0]
@@ -234,6 +238,17 @@ def test_malformed_and_truncated_output_is_rejected(client: TestClient, monkeypa
     _patch_model(monkeypatch, _model_payload([item["id"]], shopping_url="https://shop.example/coat"))
     assert client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"}).status_code == 502
 
+    wrapped = "```json\n" + json.dumps(_model_payload([item["id"]])) + "\n```"
+    _patch_model(monkeypatch, chat=ChatResult(text=wrapped, truncated=False))
+    assert client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"}).status_code == 502
+
+    prefixed = "Outfit: " + json.dumps(_model_payload([item["id"]]))
+    _patch_model(monkeypatch, chat=ChatResult(text=prefixed, truncated=False))
+    assert client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"}).status_code == 502
+
+    _patch_model(monkeypatch, _model_payload([item["id"]], reason="x" * 301))
+    assert client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"}).status_code == 502
+
 
 def test_items_changed_during_generation_are_not_returned(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     headers = _login(client, "changing-closet")
@@ -282,23 +297,40 @@ def test_missing_configuration_and_provider_errors_are_sanitized(client: TestCli
     assert "sk-secret-should-not-leak" not in timed_out.text
 
 
+def test_prompt_limits_advice_to_owned_items_and_unknown_fabric() -> None:
+    prompt = output_schema_instructions()
+    assert "Return one JSON object and no other text." in prompt
+    assert "item_ids: array of 1 to 8 unique strings" in prompt
+    assert "reason: string, 1 to 300 characters." in prompt
+    assert "In reason, mention only clothes listed in available_items." in prompt
+    assert "saved_preferences describe taste. They are not proof of ownership." in prompt
+    assert "say that it is unknown." in prompt
+    assert "Do not infer fabric or breathability" in prompt
+    assert "title:" not in prompt
+    assert "Do not include a title, item names, styling tips, or limitations." in prompt
+    assert OUTFIT_MAX_OUTPUT_TOKENS == 2048
+
+
 def test_incomplete_selection_does_not_claim_completeness() -> None:
     selected = [WardrobeItem(id="top-1", owner_id="user", name="Kurta", category="top", color="navy", notes="", availability="available")]
     available = list(selected)
-    text = limitations_for_selection("This is a complete outfit.", selected, available)
+    text = limitations_for_selection(selected, available)
     assert text.startswith("This is not a complete outfit.")
     assert "bottom" in text
     assert "shoes" in text
     assert "Your available clothes do not include" in text
+    complete = [
+        selected[0],
+        WardrobeItem(id="bottom-1", owner_id="user", name="Trousers", category="bottom", color="navy", notes="", availability="available"),
+        WardrobeItem(id="shoes-1", owner_id="user", name="Sandals", category="shoes", color="navy", notes="", availability="available"),
+    ]
+    assert limitations_for_selection(complete, complete) == ""
 
 
 def test_one_available_top_is_an_incomplete_outfit(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     headers = _login(client, "one-top")
     top = _add_item(client, headers, name="Tank Top", category="top", notes="Everyday Wear")
-    captured = _patch_model(
-        monkeypatch,
-        _model_payload([str(top["id"])], limitations="No bottom is available."),
-    )
+    captured = _patch_model(monkeypatch, _model_payload([str(top["id"])]))
     caplog.set_level("WARNING", logger="vastra.outfits")
     response = client.post(
         "/outfits/emergency",
@@ -307,16 +339,51 @@ def test_one_available_top_is_an_incomplete_outfit(client: TestClient, monkeypat
     )
     assert response.status_code == 200
     body = response.json()
+    assert body["title"] == "dinner with friends"
+    assert body["explanation"] == REASON
+    assert body["styling_tips"] == []
     assert [item["name"] for item in body["items"]] == ["Tank Top"]
     assert "bottom" in body["limitations"].lower()
+    assert "shoes" in body["limitations"].lower()
     assert len(body["items"]) == 1
     prompt = captured["messages"][0]["content"]
-    assert "styling_tips: array of 0 to 6 strings" in prompt
-    assert "limitations: string, 0 to 600 characters, not an array." in prompt
+    assert "reason: string, 1 to 300 characters." in prompt
     assert "If only a top is available, return that top's id." in prompt
     assert "Everyday Wear" not in prompt
     assert "Everyday Wear" in captured["messages"][1]["content"]
-    assert caplog.text == ""
+    assert "result=completed" in caplog.text
+    assert "Everyday Wear" not in caplog.text
+    assert "dinner with friends" not in caplog.text
+
+
+def test_reasoning_token_count_is_logged_without_response_text(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    headers = _login(client, "reasoning-count")
+    top = _add_item(client, headers, name="Tank Top", category="top", notes="Everyday Wear")
+    private = "secret-reasoning-trace " + str(top["id"])
+    _patch_model(
+        monkeypatch,
+        chat=ChatResult(
+            text=private,
+            truncated=True,
+            finish_reason="length",
+            prompt_tokens=559,
+            completion_tokens=1024,
+            total_tokens=1583,
+            reasoning_tokens=900,
+        ),
+    )
+    caplog.set_level("WARNING", logger="vastra.outfits")
+    response = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner with friends"})
+    assert response.status_code == 502
+    assert "result=truncated_response" in caplog.text
+    assert "finish_reason=length" in caplog.text
+    assert "prompt_tokens=559" in caplog.text
+    assert "completion_tokens=1024" in caplog.text
+    assert "reasoning_tokens=900" in caplog.text
+    assert "total_tokens=1583" in caplog.text
+    assert "secret-reasoning-trace" not in caplog.text
+    assert "Everyday Wear" not in caplog.text
+    assert str(top["id"]) not in caplog.text
 
 
 def test_schema_mismatch_is_logged_without_private_text(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
@@ -331,7 +398,7 @@ def test_schema_mismatch_is_logged_without_private_text(client: TestClient, monk
     assert response.status_code == 502
     assert response.json()["detail"] == "The outfit suggestion could not be used. Please try again."
     assert "schema_validation" in caplog.text
-    assert "limitations:" in caplog.text
+    assert "limitations:extra_forbidden" in caplog.text
     assert "Everyday Wear" not in caplog.text
     assert "dinner with friends" not in caplog.text
     assert "Tank Top" not in caplog.text

@@ -197,11 +197,7 @@ class EmergencyFitRequest(BaseModel):
         return _normalize_string_list(value, max_items=16, max_length=64)
 
 
-OUTFIT_TITLE_MAX = 120
-OUTFIT_EXPLANATION_MAX = 800
-OUTFIT_TIP_MAX = 200
-OUTFIT_TIP_COUNT_MAX = 6
-OUTFIT_LIMITATIONS_MAX = 600
+OUTFIT_REASON_MAX = 300
 OUTFIT_ITEM_ID_COUNT_MAX = 8
 
 
@@ -210,17 +206,8 @@ class OutfitModelResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=OUTFIT_TITLE_MAX)]
     item_ids: list[str] = Field(min_length=1, max_length=OUTFIT_ITEM_ID_COUNT_MAX)
-    explanation: Annotated[
-        str,
-        StringConstraints(strip_whitespace=True, min_length=1, max_length=OUTFIT_EXPLANATION_MAX),
-    ]
-    styling_tips: list[str] = Field(default_factory=list, max_length=OUTFIT_TIP_COUNT_MAX)
-    limitations: Annotated[
-        str,
-        StringConstraints(strip_whitespace=True, max_length=OUTFIT_LIMITATIONS_MAX),
-    ] = ""
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=OUTFIT_REASON_MAX)]
 
     @field_validator("item_ids")
     @classmethod
@@ -233,13 +220,6 @@ class OutfitModelResult(BaseModel):
         if len(cleaned) != len(set(cleaned)):
             raise ValueError("item_ids must be unique")
         return cleaned
-
-    @field_validator("styling_tips", mode="before")
-    @classmethod
-    def normalize_styling_tips(cls, value: object) -> list[str]:
-        if value is None:
-            return []
-        return _normalize_string_list(value, max_items=OUTFIT_TIP_COUNT_MAX, max_length=OUTFIT_TIP_MAX)
 
 
 class OutfitItemPublic(BaseModel):

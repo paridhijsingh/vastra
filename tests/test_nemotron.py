@@ -19,9 +19,11 @@ from vastra.nemotron import (
     TRUNCATED_MESSAGE,
     NemotronConfig,
     NemotronConfigError,
+    TokenUsage,
     format_usage,
     parse_nemotron_env,
     public_call_error,
+    request_chat_completion,
     run_styling_check,
 )
 from openai import APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError
@@ -176,6 +178,61 @@ def test_settings_start_without_a_nebius_key(tmp_path: Path, monkeypatch: pytest
     assert settings.nemotron_model == "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
     assert settings.nemotron_timeout_seconds == 60
     clear_settings_cache()
+
+
+def test_reasoning_token_count_is_read_and_request_parameters_stay_unchanged() -> None:
+    usage = SimpleNamespace(
+        prompt_tokens=559,
+        completion_tokens=1024,
+        total_tokens=1583,
+        completion_tokens_details=SimpleNamespace(reasoning_tokens=900, reasoning_content="private trace"),
+    )
+    client = _FakeClient(_completion("not logged", finish_reason="length", usage=usage))
+    result = request_chat_completion(
+        _config(),
+        [{"role": "user", "content": "private prompt"}],
+        max_tokens=2048,
+        client=client,  # type: ignore[arg-type]
+    )
+    assert result.reasoning_tokens == 900
+    assert result.prompt_tokens == 559
+    assert result.completion_tokens == 1024
+    assert result.finish_reason == "length"
+    assert result.truncated
+    sent = client.calls[0]
+    assert set(sent) == {"model", "messages", "max_tokens", "stream"}
+    assert sent["max_tokens"] == 2048
+    assert sent["stream"] is False
+    assert "reasoning_effort" not in sent
+    printed = format_usage(
+        TokenUsage(
+            prompt_tokens=result.prompt_tokens,
+            completion_tokens=result.completion_tokens,
+            total_tokens=result.total_tokens,
+            reasoning_tokens=result.reasoning_tokens,
+        )
+    )
+    assert printed == "prompt_tokens=559 completion_tokens=1024 total_tokens=1583 reasoning_tokens=900"
+    assert "private trace" not in printed
+    assert "private prompt" not in printed
+
+    missing = request_chat_completion(
+        _config(),
+        [{"role": "user", "content": "private prompt"}],
+        max_tokens=2048,
+        client=_FakeClient(  # type: ignore[arg-type]
+            _completion(
+                "answer",
+                usage=SimpleNamespace(
+                    prompt_tokens=1,
+                    completion_tokens=2,
+                    total_tokens=3,
+                    completion_tokens_details=SimpleNamespace(reasoning_tokens="not-a-count"),
+                ),
+            )
+        ),
+    )
+    assert missing.reasoning_tokens is None
 
 
 def test_smoke_script_exits_nonzero_without_calling_the_api(monkeypatch: pytest.MonkeyPatch) -> None:
