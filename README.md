@@ -17,10 +17,11 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Style Profile UI** is implemented (load/save/delete).
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
 - **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
-- **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Outfit endpoints are not connected yet.
+- **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
+- **Emergency Fit API** recommends one outfit from available owned clothes. The page for it is not built yet. Generated outfits are not saved. Image generation is post-v1.
 - Smart Shopping remains excluded.
 
-A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
+A full end-to-end styling demo is not yet available. Emergency Fit works on the API; its page and Rescue My Outfit are still pending.
 
 ## Planned features
 
@@ -30,7 +31,7 @@ A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
 | **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Working (API + UI) |
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
 | **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Working (API + manual entry UI) |
-| **Emergency Fit**                      | Recommend an outfit for an occasion and time limit using available owned items                  | Planned |
+| **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working (API). UI pending |
 | **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
 | **Saved events and outfits**           | Save occasions and outfits for later recall                                                     | Planned |
@@ -264,6 +265,16 @@ Style Dictionary (requires `Authorization: Bearer <token>`):
 - `POST /dictionary` — create a personal entry
 - `PATCH /dictionary/{entry_id}` — update your personal entry
 - `DELETE /dictionary/{entry_id}` — delete your personal entry
+
+Emergency Fit (requires `Authorization: Bearer <token>`):
+
+- `POST /outfits/emergency` — one outfit from clothes marked available. Does not save the outfit or change the wardrobe, profile, or dictionary.
+
+```json
+{"occasion": "dinner with friends", "vibe": "relaxed", "comfort_needs": ["breathable"]}
+```
+
+`occasion` is required. `vibe` and `comfort_needs` are optional. A saved profile is optional. If nothing is available, the response is 409 and the model is not called.
 
 Required configuration in `.env`:
 

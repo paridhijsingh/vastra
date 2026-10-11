@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     secret_key: str = Field(validation_alias="SECRET_KEY")
     jwt_expire_hours: int = Field(default=72, validation_alias="JWT_EXPIRE_HOURS")
     jwt_algorithm: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
-    # Optional. The API starts without a Nebius key. Outfit calls are not wired yet.
+    # Optional. Emergency Fit returns 503 when NEBIUS_API_KEY is missing.
     nebius_api_key: str | None = Field(default=None, validation_alias="NEBIUS_API_KEY")
     nebius_base_url: str = Field(
         default="https://api.tokenfactory.nebius.com/v1/",

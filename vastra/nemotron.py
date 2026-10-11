@@ -43,6 +43,21 @@ class NemotronConfigError(Exception):
         self.message = message
 
 
+class NemotronCallError(Exception):
+    """Provider failure with a sanitized message. kind is timeout, rate_limit, or unavailable."""
+
+    def __init__(self, message: str, kind: str) -> None:
+        super().__init__(message)
+        self.message = message
+        self.kind = kind
+
+
+@dataclass(frozen=True)
+class ChatResult:
+    text: str
+    truncated: bool
+
+
 @dataclass(frozen=True)
 class NemotronConfig:
     api_key: str
@@ -109,14 +124,79 @@ def public_call_error(exc: Exception) -> str:
     return FAILED_MESSAGE
 
 
-def run_styling_check(config: NemotronConfig, client: OpenAI | None = None) -> SmokeResult:
-    """One non-streaming completion. The caller supplies config; this sends no user data."""
-    openai_client = client or OpenAI(
+def config_from_settings(settings: object) -> NemotronConfig:
+    """Build a client config from application settings. Does not contact the provider."""
+    key = _optional_text(getattr(settings, "nebius_api_key", None))
+    base_url = _optional_text(getattr(settings, "nebius_base_url", None)) or DEFAULT_BASE_URL
+    model = _optional_text(getattr(settings, "nemotron_model", None)) or DEFAULT_MODEL
+    raw_timeout = getattr(settings, "nemotron_timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
+    timeout = _timeout_seconds(None if raw_timeout is None else str(raw_timeout))
+    if key is None:
+        raise NemotronConfigError(MISSING_KEY_MESSAGE)
+    if not (base_url.startswith("https://") or base_url.startswith("http://")):
+        raise NemotronConfigError(INVALID_BASE_URL_MESSAGE)
+    if not model:
+        raise NemotronConfigError(MISSING_MODEL_MESSAGE)
+    if timeout is None:
+        raise NemotronConfigError(INVALID_TIMEOUT_MESSAGE)
+    return NemotronConfig(
+        api_key=key,
+        base_url=base_url,
+        model=model,
+        timeout_seconds=timeout,
+    )
+
+
+def build_client(config: NemotronConfig) -> OpenAI:
+    return OpenAI(
         api_key=config.api_key,
         base_url=config.base_url,
         timeout=config.timeout_seconds,
         max_retries=0,
     )
+
+
+def call_error_kind(exc: Exception) -> str:
+    status = getattr(exc, "status_code", None)
+    if isinstance(exc, APITimeoutError):
+        return "timeout"
+    if isinstance(exc, RateLimitError) or status == 429:
+        return "rate_limit"
+    return "unavailable"
+
+
+def request_chat_completion(
+    config: NemotronConfig,
+    messages: list[dict[str, str]],
+    *,
+    max_tokens: int,
+    client: OpenAI | None = None,
+) -> ChatResult:
+    """One non-streaming completion. Retries are disabled. Raises NemotronCallError on provider failure."""
+    openai_client = client or build_client(config)
+    try:
+        response = openai_client.chat.completions.create(
+            model=config.model,
+            messages=messages,
+            max_tokens=max_tokens,
+            stream=False,
+        )
+    except Exception as exc:
+        raise NemotronCallError(public_call_error(exc), call_error_kind(exc)) from None
+
+    choice = response.choices[0] if response.choices else None
+    content = ""
+    finish_reason = None
+    if choice is not None and choice.message is not None and choice.message.content:
+        content = choice.message.content.strip()
+    if choice is not None:
+        finish_reason = choice.finish_reason
+    return ChatResult(text=content, truncated=finish_reason == "length")
+
+
+def run_styling_check(config: NemotronConfig, client: OpenAI | None = None) -> SmokeResult:
+    """One non-streaming completion. The caller supplies config; this sends no user data."""
+    openai_client = client or build_client(config)
     try:
         response = openai_client.chat.completions.create(
             model=config.model,

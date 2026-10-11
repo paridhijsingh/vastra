@@ -162,6 +162,91 @@ class WardrobeItemPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+OccasionText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=200),
+]
+
+
+class EmergencyFitRequest(BaseModel):
+    """Occasion request. Profile and ownership come from the authenticated user."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    occasion: OccasionText
+    vibe: str | None = None
+    comfort_needs: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+
+    @field_validator("vibe", mode="before")
+    @classmethod
+    def blank_vibe_is_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("vibe must be a string")
+        trimmed = value.strip()
+        if not trimmed:
+            return None
+        if len(trimmed) > 200:
+            raise ValueError("vibe must be at most 200 characters")
+        return trimmed
+
+    @field_validator("comfort_needs", mode="before")
+    @classmethod
+    def normalize_comfort_needs(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=16, max_length=64)
+
+
+class OutfitModelResult(BaseModel):
+    """Structured model output. Item names are not accepted from the model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+    item_ids: list[str] = Field(min_length=1, max_length=8)
+    explanation: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=800)]
+    styling_tips: list[str] = Field(default_factory=list, max_length=6)
+    limitations: Annotated[str, StringConstraints(strip_whitespace=True, max_length=600)] = ""
+
+    @field_validator("item_ids")
+    @classmethod
+    def unique_item_ids(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for item_id in value:
+            if not isinstance(item_id, str) or not item_id.strip():
+                raise ValueError("item_ids must be nonblank strings")
+            cleaned.append(item_id.strip())
+        if len(cleaned) != len(set(cleaned)):
+            raise ValueError("item_ids must be unique")
+        return cleaned
+
+    @field_validator("styling_tips", mode="before")
+    @classmethod
+    def normalize_styling_tips(cls, value: object) -> list[str]:
+        if value is None:
+            return []
+        return _normalize_string_list(value, max_items=6, max_length=200)
+
+
+class OutfitItemPublic(BaseModel):
+    """Wardrobe details loaded from the database for the signed-in user."""
+
+    id: str
+    name: str
+    category: ItemCategory
+    color: str
+    notes: str
+    availability: Literal["available"]
+
+
+class EmergencyOutfitPublic(BaseModel):
+    title: str
+    items: list[OutfitItemPublic]
+    explanation: str
+    styling_tips: list[str]
+    limitations: str
+
+
 DictionaryKind = Literal["garment", "fabric", "silhouette", "styling_technique"]
 DictionaryGuidanceType = Literal["general"]
 

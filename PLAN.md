@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 11, 2026  
-Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, Wardrobe UI, and Style Dictionary page working, including manual private entry create/edit/delete; shared catalog is empty; AI suggestions and live updates are pending; Emergency Fit next  
+Status: FastAPI auth/profile/wardrobe APIs and Emergency Fit API working; Next.js auth, Style Profile UI, Wardrobe UI, and Style Dictionary page working; Emergency Fit UI, saved outfits, and Rescue are pending; image generation is post-v1  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -125,7 +125,7 @@ The Next.js frontend communicates with FastAPI. The backend owns database access
 
 Frontend auth status: register/sign-in work through Next.js route handlers that store the bearer token in an HttpOnly cookie. Logout clears the browser cookie and does not revoke tokens on the backend. Style Profile and Wardrobe UIs are connected to their FastAPI endpoints. Smart Shopping remains excluded.
 
-The configured smoke-test model is `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`. `scripts/check_nemotron.py` makes one manual completion. Outfit endpoints do not call the model yet.
+The configured model is `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`. `scripts/check_nemotron.py` makes one manual completion. `POST /outfits/emergency` makes one Nemotron request from available owned clothes and does not save the outfit. Image generation is post-v1.
 
 Use ordinary Python workflow functions initially. Add an agent framework only if a concrete requirement justifies it.
 
@@ -163,9 +163,11 @@ Define deletion behavior for related records explicitly.
 5. Check whether enough information and suitable clothing are available.
 6. Ask Nemotron for a structured recommendation.
 7. Validate ownership, availability, and constraints.
-8. Save and display the valid outfit.
+8. Return the outfit. Saving it is a later step; the current API does not persist generated outfits.
 
-If the wardrobe is insufficient, explain the limitation or ask a follow-up question.
+If the wardrobe is insufficient, explain the limitation. Do not invent missing pieces.
+
+Image generation is post-v1.
 
 ### Rescue My Outfit
 
@@ -444,7 +446,7 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI and the Style Dictionary page are in place, including manual private dictionary entries. The shared catalog is still empty. A manual Nebius Nemotron smoke test is available; outfit endpoints are not connected yet. Next: Emergency Fit.
+Wardrobe UI, the Style Dictionary page, and the Emergency Fit API are in place. The shared catalog is still empty. Emergency Fit does not save outfits and has no page yet. Image generation is post-v1. Next: Emergency Fit UI, then Rescue My Outfit.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 
