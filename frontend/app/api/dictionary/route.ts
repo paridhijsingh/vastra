@@ -2,7 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { AUTH_COOKIE_NAME } from "@/lib/auth/cookies";
-import { backendListDictionary } from "@/lib/dictionary/backend";
+import { isSameOriginRequest } from "@/lib/auth/same-origin";
+import { backendCreateDictionaryEntry, backendListDictionary } from "@/lib/dictionary/backend";
+import { readDictionaryCreateBody } from "@/lib/dictionary/form";
 import {
   isDictionaryKind,
   isDictionaryStyle,
@@ -83,4 +85,50 @@ export async function GET(request: Request) {
   }
 
   return jsonPrivate({ entries: result.data }, { status: 200 });
+}
+
+export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return jsonPrivate({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const tokenOrResponse = await requireToken();
+  if (tokenOrResponse instanceof NextResponse) {
+    return tokenOrResponse;
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonPrivate({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const parsed = readDictionaryCreateBody(body);
+  if (!parsed.ok) {
+    return jsonPrivate(
+      { error: parsed.error, kind: "validation", fields: parsed.fields },
+      { status: 422 },
+    );
+  }
+
+  const result = await backendCreateDictionaryEntry(tokenOrResponse, parsed.body);
+  if (!result.ok) {
+    if (result.kind === "unauthorized") {
+      return unauthorizedSessionResponse(result.message);
+    }
+    return jsonPrivate(
+      { error: result.message, kind: result.kind, fields: result.fields },
+      {
+        status:
+          result.kind === "validation"
+            ? 422
+            : result.kind === "unavailable"
+              ? 503
+              : 502,
+      },
+    );
+  }
+
+  return jsonPrivate({ entry: result.data }, { status: 201 });
 }

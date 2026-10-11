@@ -2,13 +2,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { DictionaryDeleteConfirm, DictionaryTermForm } from "@/components/DictionaryTermForm";
+import {
+  canManageDictionaryEntry,
+  entryToForm,
+  submitDictionaryForm,
+  type DictionaryFieldErrors,
+  type DictionaryFormValues,
+} from "@/lib/dictionary/form";
 import {
   DICTIONARY_KIND_LABELS,
   DICTIONARY_LOAD_ERROR,
+  DICTIONARY_PRIVACY_NOTE,
   MISSING_ENTRY_BODY,
   MISSING_ENTRY_TITLE,
+  NO_DICTIONARY_CHANGES_MESSAGE,
+  TERM_ADDED_MESSAGE,
   parseDictionaryEntry,
   type DictionaryEntry,
 } from "@/lib/dictionary/types";
@@ -17,13 +28,28 @@ type LoadState = "loading" | "ready" | "missing" | "error";
 
 type Props = {
   entryId: string;
+  showAddedNotice: boolean;
+  startEditing: boolean;
 };
 
-export function DictionaryEntryView({ entryId }: Props) {
+export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: Props) {
   const router = useRouter();
+  const savingRef = useRef(false);
   const [entry, setEntry] = useState<DictionaryEntry | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(startEditing);
+  const [formValues, setFormValues] = useState<DictionaryFormValues | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<DictionaryFieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formStatus, setFormStatus] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [savedNotice, setSavedNotice] = useState<string | null>(
+    showAddedNotice ? TERM_ADDED_MESSAGE : null,
+  );
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -70,12 +96,16 @@ export function DictionaryEntryView({ entryId }: Props) {
       }
 
       setEntry(parsed);
+      if (startEditing && canManageDictionaryEntry(parsed)) {
+        setFormValues(entryToForm(parsed));
+        setEditing(true);
+      }
       setLoadState("ready");
     } catch {
       setError("The dictionary service is unavailable. Please try again later.");
       setLoadState("error");
     }
-  }, [entryId, router]);
+  }, [entryId, router, startEditing]);
 
   useEffect(() => {
     void load();
@@ -121,8 +151,113 @@ export function DictionaryEntryView({ entryId }: Props) {
     );
   }
 
+  function beginEdit() {
+    if (!entry || !canManageDictionaryEntry(entry)) return;
+    setFormValues(entryToForm(entry));
+    setFieldErrors({});
+    setFormError(null);
+    setFormStatus(null);
+    setEditing(true);
+    setConfirmingDelete(false);
+  }
+
+  async function onSave() {
+    if (!entry || !formValues || savingRef.current) return;
+    const result = submitDictionaryForm(formValues, entry);
+    if (!result.ok) {
+      setFieldErrors(result.fields);
+      setFormError(null);
+      setFormStatus(null);
+      return;
+    }
+    if (result.mode !== "edit" || result.patch === null) {
+      setFieldErrors({});
+      setFormError(null);
+      setFormStatus(NO_DICTIONARY_CHANGES_MESSAGE);
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    setFormError(null);
+    setFormStatus(null);
+    setFieldErrors({});
+    try {
+      const response = await fetch(`/api/dictionary/${encodeURIComponent(entry.id)}`, {
+        method: "PATCH",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify(result.patch),
+      });
+      const body = (await response.json().catch(() => ({}))) as {
+        entry?: unknown;
+        error?: string;
+        fields?: DictionaryFieldErrors;
+      };
+      if (response.status === 401) {
+        setFormError(body.error ?? "Your session has expired. Please sign in again.");
+        router.push(`/signin?next=${encodeURIComponent(`/dictionary/${entry.id}`)}`);
+        router.refresh();
+        return;
+      }
+      if (!response.ok) {
+        setFormError(body.error ?? "Could not update the term. Please try again.");
+        if (body.fields) setFieldErrors(body.fields);
+        return;
+      }
+      const updated = parseDictionaryEntry(body.entry);
+      if (!updated) {
+        setFormError("Could not update the term. Please try again.");
+        return;
+      }
+      setEntry(updated);
+      setFormValues(entryToForm(updated));
+      setEditing(false);
+      setSavedNotice(null);
+    } catch {
+      setFormError("The dictionary service is unavailable. Please try again later.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
+  async function onDelete() {
+    if (!entry || savingRef.current || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const response = await fetch(`/api/dictionary/${encodeURIComponent(entry.id)}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      if (response.status === 401) {
+        setDeleteError(body.error ?? "Your session has expired. Please sign in again.");
+        return;
+      }
+      if (!response.ok) {
+        setDeleteError(body.error ?? "Could not delete the term. Please try again.");
+        return;
+      }
+      router.push("/dictionary?notice=deleted");
+      router.refresh();
+    } catch {
+      setDeleteError("The dictionary service is unavailable. Please try again later.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const manageable = canManageDictionaryEntry(entry);
+
   return (
     <article className="flex max-w-2xl min-w-0 flex-col gap-6">
+      {savedNotice ? (
+        <p className="text-base font-semibold text-foreground" role="status">
+          {savedNotice}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-3">
         <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-dictionary-text">
           {DICTIONARY_KIND_LABELS[entry.kind]}
@@ -131,8 +266,69 @@ export function DictionaryEntryView({ entryId }: Props) {
           {entry.term}
         </h1>
         <p className="text-lg text-foreground">{entry.definition}</p>
+        {entry.styles.length > 0 ? (
+          <p className="text-base text-foreground">Broad styles: {entry.styles.join(", ")}</p>
+        ) : null}
+        {manageable ? (
+          <p className="text-sm text-muted">{DICTIONARY_PRIVACY_NOTE}</p>
+        ) : null}
         <p className="text-sm text-muted">General guidance</p>
       </div>
+
+      {manageable && editing && formValues ? (
+        <DictionaryTermForm
+          values={formValues}
+          errors={fieldErrors}
+          formError={formError}
+          status={formStatus}
+          saving={saving}
+          submitLabel="Save changes"
+          onChange={setFormValues}
+          onSubmit={() => void onSave()}
+          onCancel={() => {
+            setEditing(false);
+            setFormError(null);
+            setFormStatus(null);
+            setFieldErrors({});
+            setFormValues(entryToForm(entry));
+          }}
+        />
+      ) : null}
+
+      {manageable && !editing ? (
+        confirmingDelete ? (
+          <DictionaryDeleteConfirm
+            term={entry.term}
+            busy={deleting}
+            error={deleteError}
+            onConfirm={() => void onDelete()}
+            onCancel={() => {
+              setConfirmingDelete(false);
+              setDeleteError(null);
+            }}
+          />
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={beginEdit}
+              className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmingDelete(true);
+                setDeleteError(null);
+              }}
+              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text"
+            >
+              Delete
+            </button>
+          </div>
+        )
+      ) : null}
 
       {entry.style_tags.length > 0 ? (
         <ul className="flex flex-wrap gap-2">

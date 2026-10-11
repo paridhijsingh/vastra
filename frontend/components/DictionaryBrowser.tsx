@@ -2,19 +2,30 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
+import { DictionaryDeleteConfirm, DictionaryTermForm } from "@/components/DictionaryTermForm";
+import {
+  EMPTY_DICTIONARY_FORM,
+  canManageDictionaryEntry,
+  submitDictionaryForm,
+  type DictionaryFieldErrors,
+  type DictionaryFormValues,
+} from "@/lib/dictionary/form";
 import {
   DICTIONARY_KIND_LABELS,
   DICTIONARY_KINDS,
   DICTIONARY_FILTER_NOTE,
   DICTIONARY_LOAD_ERROR,
+  DICTIONARY_PRIVACY_NOTE,
   DICTIONARY_STYLES,
   EMPTY_DICTIONARY_BODY,
   EMPTY_DICTIONARY_TITLE,
   NO_MATCH_TITLE,
+  TERM_DELETED_MESSAGE,
   dictionaryListHref,
   hasActiveDictionaryFilters,
+  parseDictionaryEntry,
   parseDictionaryList,
   type DictionaryEntry,
   type DictionaryFilters,
@@ -28,14 +39,17 @@ type Props = {
   initialFilters: DictionaryFilters;
   unsupportedStyle: string | null;
   unsupportedKind: string | null;
+  showDeletedNotice: boolean;
 };
 
 export function DictionaryBrowser({
   initialFilters,
   unsupportedStyle,
   unsupportedKind,
+  showDeletedNotice,
 }: Props) {
   const router = useRouter();
+  const savingRef = useRef(false);
   const [q, setQ] = useState(initialFilters.q);
   const [style, setStyle] = useState<DictionaryStyle | "">(initialFilters.style);
   const [kind, setKind] = useState<DictionaryKind | "">(initialFilters.kind);
@@ -43,6 +57,14 @@ export function DictionaryBrowser({
   const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [formValues, setFormValues] = useState<DictionaryFormValues>(EMPTY_DICTIONARY_FORM);
+  const [fieldErrors, setFieldErrors] = useState<DictionaryFieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const submittedQ = initialFilters.q;
   const submittedStyle = initialFilters.style;
@@ -116,6 +138,88 @@ export function DictionaryBrowser({
     router.push(dictionaryListHref({ q, style, kind, tag }));
   }
 
+  async function onCreate() {
+    if (savingRef.current) return;
+    const result = submitDictionaryForm(formValues);
+    if (!result.ok || result.mode !== "create") {
+      setFieldErrors(result.ok ? {} : result.fields);
+      setFormError(null);
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    setFormError(null);
+    setFieldErrors({});
+    try {
+      const response = await fetch("/api/dictionary", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify(result.body),
+      });
+      const body = (await response.json().catch(() => ({}))) as {
+        entry?: unknown;
+        error?: string;
+        fields?: DictionaryFieldErrors;
+      };
+      if (response.status === 401) {
+        setFormError(body.error ?? "Your session has expired. Please sign in again.");
+        router.push("/signin?next=/dictionary");
+        router.refresh();
+        return;
+      }
+      if (!response.ok) {
+        setFormError(body.error ?? "Could not add the term. Please try again.");
+        if (body.fields) setFieldErrors(body.fields);
+        return;
+      }
+      const created = parseDictionaryEntry(body.entry);
+      if (!created) {
+        setFormError("Could not add the term. Please try again.");
+        return;
+      }
+      router.push(`/dictionary/${encodeURIComponent(created.id)}?added=1`);
+      router.refresh();
+    } catch {
+      setFormError("The dictionary service is unavailable. Please try again later.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
+  async function onDelete(entry: DictionaryEntry) {
+    if (savingRef.current || deletingId) return;
+    setDeletingId(entry.id);
+    setDeleteError(null);
+    try {
+      const response = await fetch(`/api/dictionary/${encodeURIComponent(entry.id)}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      if (response.status === 401) {
+        setDeleteError(body.error ?? "Your session has expired. Please sign in again.");
+        router.push("/signin?next=/dictionary");
+        router.refresh();
+        return;
+      }
+      if (!response.ok) {
+        setDeleteError(body.error ?? "Could not delete the term. Please try again.");
+        return;
+      }
+      setEntries((current) => current.filter((item) => item.id !== entry.id));
+      setConfirmId(null);
+      router.push("/dictionary?notice=deleted");
+      router.refresh();
+    } catch {
+      setDeleteError("The dictionary service is unavailable. Please try again later.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const filtersActive = hasActiveDictionaryFilters({
     q: submittedQ,
     style: submittedStyle,
@@ -125,6 +229,48 @@ export function DictionaryBrowser({
 
   return (
     <div className="flex max-w-3xl min-w-0 flex-col gap-6">
+      {showDeletedNotice ? (
+        <p className="text-base font-semibold text-foreground" role="status">
+          {TERM_DELETED_MESSAGE}
+        </p>
+      ) : null}
+
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted">{DICTIONARY_PRIVACY_NOTE}</p>
+        <button
+          type="button"
+          aria-expanded={adding}
+          onClick={() => {
+            setAdding((open) => !open);
+            setFormError(null);
+            setFieldErrors({});
+          }}
+          className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+        >
+          Add a term
+        </button>
+        {adding ? (
+          <div className="rounded-md border border-border bg-surface px-4 py-4">
+            <h2 className="font-display text-2xl font-semibold text-foreground">Add a term</h2>
+            <DictionaryTermForm
+              values={formValues}
+              errors={fieldErrors}
+              formError={formError}
+              status={null}
+              saving={saving}
+              submitLabel="Add a term"
+              onChange={setFormValues}
+              onSubmit={() => void onCreate()}
+              onCancel={() => {
+                setAdding(false);
+                setFormError(null);
+                setFieldErrors({});
+              }}
+            />
+          </div>
+        ) : null}
+      </div>
+
       <p className="text-sm text-muted">{DICTIONARY_FILTER_NOTE}</p>
 
       {unsupportedStyle ? (
@@ -293,10 +439,13 @@ export function DictionaryBrowser({
       {loadState === "ready" && entries.length > 0 ? (
         <ul className="flex flex-col gap-4">
           {entries.map((entry) => (
-            <li key={entry.id}>
+            <li
+              key={entry.id}
+              className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4"
+            >
               <Link
                 href={`/dictionary/${encodeURIComponent(entry.id)}`}
-                className="flex flex-col gap-2 rounded-md border border-border bg-surface px-4 py-4 hover:border-[#7a4e72]/50"
+                className="flex flex-col gap-2 hover:underline"
               >
                 <span className="font-display text-2xl font-semibold text-foreground">
                   {entry.term}
@@ -306,7 +455,7 @@ export function DictionaryBrowser({
                   <span className="flex flex-wrap gap-2">
                     {entry.style_tags.map((tag) => (
                       <span
-                        key={tag}
+                        key={`${entry.id}-${tag}`}
                         className="rounded-sm bg-[#7a4e72]/10 px-2 py-1 text-sm font-semibold text-accent-dictionary-text"
                       >
                         {tag}
@@ -315,6 +464,39 @@ export function DictionaryBrowser({
                   </span>
                 ) : null}
               </Link>
+              {canManageDictionaryEntry(entry) ? (
+                confirmId === entry.id ? (
+                  <DictionaryDeleteConfirm
+                    term={entry.term}
+                    busy={deletingId === entry.id}
+                    error={deleteError}
+                    onConfirm={() => void onDelete(entry)}
+                    onCancel={() => {
+                      setConfirmId(null);
+                      setDeleteError(null);
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Link
+                      href={`/dictionary/${encodeURIComponent(entry.id)}?edit=1`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmId(entry.id);
+                        setDeleteError(null);
+                      }}
+                      className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#b94732]/50 px-3 text-sm font-semibold text-accent-profile-text"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )
+              ) : null}
             </li>
           ))}
         </ul>

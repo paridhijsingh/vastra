@@ -28,6 +28,12 @@ export const MISSING_ENTRY_TITLE = "Term not found";
 export const MISSING_ENTRY_BODY = "That dictionary entry does not exist.";
 export const DICTIONARY_LOAD_ERROR =
   "Could not load the dictionary. Please try again.";
+export const DICTIONARY_PRIVACY_NOTE = "Terms you add are private to your account.";
+export const TERM_ADDED_MESSAGE = "Term added to your dictionary";
+export const TERM_DELETED_MESSAGE = "Term deleted.";
+export const NO_DICTIONARY_CHANGES_MESSAGE = "No changes to save";
+
+export type DictionaryOrigin = "shared" | "personal";
 
 export type DictionaryFilters = {
   q: string;
@@ -45,6 +51,7 @@ export const EMPTY_DICTIONARY_FILTERS: DictionaryFilters = {
 
 export type DictionaryEntry = {
   id: string;
+  origin: DictionaryOrigin | null;
   term: string;
   aliases: string[];
   definition: string;
@@ -154,8 +161,14 @@ export function parseDictionaryEntry(value: unknown): DictionaryEntry | null {
   if (!styles.every((style) => isDictionaryStyle(style))) return null;
   const context = record.cultural_context;
   if (context !== null && typeof context !== "string") return null;
+  let origin: DictionaryOrigin | null = null;
+  if ("origin" in record && record.origin !== undefined) {
+    if (record.origin !== "shared" && record.origin !== "personal") return null;
+    origin = record.origin;
+  }
   return {
     id: record.id,
+    origin,
     term: record.term,
     aliases,
     definition: record.definition,

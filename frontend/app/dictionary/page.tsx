@@ -14,6 +14,7 @@ type PageProps = {
 export default async function DictionaryPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const parsed = filtersFromSearchParams(params);
+  const notice = Array.isArray(params.notice) ? params.notice[0] : params.notice;
   const user = await requireUser(dictionaryListHref(parsed.filters));
 
   return (
@@ -35,6 +36,7 @@ export default async function DictionaryPage({ searchParams }: PageProps) {
         initialFilters={parsed.filters}
         unsupportedStyle={parsed.unsupportedStyle}
         unsupportedKind={parsed.unsupportedKind}
+        showDeletedNotice={notice === "deleted"}
       />
     </div>
   );

@@ -2,8 +2,8 @@
 
 **Ready, set, styled.**
 
-Updated: October 7, 2026  
-Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, Wardrobe UI, and read-only Style Dictionary page working; personal dictionary entries can be managed through the API; shared catalog is empty; Emergency Fit next  
+Updated: October 11, 2026  
+Status: FastAPI auth/profile/wardrobe APIs working; Next.js auth, Style Profile UI, Wardrobe UI, and Style Dictionary page working, including manual private entry create/edit/delete; shared catalog is empty; AI suggestions and live updates are pending; Emergency Fit next  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -46,7 +46,7 @@ Support Indian, Western, and fusion styles, with men, women, and unisex styling 
 
 Cultural styling choices should reflect the user's preferences and context rather than assume universal dress-code rules.
 
-### Style Dictionary (private API entries, read-only page)
+### Style Dictionary (private entries, manual UI)
 
 The shared catalog is still the empty JSON file packaged with the backend. Personal entries are stored in SQLite and owned by the authenticated user. `create_all` adds that table without deleting existing data.
 
@@ -58,9 +58,9 @@ Search (`q`), `style`, `kind`, and `tag` filters combine with AND across both so
 
 Entry text, when added, should be short and original. Pairings are suggestions. Do not restrict garments by gender or judge body shape. Weather and comfort depend on fabric weight, construction, fit, and preference; do not present them as guarantees. Do not claim an entry is currently trending, and do not invent citations, review dates, or product links.
 
-The Next.js page at `/dictionary` is signed-in and read-only. It loads `GET /dictionary`, keeps submitted filters in the URL, and opens `/dictionary/[entry_id]` for a term. It does not yet create, edit, or delete entries.
+The Next.js page at `/dictionary` is signed-in. It loads `GET /dictionary`, keeps submitted filters in the URL, and opens `/dictionary/[entry_id]` for a term. Signed-in users can add a term, and can edit or delete an entry only when its `origin` is `personal`. Shared entries have no edit or delete controls. The page does not infer ownership from an id prefix. Manual entries are private to the account and are not labeled verified or currently trending.
 
-Pending: the manual-entry UI, AI term suggestions, and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
+Pending: AI term suggestions and live trend retrieval. A suggested term stays a draft until a person reviews and approves it. Do not label a suggestion as verified or currently trending without supporting sources.
 
 ### Weather-aware styling (planned)
 
@@ -444,8 +444,8 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI and the Style Dictionary page are in place. The dictionary catalog is still empty. Next: Nebius / Nemotron integration and Emergency Fit.
+Wardrobe UI and the Style Dictionary page are in place, including manual private dictionary entries. The shared catalog is still empty. Next: Nebius / Nemotron integration and Emergency Fit.
 
-Pending for the dictionary: the manual-entry UI, AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources), and live trend retrieval.
+Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 
 Do not implement weather lookups, saved events, shopping, or MCP yet.

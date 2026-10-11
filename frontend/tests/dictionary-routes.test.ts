@@ -13,23 +13,38 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { GET as getEntry } from "@/app/api/dictionary/[entryId]/route";
-import { GET as listDictionary } from "@/app/api/dictionary/route";
+import {
+  DELETE as deleteEntry,
+  GET as getEntry,
+  PATCH as patchEntry,
+} from "@/app/api/dictionary/[entryId]/route";
+import { GET as listDictionary, POST as createEntry } from "@/app/api/dictionary/route";
+import {
+  canManageDictionaryEntry,
+  entryToForm,
+  submitDictionaryForm,
+} from "@/lib/dictionary/form";
 import {
   DICTIONARY_FILTER_NOTE,
   DICTIONARY_LOAD_ERROR,
+  DICTIONARY_PRIVACY_NOTE,
   EMPTY_DICTIONARY_BODY,
   EMPTY_DICTIONARY_TITLE,
   MISSING_ENTRY_BODY,
   MISSING_ENTRY_TITLE,
+  NO_DICTIONARY_CHANGES_MESSAGE,
   NO_MATCH_TITLE,
+  TERM_ADDED_MESSAGE,
+  TERM_DELETED_MESSAGE,
   dictionaryListHref,
   filtersFromSearchParams,
   hasActiveDictionaryFilters,
+  parseDictionaryEntry,
 } from "@/lib/dictionary/types";
 
 const FIXTURE = {
   id: "kurta",
+  origin: "shared",
   term: "Kurta",
   aliases: ["kurta shirt"],
   definition: "A tunic-length top worn by people of any gender.",
@@ -247,7 +262,236 @@ describe("GET /api/dictionary/[entryId]", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.entry.term).toBe("Kurta");
+    expect(body.entry.origin).toBe("shared");
     expect(body.entry.cultural_context).toContain("South Asia");
     expect(JSON.stringify(body)).not.toContain("valid-token");
+  });
+});
+
+function sameOriginHeaders(): HeadersInit {
+  return {
+    host: "localhost:3000",
+    origin: "http://localhost:3000",
+    "content-type": "application/json",
+  };
+}
+
+const PERSONAL = {
+  ...FIXTURE,
+  id: "personal-11111111-1111-4111-8111-111111111111",
+  origin: "personal",
+  term: "Agbada",
+  aliases: ["agbada robe"],
+  style_tags: ["Yoruba", "West African"],
+  cultural_context: "Worn in parts of West Africa.",
+  styles: ["fusion"],
+};
+
+describe("dictionary entry management", () => {
+  it("keeps failed values, clears lists, and ignores id prefixes", () => {
+    expect(DICTIONARY_PRIVACY_NOTE).toBe("Terms you add are private to your account.");
+    expect(TERM_ADDED_MESSAGE).toBe("Term added to your dictionary");
+    expect(TERM_DELETED_MESSAGE).toBe("Term deleted.");
+    expect(NO_DICTIONARY_CHANGES_MESSAGE).toBe("No changes to save");
+
+    const parsed = parseDictionaryEntry(PERSONAL);
+    expect(parsed).not.toBeNull();
+    const values = entryToForm(parsed!);
+    const failed = { ...values, term: "   ", definition: values.definition };
+    const before = structuredClone(failed);
+    const invalid = submitDictionaryForm(failed, parsed);
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) expect(invalid.fields.term).toMatch(/required/i);
+    expect(failed).toEqual(before);
+
+    const unchanged = submitDictionaryForm(values, parsed);
+    expect(unchanged.ok && unchanged.mode === "edit" && unchanged.patch).toBeNull();
+
+    const cleared = submitDictionaryForm(
+      { ...values, aliases: "", culturalContext: "" },
+      parsed,
+    );
+    expect(cleared.ok && cleared.mode === "edit" ? cleared.patch : null).toEqual({
+      aliases: [],
+      cultural_context: null,
+    });
+
+    expect(canManageDictionaryEntry({ origin: "personal" })).toBe(true);
+    expect(canManageDictionaryEntry({ origin: "shared" })).toBe(false);
+    expect(
+      canManageDictionaryEntry(
+        parseDictionaryEntry({ ...PERSONAL, id: "personal-abc", origin: "shared" })!,
+      ),
+    ).toBe(false);
+    expect(canManageDictionaryEntry(parseDictionaryEntry({ ...PERSONAL, origin: undefined })!)).toBe(
+      false,
+    );
+    expect(canManageDictionaryEntry({ origin: "personal" })).toBe(true);
+  });
+
+  it("creates a personal entry without client identity fields", async () => {
+    cookieState.token = "valid-token";
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      const sent = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      expect(sent.guidance_type).toBe("general");
+      expect(sent).not.toHaveProperty("id");
+      expect(sent).not.toHaveProperty("owner_id");
+      expect(sent).not.toHaveProperty("origin");
+      expect(sent.term).toBe("Agbada");
+      return Response.json(PERSONAL, { status: 201 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await createEntry(
+      new Request("http://localhost:3000/api/dictionary", {
+        method: "POST",
+        headers: sameOriginHeaders(),
+        body: JSON.stringify({
+          term: " Agbada ",
+          definition: PERSONAL.definition,
+          kind: "garment",
+          styles: ["fusion"],
+          style_tags: ["Yoruba"],
+        }),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await response.json();
+    expect(body.entry.origin).toBe("personal");
+    expect(body.entry.id.startsWith("personal-")).toBe(true);
+    expect(JSON.stringify(body)).not.toContain("valid-token");
+    expect(JSON.stringify(body)).not.toContain("owner_id");
+  });
+
+  it("rejects create attempts that set ownership and preserves a validation error", async () => {
+    cookieState.token = "valid-token";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await createEntry(
+      new Request("http://localhost:3000/api/dictionary", {
+        method: "POST",
+        headers: sameOriginHeaders(),
+        body: JSON.stringify({
+          term: "Agbada",
+          definition: "A robe.",
+          kind: "garment",
+          owner_id: "spoof",
+          origin: "shared",
+          id: "kurta",
+        }),
+      }),
+    );
+    expect(response.status).toBe(422);
+    expect(fetchMock).not.toHaveBeenCalled();
+    const body = await response.json();
+    expect(body.kind).toBe("validation");
+  });
+
+  it("patches only changed fields and can clear a list and cultural context", async () => {
+    cookieState.token = "valid-token";
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      expect(init?.method).toBe("PATCH");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        aliases: [],
+        cultural_context: null,
+      });
+      return Response.json({
+        ...PERSONAL,
+        aliases: [],
+        cultural_context: null,
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await patchEntry(
+      new Request(`http://localhost:3000/api/dictionary/${PERSONAL.id}`, {
+        method: "PATCH",
+        headers: sameOriginHeaders(),
+        body: JSON.stringify({ aliases: [], cultural_context: null }),
+      }),
+      { params: Promise.resolve({ entryId: PERSONAL.id }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.entry.aliases).toEqual([]);
+    expect(body.entry.cultural_context).toBeNull();
+    expect(body.entry.term).toBe("Agbada");
+  });
+
+  it("does not send an empty patch", async () => {
+    cookieState.token = "valid-token";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await patchEntry(
+      new Request("http://localhost:3000/api/dictionary/personal-1", {
+        method: "PATCH",
+        headers: sameOriginHeaders(),
+        body: JSON.stringify({}),
+      }),
+      { params: Promise.resolve({ entryId: "personal-1" }) },
+    );
+    expect(response.status).toBe(422);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects writes to a shared entry", async () => {
+    cookieState.token = "valid-token";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ detail: "Shared dictionary entries are read-only" }, { status: 403 }),
+      ),
+    );
+    const patch = await patchEntry(
+      new Request("http://localhost:3000/api/dictionary/kurta", {
+        method: "PATCH",
+        headers: sameOriginHeaders(),
+        body: JSON.stringify({ term: "Changed" }),
+      }),
+      { params: Promise.resolve({ entryId: "kurta" }) },
+    );
+    expect(patch.status).toBe(403);
+    const deleted = await deleteEntry(
+      new Request("http://localhost:3000/api/dictionary/kurta", {
+        method: "DELETE",
+        headers: sameOriginHeaders(),
+      }),
+      { params: Promise.resolve({ entryId: "kurta" }) },
+    );
+    expect(deleted.status).toBe(403);
+    expect((await deleted.json()).error).toMatch(/read-only/i);
+  });
+
+  it("deletes a personal entry", async () => {
+    cookieState.token = "valid-token";
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
+    const response = await deleteEntry(
+      new Request(`http://localhost:3000/api/dictionary/${PERSONAL.id}`, {
+        method: "DELETE",
+        headers: sameOriginHeaders(),
+      }),
+      { params: Promise.resolve({ entryId: PERSONAL.id }) },
+    );
+    expect(response.status).toBe(200);
+    expect((await response.json()).ok).toBe(true);
+  });
+
+  it("rejects cross-origin dictionary changes", async () => {
+    cookieState.token = "valid-token";
+    const response = await createEntry(
+      new Request("http://localhost:3000/api/dictionary", {
+        method: "POST",
+        headers: {
+          host: "localhost:3000",
+          origin: "https://evil.example",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          term: "Agbada",
+          definition: "A robe.",
+          kind: "garment",
+        }),
+      }),
+    );
+    expect(response.status).toBe(403);
   });
 });

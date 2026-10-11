@@ -16,7 +16,7 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Frontend authentication** is implemented (register, sign in, HttpOnly session cookie).
 - **Style Profile UI** is implemented (load/save/delete).
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
-- **Style Dictionary** has a shared empty catalog, private entry create/edit/delete on the API, and a read-only Next.js page. The manual-entry UI, AI term suggestions, and live trend retrieval are pending.
+- **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
 - Smart Shopping remains excluded.
 
 A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
@@ -28,7 +28,7 @@ A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
 | **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Working (API + UI) |
 | **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Working (API + UI) |
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
-| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | API entries private; page is read-only |
+| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Working (API + manual entry UI) |
 | **Emergency Fit**                      | Recommend an outfit for an occasion and time limit using available owned items                  | Planned |
 | **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
@@ -61,11 +61,10 @@ Every route requires a bearer token. Responses include `origin` (`shared` or `pe
 
 Future entry text should stay short and original. Pairings are suggestions, not rules. Garments are not limited by gender, and entries do not judge body shape. Weather and comfort notes depend on fabric weight, construction, fit, and personal preference; they are not guarantees. Entries are not described as currently trending.
 
-The signed-in Next.js page is `/dictionary`. It searches and filters the catalog and links each term to `/dictionary/[entry_id]`. It does not yet create, edit, or delete entries. The style menu is Indian, Western, and fusion. A separate text field filters by a cultural or style tag. The page does not call a model.
+The signed-in Next.js page is `/dictionary`. It searches and filters the catalog, links each term to `/dictionary/[entry_id]`, and can add, edit, and delete personal entries. Edit and delete appear only when the API reports `origin` `personal`. Shared entries stay read-only. The style menu is Indian, Western, and fusion. A separate text field filters by a cultural or style tag. Terms you add are private to your account. The page does not call a model, and it does not label manual entries as verified or currently trending.
 
 Pending:
 
-- The manual-entry UI
 - AI term suggestions, which must stay drafts until reviewed and approved, and must not be labeled verified or currently trending without supporting sources
 - Live trend retrieval
 
@@ -296,7 +295,7 @@ Frontend auth pages:
 - `/signin` — establish a browser session
 - `/profile` — style profile form (requires sign-in)
 - `/wardrobe` — wardrobe manager with availability filters (requires sign-in)
-- `/dictionary` — style dictionary search (requires sign-in; catalog is empty)
+- `/dictionary` — style dictionary search, plus add, edit, and delete for your own terms (requires sign-in; shared catalog is empty)
 
 Frontend configuration (server-only in `.env.local`):
 
