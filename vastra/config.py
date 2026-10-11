@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     secret_key: str = Field(validation_alias="SECRET_KEY")
     jwt_expire_hours: int = Field(default=72, validation_alias="JWT_EXPIRE_HOURS")
     jwt_algorithm: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
+    # Optional. The API starts without a Nebius key. Outfit calls are not wired yet.
+    nebius_api_key: str | None = Field(default=None, validation_alias="NEBIUS_API_KEY")
+    nebius_base_url: str = Field(
+        default="https://api.tokenfactory.nebius.com/v1/",
+        validation_alias="NEBIUS_BASE_URL",
+    )
+    nemotron_model: str = Field(
+        default="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+        validation_alias="NEMOTRON_MODEL",
+    )
+    nemotron_timeout_seconds: float = Field(default=60, validation_alias="NEMOTRON_TIMEOUT_SECONDS")
 
 
 @lru_cache

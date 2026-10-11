@@ -125,7 +125,7 @@ The Next.js frontend communicates with FastAPI. The backend owns database access
 
 Frontend auth status: register/sign-in work through Next.js route handlers that store the bearer token in an HttpOnly cookie. Logout clears the browser cookie and does not revoke tokens on the backend. Style Profile and Wardrobe UIs are connected to their FastAPI endpoints. Smart Shopping remains excluded.
 
-Choose the exact Nemotron model identifier during integration based on verified availability and a working test call.
+The configured smoke-test model is `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`. `scripts/check_nemotron.py` makes one manual completion. Outfit endpoints do not call the model yet.
 
 Use ordinary Python workflow functions initially. Add an agent framework only if a concrete requirement justifies it.
 
@@ -444,7 +444,7 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI and the Style Dictionary page are in place, including manual private dictionary entries. The shared catalog is still empty. Next: Nebius / Nemotron integration and Emergency Fit.
+Wardrobe UI and the Style Dictionary page are in place, including manual private dictionary entries. The shared catalog is still empty. A manual Nebius Nemotron smoke test is available; outfit endpoints are not connected yet. Next: Emergency Fit.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 

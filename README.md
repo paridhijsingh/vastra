@@ -17,6 +17,7 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Style Profile UI** is implemented (load/save/delete).
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
 - **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
+- **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Outfit endpoints are not connected yet.
 - Smart Shopping remains excluded.
 
 A full end-to-end styling demo (Emergency Fit / Rescue) is not yet available.
@@ -271,6 +272,22 @@ Required configuration in `.env`:
 
 Optional: `JWT_EXPIRE_HOURS` (default `72`).
 
+Optional Nebius settings in the root `.env` (the API starts without a key):
+
+- `NEBIUS_API_KEY`
+- `NEBIUS_BASE_URL` — default `https://api.tokenfactory.nebius.com/v1/`
+- `NEMOTRON_MODEL` — default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`
+- `NEMOTRON_TIMEOUT_SECONDS` — default `60`
+
+Manual smoke test (one paid chat completion; not part of pytest):
+
+```bash
+source .venv/bin/activate
+python scripts/check_nemotron.py
+```
+
+The script loads the root `.env` from any working directory, then asks Nemotron for one short styling sentence. It prints the answer and token usage. It exits nonzero for missing settings, authentication errors, rate limits, connection or timeout errors, and empty or truncated responses. It does not read the database or send user data.
+
 Run backend tests:
 
 ```bash
@@ -316,7 +333,7 @@ npm run typecheck
 npm run build
 ```
 
-Later milestones will use Nebius / Nemotron settings on the backend (`NEBIUS_API_KEY`, `NEBIUS_BASE_URL`, `NEMOTRON_MODEL`).
+Nebius credentials stay in the root backend `.env`. Do not copy `NEBIUS_API_KEY` into frontend env files. Outfit generation is not wired to the model yet.
 
 Never commit `.env`, `.env.local`, API keys, authentication secrets, or personal database files.
 
