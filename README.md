@@ -19,9 +19,10 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
 - **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
 - **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Generated outfits are not saved. Image generation is post-v1.
+- **Rescue My Outfit** replaces one available piece with another owned item of the same category. The API is `POST /outfits/rescue`. The page is not built yet. Revisions are not saved.
 - Smart Shopping remains excluded.
 
-Emergency Fit can be used from the signed-in page. Rescue My Outfit is still pending.
+Emergency Fit can be used from the signed-in page. Rescue My Outfit works on the API; its page is still pending.
 
 ## Planned features
 
@@ -32,7 +33,7 @@ Emergency Fit can be used from the signed-in page. Rescue My Outfit is still pen
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
 | **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Working (API + manual entry UI) |
 | **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working |
-| **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
+| **Rescue My Outfit**                   | Replace one available piece with another of the same category and keep the rest locked          | Working (API). UI pending |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
 | **Saved events and outfits**           | Save occasions and outfits for later recall                                                     | Planned |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
@@ -104,9 +105,9 @@ The signed-in page is `/emergency-fit`. It asks for an occasion, an optional vib
 
 > “These shoes are uncomfortable. Replace only the shoes and keep the rest.”
 
-Vastra will lock the other pieces, find an available replacement, and validate the revised outfit.
+The API locks every piece except the one being replaced, asks for one available replacement of the same category, and validates the revision. The page is not built yet, and the revision is not saved.
 
-If no suitable replacement exists, it will explain why. It will ask before changing another piece.
+If no other available item in that category exists, the API explains that and does not call the model. It does not replace a second piece.
 
 ## Feedback and confirmed memory
 
@@ -275,6 +276,16 @@ Emergency Fit (requires `Authorization: Bearer <token>`):
 ```
 
 `occasion` is required. `vibe` and `comfort_needs` are optional. A saved profile is optional. If nothing is available, the response is 409 and the model is not called.
+
+Rescue My Outfit (requires `Authorization: Bearer <token>`):
+
+- `POST /outfits/rescue` — replace one available piece with another available owned item of the same category. Does not save the outfit or change the wardrobe, profile, or dictionary.
+
+```json
+{"item_ids": ["top-id", "bottom-id"], "replace_item_id": "top-id", "occasion": "dinner with friends", "change_request": "The top feels too warm.", "comfort_needs": ["breathable"]}
+```
+
+`item_ids`, `replace_item_id`, `occasion`, and `change_request` are required. `comfort_needs` is optional. Unknown outfit ids return 404. If the pieces are not available, or no same-category replacement exists, the response is 409 and the model is not called.
 
 Required configuration in `.env`:
 

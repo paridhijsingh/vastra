@@ -15,13 +15,15 @@ from vastra.auth import create_access_token, get_current_user, hash_password, ve
 from vastra.db import get_db, init_db
 from vastra.dictionary import find_dictionary_entry, load_dictionary, search_dictionary
 from vastra.models import PersonalDictionaryEntry, StyleProfile, User, WardrobeItem
-from vastra.outfits import OutfitRequestError, recommend_emergency_outfit
+from vastra.outfits import OutfitRequestError, recommend_emergency_outfit, recommend_rescue_outfit
 from vastra.schemas import (
     AvailabilityStatus,
     DictionaryEntry,
     DictionaryEntryCreate,
     EmergencyFitRequest,
     EmergencyOutfitPublic,
+    RescueOutfitRequest,
+    RescueOutfitPublic,
     DictionaryEntryUpdate,
     DictionaryKind,
     DictionaryStyle,
@@ -201,6 +203,19 @@ def emergency_fit(
     """Recommend one outfit from available owned clothes. Does not save the result."""
     try:
         return recommend_emergency_outfit(db, current_user, body)
+    except OutfitRequestError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
+
+
+@app.post("/outfits/rescue", response_model=RescueOutfitPublic)
+def rescue_outfit(
+    body: RescueOutfitRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> RescueOutfitPublic:
+    """Replace one available piece with another of the same category. Does not save the result."""
+    try:
+        return recommend_rescue_outfit(db, current_user, body)
     except OutfitRequestError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
 

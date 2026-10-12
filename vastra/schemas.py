@@ -241,6 +241,66 @@ class EmergencyOutfitPublic(BaseModel):
     limitations: str
 
 
+ChangeRequestText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=300),
+]
+
+
+class RescueOutfitRequest(BaseModel):
+    """Replace one piece of an outfit the caller already holds. Ownership comes from the session."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    item_ids: list[str] = Field(min_length=1, max_length=OUTFIT_ITEM_ID_COUNT_MAX)
+    replace_item_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    occasion: OccasionText
+    change_request: ChangeRequestText
+    comfort_needs: list[NonBlankTrimmedStr] = Field(default_factory=list, max_length=16)
+
+    @field_validator("item_ids")
+    @classmethod
+    def unique_item_ids(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for item_id in value:
+            if not isinstance(item_id, str) or not item_id.strip():
+                raise ValueError("item_ids must be nonblank strings")
+            cleaned.append(item_id.strip())
+        if len(cleaned) != len(set(cleaned)):
+            raise ValueError("item_ids must be unique")
+        return cleaned
+
+    @field_validator("comfort_needs", mode="before")
+    @classmethod
+    def normalize_comfort_needs(cls, value: object) -> list[str]:
+        return _normalize_string_list(value, max_items=16, max_length=64)
+
+    @model_validator(mode="after")
+    def replace_item_is_in_the_outfit(self) -> "RescueOutfitRequest":
+        if self.replace_item_id not in self.item_ids:
+            raise ValueError("replace_item_id must be one of item_ids")
+        return self
+
+
+class RescueModelResult(BaseModel):
+    """One candidate id and a short reason. No item names."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    replacement_item_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=OUTFIT_REASON_MAX)]
+
+
+class RescueOutfitPublic(BaseModel):
+    title: str
+    items: list[OutfitItemPublic]
+    explanation: str
+    styling_tips: list[str]
+    limitations: str
+    replaced_item_id: str
+    replacement_item_id: str
+
+
 DictionaryKind = Literal["garment", "fabric", "silhouette", "styling_technique"]
 DictionaryGuidanceType = Literal["general"]
 
