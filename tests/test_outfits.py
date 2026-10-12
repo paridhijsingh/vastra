@@ -315,10 +315,24 @@ def test_incomplete_selection_does_not_claim_completeness() -> None:
     selected = [WardrobeItem(id="top-1", owner_id="user", name="Kurta", category="top", color="navy", notes="", availability="available")]
     available = list(selected)
     text = limitations_for_selection(selected, available)
-    assert text.startswith("This is not a complete outfit.")
-    assert "bottom" in text
-    assert "shoes" in text
-    assert "Your available clothes do not include" in text
+    assert text == "This outfit is incomplete: a bottom and shoes are missing."
+    held_back = [
+        selected[0],
+        WardrobeItem(id="bottom-1", owner_id="user", name="Trousers", category="bottom", color="navy", notes="", availability="available"),
+        WardrobeItem(id="shoes-1", owner_id="user", name="Sandals", category="shoes", color="navy", notes="", availability="available"),
+    ]
+    unselected = limitations_for_selection(selected, held_back)
+    assert unselected == "This outfit is incomplete: a bottom and shoes are missing from this selection."
+    assert unselected.count("bottom") == 1
+    assert unselected.count("shoes") == 1
+    shoes_only = [held_back[2]]
+    mixed = limitations_for_selection(selected, shoes_only)
+    assert mixed == (
+        "This outfit is incomplete: shoes are missing from this selection. "
+        "Your available clothes do not include a bottom, or a one-piece."
+    )
+    assert mixed.count("shoes") == 1
+    assert mixed.count("bottom") == 1
     complete = [
         selected[0],
         WardrobeItem(id="bottom-1", owner_id="user", name="Trousers", category="bottom", color="navy", notes="", availability="available"),
@@ -343,8 +357,7 @@ def test_one_available_top_is_an_incomplete_outfit(client: TestClient, monkeypat
     assert body["explanation"] == REASON
     assert body["styling_tips"] == []
     assert [item["name"] for item in body["items"]] == ["Tank Top"]
-    assert "bottom" in body["limitations"].lower()
-    assert "shoes" in body["limitations"].lower()
+    assert body["limitations"] == "This outfit is incomplete: a bottom and shoes are missing."
     assert len(body["items"]) == 1
     prompt = captured["messages"][0]["content"]
     assert "reason: string, 1 to 300 characters." in prompt

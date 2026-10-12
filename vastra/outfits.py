@@ -148,31 +148,69 @@ def limitations_for_selection(
     selected: list[WardrobeItem],
     available: list[WardrobeItem],
 ) -> str:
-    gaps = _coverage_gaps(selected)
-    if not gaps:
+    if not _coverage_gaps(selected):
         return ""
-    unavailable_gaps = [gap for gap in gaps if gap in _coverage_gaps(available)]
-    note = "This is not a complete outfit. Missing from this selection: " + ", ".join(gaps) + "."
-    if unavailable_gaps:
-        note += " Your available clothes do not include: " + ", ".join(unavailable_gaps) + "."
-    return note
+    selected_missing = _body_and_shoes_missing(selected)
+    available_missing = _body_and_shoes_missing(available)
+    absent_from_wardrobe = _ordered_gaps(selected_missing & available_missing)
+    absent_from_selection = _ordered_gaps(selected_missing - available_missing)
+    sentences: list[str] = []
+    if absent_from_selection:
+        sentences.append(
+            "This outfit is incomplete: "
+            + _gap_phrase(absent_from_selection)
+            + " are missing from this selection."
+        )
+    if absent_from_wardrobe:
+        phrase = _gap_phrase(absent_from_wardrobe)
+        if absent_from_selection:
+            sentences.append("Your available clothes do not include " + phrase + ".")
+        else:
+            sentences.append("This outfit is incomplete: " + phrase + " are missing.")
+    return " ".join(sentences)
+
+
+def _body_and_shoes_missing(items: list[WardrobeItem]) -> set[str]:
+    categories = {item.category for item in items}
+    missing: set[str] = set()
+    if "one_piece" not in categories:
+        if "top" not in categories:
+            missing.add("top")
+        if "bottom" not in categories:
+            missing.add("bottom")
+    if "shoes" not in categories:
+        missing.add("shoes")
+    return missing
+
+
+def _ordered_gaps(missing: set[str]) -> list[str]:
+    gaps: list[str] = []
+    has_top = "top" in missing
+    has_bottom = "bottom" in missing
+    if has_top and has_bottom:
+        gaps.append("a top and bottom, or a one-piece")
+    elif has_top:
+        gaps.append("a top, or a one-piece")
+    elif has_bottom:
+        gaps.append("a bottom, or a one-piece")
+    if "shoes" in missing:
+        gaps.append("shoes")
+    return gaps
+
+
+def _gap_phrase(gaps: list[str]) -> str:
+    """Name each missing category once. A lone top's bottom gap is 'a bottom'."""
+    if gaps == ["a bottom, or a one-piece", "shoes"]:
+        return "a bottom and shoes"
+    if len(gaps) == 1:
+        return gaps[0]
+    if len(gaps) == 2:
+        return f"{gaps[0]} and {gaps[1]}"
+    return ", ".join(gaps[:-1]) + ", and " + gaps[-1]
 
 
 def _coverage_gaps(items: list[WardrobeItem]) -> list[str]:
-    categories = {item.category for item in items}
-    gaps: list[str] = []
-    if "one_piece" not in categories:
-        has_top = "top" in categories
-        has_bottom = "bottom" in categories
-        if not has_top and not has_bottom:
-            gaps.append("a top and bottom, or a one-piece")
-        elif not has_top:
-            gaps.append("a top, or a one-piece")
-        elif not has_bottom:
-            gaps.append("a bottom, or a one-piece")
-    if "shoes" not in categories:
-        gaps.append("shoes")
-    return gaps
+    return _ordered_gaps(_body_and_shoes_missing(items))
 
 
 def _preference_payload(profile: StyleProfile | None) -> dict[str, object]:

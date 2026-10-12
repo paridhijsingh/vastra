@@ -18,10 +18,10 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
 - **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
 - **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
-- **Emergency Fit API** recommends one outfit from available owned clothes. The page for it is not built yet. Generated outfits are not saved. Image generation is post-v1.
+- **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Generated outfits are not saved. Image generation is post-v1.
 - Smart Shopping remains excluded.
 
-A full end-to-end styling demo is not yet available. Emergency Fit works on the API; its page and Rescue My Outfit are still pending.
+Emergency Fit can be used from the signed-in page. Rescue My Outfit is still pending.
 
 ## Planned features
 
@@ -31,7 +31,7 @@ A full end-to-end styling demo is not yet available. Emergency Fit works on the 
 | **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Working (API + UI) |
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
 | **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Working (API + manual entry UI) |
-| **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working (API). UI pending |
+| **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working |
 | **Rescue My Outfit**                   | Replace a selected piece while preserving the rest of the outfit                                | Planned |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
 | **Saved events and outfits**           | Save occasions and outfits for later recall                                                     | Planned |
@@ -98,7 +98,7 @@ Vastra will:
 5. Validate ownership, availability, and constraints.
 6. Display the outfit and explain the choices.
 
-If your wardrobe lacks suitable pieces, Vastra will explain the limitation or ask a follow-up question.
+The signed-in page is `/emergency-fit`. It asks for an occasion, an optional vibe, and optional comfort needs, then shows the outfit. The suggestion stays in page memory and is not saved. If your wardrobe lacks suitable pieces, the page explains the limitation.
 
 ## Rescue My Outfit
 
@@ -268,7 +268,7 @@ Style Dictionary (requires `Authorization: Bearer <token>`):
 
 Emergency Fit (requires `Authorization: Bearer <token>`):
 
-- `POST /outfits/emergency` — one outfit from clothes marked available. Does not save the outfit or change the wardrobe, profile, or dictionary.
+- `POST /outfits/emergency` — one outfit from clothes marked available. Does not save the outfit or change the wardrobe, profile, or dictionary. The page is http://127.0.0.1:3000/emergency-fit.
 
 ```json
 {"occasion": "dinner with friends", "vibe": "relaxed", "comfort_needs": ["breathable"]}

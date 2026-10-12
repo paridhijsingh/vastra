@@ -2,11 +2,6 @@ import Link from "next/link";
 
 const COMING_SOON = [
   {
-    title: "Emergency Fit",
-    description:
-      "Get an outfit recommendation for an occasion and time limit using clothes you already own and have marked available.",
-  },
-  {
     title: "Rescue My Outfit",
     description:
       "Replace one piece that is not working while keeping the rest of the outfit locked in place.",
@@ -42,6 +37,12 @@ export default function HomePage() {
             Wardrobe
           </Link>
           <Link
+            href="/emergency-fit"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
+          >
+            Emergency Fit
+          </Link>
+          <Link
             href="/dictionary"
             className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
           >
@@ -59,8 +60,7 @@ export default function HomePage() {
             Coming soon
           </h2>
           <p className="max-w-2xl text-base text-muted">
-            These workflows are planned. They are not available in this frontend
-            shell yet.
+            Rescue My Outfit is planned. It is not available in this frontend yet.
           </p>
         </div>
 

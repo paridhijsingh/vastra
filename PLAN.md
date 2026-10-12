@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 11, 2026  
-Status: FastAPI auth/profile/wardrobe APIs and Emergency Fit API working; Next.js auth, Style Profile UI, Wardrobe UI, and Style Dictionary page working; Emergency Fit UI, saved outfits, and Rescue are pending; image generation is post-v1  
+Status: FastAPI auth/profile/wardrobe APIs and Emergency Fit working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, and Emergency Fit pages working; saved outfits and Rescue are pending; image generation is post-v1  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -163,7 +163,7 @@ Define deletion behavior for related records explicitly.
 5. Check whether enough information and suitable clothing are available.
 6. Ask Nemotron for a structured recommendation.
 7. Validate ownership, availability, and constraints.
-8. Return the outfit. Saving it is a later step; the current API does not persist generated outfits.
+8. Return the outfit and show it on `/emergency-fit`. Saving it is a later step; the current API and page do not persist generated outfits.
 
 If the wardrobe is insufficient, explain the limitation. Do not invent missing pieces.
 
@@ -446,7 +446,7 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI, the Style Dictionary page, and the Emergency Fit API are in place. The shared catalog is still empty. Emergency Fit does not save outfits and has no page yet. Image generation is post-v1. Next: Emergency Fit UI, then Rescue My Outfit.
+Wardrobe UI, the Style Dictionary page, and Emergency Fit are in place. Emergency Fit does not save outfits. The shared catalog is still empty. Image generation is post-v1. Next: Rescue My Outfit.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 
