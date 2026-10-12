@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 11, 2026  
-Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, and Rescue My Outfit working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, and Emergency Fit pages working; Rescue UI and saved outfits are pending; image generation is post-v1  
+Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, and Rescue My Outfit working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, and Rescue pages working; saved outfits are pending; image generation is post-v1  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -179,7 +179,7 @@ Image generation is post-v1.
 6. Ask Nemotron for a structured revision.
 7. Validate the replacement.
 8. Verify that locked item IDs remain unchanged.
-9. Return the revision. Saving and the Rescue page are later steps; the current API does not persist the revision.
+9. Return the revision and show it on `/rescue`. Saving is a later step; the current API and page do not persist the revision.
 
 For v1 the replacement must be another available owned item of the same category. Every other original item stays locked. If none exists, explain why and do not call the model.
 
@@ -446,7 +446,7 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI, the Style Dictionary page, Emergency Fit, and the Rescue My Outfit API are in place. Neither flow saves outfits. Rescue has no page yet. The shared catalog is still empty. Image generation is post-v1. Next: Rescue My Outfit UI.
+Wardrobe UI, the Style Dictionary page, Emergency Fit, and Rescue My Outfit are in place. Neither flow saves outfits. The shared catalog is still empty. Image generation is post-v1. Saved outfits remain pending.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 

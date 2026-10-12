@@ -19,10 +19,10 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
 - **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
 - **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Generated outfits are not saved. Image generation is post-v1.
-- **Rescue My Outfit** replaces one available piece with another owned item of the same category. The API is `POST /outfits/rescue`. The page is not built yet. Revisions are not saved.
+- **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Revisions are not saved.
 - Smart Shopping remains excluded.
 
-Emergency Fit can be used from the signed-in page. Rescue My Outfit works on the API; its page is still pending.
+Emergency Fit and Rescue My Outfit can be used from their signed-in pages. Neither one saves the outfit.
 
 ## Planned features
 
@@ -33,7 +33,7 @@ Emergency Fit can be used from the signed-in page. Rescue My Outfit works on the
 | **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
 | **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Working (API + manual entry UI) |
 | **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working |
-| **Rescue My Outfit**                   | Replace one available piece with another of the same category and keep the rest locked          | Working (API). UI pending |
+| **Rescue My Outfit**                   | Replace one available piece with another of the same category and keep the rest locked          | Working |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
 | **Saved events and outfits**           | Save occasions and outfits for later recall                                                     | Planned |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
@@ -105,7 +105,7 @@ The signed-in page is `/emergency-fit`. It asks for an occasion, an optional vib
 
 > “These shoes are uncomfortable. Replace only the shoes and keep the rest.”
 
-The API locks every piece except the one being replaced, asks for one available replacement of the same category, and validates the revision. The page is not built yet, and the revision is not saved.
+The signed-in page is `/rescue`. It locks every piece except the one being replaced, asks for one available replacement of the same category, and shows the revision. The revision is not saved.
 
 If no other available item in that category exists, the API explains that and does not call the model. It does not replace a second piece.
 
@@ -279,7 +279,7 @@ Emergency Fit (requires `Authorization: Bearer <token>`):
 
 Rescue My Outfit (requires `Authorization: Bearer <token>`):
 
-- `POST /outfits/rescue` — replace one available piece with another available owned item of the same category. Does not save the outfit or change the wardrobe, profile, or dictionary.
+- `POST /outfits/rescue` — replace one available piece with another available owned item of the same category. Does not save the outfit or change the wardrobe, profile, or dictionary. The page is http://127.0.0.1:3000/rescue.
 
 ```json
 {"item_ids": ["top-id", "bottom-id"], "replace_item_id": "top-id", "occasion": "dinner with friends", "change_request": "The top feels too warm.", "comfort_needs": ["breathable"]}

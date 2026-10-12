@@ -1,13 +1,5 @@
 import Link from "next/link";
 
-const COMING_SOON = [
-  {
-    title: "Rescue My Outfit",
-    description:
-      "Replace one piece that is not working while keeping the rest of the outfit locked in place.",
-  },
-] as const;
-
 export default function HomePage() {
   return (
     <div className="flex min-w-0 flex-col gap-12">
@@ -43,45 +35,18 @@ export default function HomePage() {
             Emergency Fit
           </Link>
           <Link
+            href="/rescue"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
+          >
+            Rescue
+          </Link>
+          <Link
             href="/dictionary"
             className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
           >
             Style Dictionary
           </Link>
         </div>
-      </section>
-
-      <section aria-labelledby="coming-soon-heading" className="flex min-w-0 flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <h2
-            id="coming-soon-heading"
-            className="font-display text-2xl font-semibold text-foreground sm:text-3xl"
-          >
-            Coming soon
-          </h2>
-          <p className="max-w-2xl text-base text-muted">
-            Rescue My Outfit is planned. It is not available in this frontend yet.
-          </p>
-        </div>
-
-        <ul className="grid min-w-0 gap-6 sm:grid-cols-2 sm:gap-4">
-          {COMING_SOON.map((feature) => (
-            <li
-              key={feature.title}
-              className="flex min-w-0 flex-col gap-3 border-t-[3px] border-border pt-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <h3 className="font-display min-w-0 text-xl font-semibold text-foreground break-words">
-                  {feature.title}
-                </h3>
-                <span className="shrink-0 rounded-sm bg-black/5 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Coming soon
-                </span>
-              </div>
-              <p className="text-base text-muted">{feature.description}</p>
-            </li>
-          ))}
-        </ul>
       </section>
     </div>
   );
