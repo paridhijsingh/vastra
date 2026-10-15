@@ -78,7 +78,7 @@ Pending: AI term suggestions and live trend retrieval. A suggested term stays a 
 
 ### Saved Events
 
-`/events` lists private events in date order and can create one. `/events/{id}` shows, edits, and deletes an event. A Saved Look is optional. The event stores that reference only: reading it returns the look’s current name, and deleting the look clears the reference without deleting the event. Deleting an event does not delete the look or wardrobe. Events do not store location or call the model.
+`/events` lists private events in date order and can create one. `/events/{id}` shows, edits, and deletes an event, and can open Emergency Fit with the event id. That page prefills occasion and comfort needs and does not generate until you submit. Saving the suggestion does not change the event. Attaching it sends `look_id` only. If the event already has a look, the page asks before replacing it and leaves the previous look saved. The event stores that reference only: reading it returns the look’s current name, and deleting the look clears the reference without deleting the event. Deleting an event does not delete the look or wardrobe. Events do not store location or call the model.
 
 ### Stretch feature
 
@@ -168,7 +168,7 @@ Define deletion behavior for related records explicitly.
 5. Check whether enough information and suitable clothing are available.
 6. Ask Nemotron for a structured recommendation.
 7. Validate ownership, availability, and constraints.
-8. Return the outfit and show it on `/emergency-fit`. Saving it is a later step; the current API and page do not persist generated outfits.
+8. Return the outfit and show it on `/emergency-fit`. Saving it is a separate Save a look step. An event can then attach that look with `look_id` only. Opening an event’s Emergency Fit link does not call the model.
 
 If the wardrobe is insufficient, explain the limitation. Do not invent missing pieces.
 

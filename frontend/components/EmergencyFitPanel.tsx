@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { SaveLookForm } from "@/components/SaveLookForm";
+import { emergencyFitFields, type EventFitContext } from "@/lib/emergency/event-fit";
 import {
   AI_SUGGESTION_NOTE,
   CREATING_OUTFIT_MESSAGE,
@@ -23,16 +24,19 @@ import {
 
 type Props = {
   userId: string;
+  returnPath: string;
+  event?: EventFitContext | null;
 };
 
-export function EmergencyFitPanel({ userId }: Props) {
+export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
   const router = useRouter();
   const formId = useId();
   const pendingRef = useRef(false);
   const occasionRef = useRef<HTMLInputElement>(null);
-  const [occasion, setOccasion] = useState("");
-  const [vibe, setVibe] = useState("");
-  const [comfortText, setComfortText] = useState("");
+  const fields = emergencyFitFields(event);
+  const [occasion, setOccasion] = useState(fields.occasion);
+  const [vibe, setVibe] = useState(fields.vibe);
+  const [comfortText, setComfortText] = useState(fields.comfortText);
   const [pending, setPending] = useState(false);
   const [wardrobeLoading, setWardrobeLoading] = useState(true);
   const [wardrobeFailed, setWardrobeFailed] = useState(false);
@@ -57,7 +61,7 @@ export function EmergencyFitPanel({ userId }: Props) {
         ]);
         if (cancelled) return;
         if (wardrobeResponse.status === 401 || profileResponse.status === 401) {
-          router.push("/signin?next=/emergency-fit");
+          router.push(`/signin?next=${encodeURIComponent(returnPath)}`);
           return;
         }
         if (!wardrobeResponse.ok) {
@@ -107,7 +111,7 @@ export function EmergencyFitPanel({ userId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [router, userId]);
+  }, [returnPath, router, userId]);
 
   const gate = wardrobeGate({
     loading: wardrobeLoading,
@@ -122,7 +126,7 @@ export function EmergencyFitPanel({ userId }: Props) {
     try {
       const response = await fetch("/api/wardrobe?availability=available", { cache: "no-store" });
       if (response.status === 401) {
-        router.push("/signin?next=/emergency-fit");
+        router.push(`/signin?next=${encodeURIComponent(returnPath)}`);
         return;
       }
       if (!response.ok) {
@@ -185,7 +189,7 @@ export function EmergencyFitPanel({ userId }: Props) {
       });
       const payload: unknown = await response.json().catch(() => null);
       if (response.status === 401) {
-        router.push("/signin?next=/emergency-fit");
+        router.push(`/signin?next=${encodeURIComponent(returnPath)}`);
         return;
       }
       if (!response.ok) {
@@ -228,6 +232,14 @@ export function EmergencyFitPanel({ userId }: Props) {
         <p id={`${formId}-explain`} className="text-base text-muted">
           {EMERGENCY_FIT_EXPLANATION}
         </p>
+        {event ? (
+          <p className="text-base text-foreground">
+            Styling for {event.name}.{" "}
+            <Link href={`/events/${event.id}`} className="font-semibold text-primary underline">
+              Back to this event
+            </Link>
+          </p>
+        ) : null}
 
         {gate.status === "loading" ? (
           <p role="status" className="text-base text-muted">
@@ -365,12 +377,12 @@ export function EmergencyFitPanel({ userId }: Props) {
         </button>
       </form>
 
-      {result ? <OutfitResult outfit={result} /> : null}
+      {result ? <OutfitResult outfit={result} event={event} /> : null}
     </div>
   );
 }
 
-function OutfitResult({ outfit }: { outfit: EmergencyOutfitView }) {
+function OutfitResult({ outfit, event }: { outfit: EmergencyOutfitView; event: EventFitContext | null }) {
   return (
     <section aria-labelledby="emergency-result-title" className="flex min-w-0 flex-col gap-5">
       <div className="flex max-w-2xl flex-col gap-2">
@@ -430,6 +442,7 @@ function OutfitResult({ outfit }: { outfit: EmergencyOutfitView }) {
         itemIds={outfit.itemIds}
         defaultName={outfit.title}
         defaultOccasion={outfit.title}
+        attachEvent={event}
       />
     </section>
   );

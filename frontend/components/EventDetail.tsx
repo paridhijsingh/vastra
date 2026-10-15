@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
 import { EventFields } from "@/components/EventsPanel";
+import { emergencyFitEventPath } from "@/lib/emergency/event-fit";
 import {
   NO_EVENT_CHANGES,
   REMOVED_LOOK_LABEL,
@@ -354,6 +355,12 @@ export function EventDetail({ userId, eventId }: Props) {
         </div>
       ) : (
         <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href={emergencyFitEventPath(event.id)}
+            className="btn-primary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
+          >
+            Suggest an outfit
+          </Link>
           <button
             type="button"
             onClick={() => {

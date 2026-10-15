@@ -91,7 +91,7 @@ The signed-in pages are `/looks` and `/looks/{id}`. A look is a named plan of ow
 
 ### Saved Events
 
-The signed-in pages are `/events` and `/events/{id}`. `occasion`, `notes`, and `comfort_needs` are optional. A Saved Look can be attached from the looks you already saved. Reading an event uses that look’s current name and does not copy wardrobe items. Deleting the look keeps the event and clears the link. Deleting the event keeps the look and the wardrobe. There is no location, weather, or reminder field.
+The signed-in pages are `/events` and `/events/{id}`. `occasion`, `notes`, and `comfort_needs` are optional. A Saved Look can be attached from the looks you already saved. **Suggest an outfit** opens Emergency Fit with that event’s id. The page fills the occasion from the event, or the event name when the occasion is blank, and fills the comfort needs. Vibe stays blank. Opening the page does not generate an outfit. Saving a look does not change the event. **Attach to this event** sends only the new look id, and replacing a look leaves the previous look saved. Reading an event uses that look’s current name and does not copy wardrobe items. Deleting the look keeps the event and clears the link. Deleting the event keeps the look and the wardrobe. There is no location, weather, or reminder field.
 
 ## Emergency Fit
 
@@ -106,7 +106,7 @@ Vastra will:
 5. Validate ownership, availability, and constraints.
 6. Display the outfit and explain the choices.
 
-The signed-in page is `/emergency-fit`. It asks for an occasion, an optional vibe, and optional comfort needs, then shows the outfit. Suggestions are saved only when you choose Save a look. If your wardrobe lacks suitable pieces, the page explains the limitation.
+The signed-in page is `/emergency-fit`. It asks for an occasion, an optional vibe, and optional comfort needs, then shows the outfit. An event link can prefill the occasion and comfort needs; the model still receives only those fields, and only after you choose Generate outfit. Suggestions are saved only when you choose Save a look. Attaching that look to the event is a separate step. If your wardrobe lacks suitable pieces, the page explains the limitation.
 
 ## Rescue My Outfit
 
