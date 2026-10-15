@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 11, 2026  
-Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, and Rescue My Outfit working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, and Rescue pages working; saved outfits are pending; image generation is post-v1  
+Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, and Saved Looks working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, and Rescue pages working; Saved Looks UI is pending; image generation is post-v1  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -35,7 +35,7 @@ The first release should complete these workflows reliably before adding more fe
 | Emergency Fit         | Recommend an outfit for an occasion and time limit using available owned items             |
 | Rescue My Outfit      | Replace a selected piece while preserving the rest of the outfit                           |
 | Weather-aware styling | Optional weather context; location requested only via "Use my location"                    |
-| Saved events/outfits  | Save occasions and outfits for later recall (later milestone)                              |
+| Saved Looks           | Save a named outfit plan from owned wardrobe items (API done; UI pending)                 |
 | Explanations          | Explain outfit choices and offer optional hair or makeup tips                              |
 | Outfit feedback       | Save ratings and explicit comments separately from lasting preferences                     |
 | Confirmed memory      | Ask before saving a lasting preference; support approval, editing, dismissal, and deletion |
@@ -71,9 +71,9 @@ Pending: AI term suggestions and live trend retrieval. A suggested term stays a 
 - Explain that coordinates are sent to the weather provider for the lookup. Do not send precise coordinates to Nemotron; send relevant weather conditions instead.
 - Display: “Weather can change. You can also check your preferred weather app to verify conditions before heading out.”
 
-### Saved events and outfits (planned)
+### Saved Looks
 
-Deferred to a later milestone after the core wardrobe and styling workflows.
+`POST /looks` stores a private, ordered plan of owned wardrobe items, including laundry and packed-away pieces. Reads resolve current names, colors, categories, notes, and availability. Deleting a garment leaves a missing marker in that position. `PATCH` can rename the look or edit occasion and notes. The page is not built yet. Emergency Fit and Rescue do not save results on their own. Saved events remain later work.
 
 ### Stretch feature
 
@@ -446,7 +446,7 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI, the Style Dictionary page, Emergency Fit, and Rescue My Outfit are in place. Neither flow saves outfits. The shared catalog is still empty. Image generation is post-v1. Saved outfits remain pending.
+Wardrobe UI, the Style Dictionary page, Emergency Fit, and Rescue My Outfit are in place. Those two flows still do not save results on their own. Saved Looks can be stored through the API; the page is not built yet. The shared catalog is still empty. Image generation is post-v1. Next: Saved Looks UI.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 

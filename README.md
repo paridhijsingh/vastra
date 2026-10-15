@@ -20,9 +20,10 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
 - **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Generated outfits are not saved. Image generation is post-v1.
 - **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Revisions are not saved.
+- **Saved Looks** can be stored with `POST /looks`. The API is implemented. The page is not built yet. Emergency Fit and Rescue still do not save results on their own.
 - Smart Shopping remains excluded.
 
-Emergency Fit and Rescue My Outfit can be used from their signed-in pages. Neither one saves the outfit.
+Emergency Fit and Rescue My Outfit can be used from their signed-in pages. A look is stored only when you call `POST /looks`.
 
 ## Planned features
 
@@ -35,7 +36,7 @@ Emergency Fit and Rescue My Outfit can be used from their signed-in pages. Neith
 | **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working |
 | **Rescue My Outfit**                   | Replace one available piece with another of the same category and keep the rest locked          | Working |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
-| **Saved events and outfits**           | Save occasions and outfits for later recall                                                     | Planned |
+| **Saved Looks**                        | Save a named outfit plan from owned wardrobe items for later recall                             | Working (API). UI pending |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
 | **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
 | **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
@@ -82,9 +83,9 @@ Optional location permission is requested only when the user clicks **Use my loc
 - Do not send precise coordinates to Nemotron; send relevant weather conditions instead.
 - Display: “Weather can change. You can also check your preferred weather app to verify conditions before heading out.”
 
-### Saved events and outfits (planned)
+### Saved Looks
 
-Deferred to a later milestone after the core wardrobe and styling workflows.
+The API saves a named plan of owned wardrobe items. Laundry and packed-away items can be included. Generating an Emergency Fit or Rescue outfit does not save it. The page is not built yet. Saved events remain later work.
 
 ## Emergency Fit
 
@@ -286,6 +287,20 @@ Rescue My Outfit (requires `Authorization: Bearer <token>`):
 ```
 
 `item_ids`, `replace_item_id`, `occasion`, and `change_request` are required. `comfort_needs` is optional. Unknown outfit ids return 404. If the pieces are not available, or no same-category replacement exists, the response is 409 and the model is not called.
+
+Saved Looks (requires `Authorization: Bearer <token>`):
+
+- `POST /looks` — save an ordered plan. Returns 201. Does not call the model.
+- `GET /looks` — the signed-in user's looks, newest first
+- `GET /looks/{id}` — one look, with current wardrobe details
+- `PATCH /looks/{id}` — rename or edit occasion and notes
+- `DELETE /looks/{id}` — 204
+
+```json
+{"name": "Dinner", "occasion": "dinner with friends", "notes": "Mostly standing.", "item_ids": ["top-id", "bottom-id", "shoes-id"]}
+```
+
+`name` and `item_ids` are required. `occasion` and `notes` are optional. Unknown and another user's item ids both return 404. A deleted wardrobe item stays in its position as a missing marker. The page is not built yet.
 
 Required configuration in `.env`:
 

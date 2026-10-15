@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
@@ -130,4 +130,63 @@ class PersonalDictionaryEntry(Base):
         default=_utc_now,
         onupdate=_utc_now,
         nullable=False,
+    )
+
+
+class SavedLook(Base):
+    """A private outfit plan. Item details stay on the wardrobe rows."""
+
+    __tablename__ = "saved_looks"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    owner_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    occasion: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=_utc_now,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=_utc_now,
+        onupdate=_utc_now,
+        nullable=False,
+    )
+
+
+class SavedLookItem(Base):
+    """Ordered wardrobe reference. A null item means that garment was deleted."""
+
+    __tablename__ = "saved_look_items"
+    __table_args__ = (
+        UniqueConstraint("look_id", "position", name="uq_saved_look_items_position"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    look_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("saved_looks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    wardrobe_item_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("wardrobe_items.id", ondelete="SET NULL"),
+        nullable=True,
     )

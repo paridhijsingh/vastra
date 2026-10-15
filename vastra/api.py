@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from vastra.auth import create_access_token, get_current_user, hash_password, verify_password
 from vastra.db import get_db, init_db
 from vastra.dictionary import find_dictionary_entry, load_dictionary, search_dictionary
+from vastra.looks import create_look, delete_look, get_look, list_looks, update_look
 from vastra.models import PersonalDictionaryEntry, StyleProfile, User, WardrobeItem
 from vastra.outfits import OutfitRequestError, recommend_emergency_outfit, recommend_rescue_outfit
 from vastra.schemas import (
@@ -24,6 +25,9 @@ from vastra.schemas import (
     EmergencyOutfitPublic,
     RescueOutfitRequest,
     RescueOutfitPublic,
+    SavedLookCreate,
+    SavedLookPublic,
+    SavedLookUpdate,
     DictionaryEntryUpdate,
     DictionaryKind,
     DictionaryStyle,
@@ -218,6 +222,53 @@ def rescue_outfit(
         return recommend_rescue_outfit(db, current_user, body)
     except OutfitRequestError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
+
+
+@app.post("/looks", response_model=SavedLookPublic, status_code=status.HTTP_201_CREATED)
+def post_look(
+    body: SavedLookCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SavedLookPublic:
+    """Save an ordered wardrobe plan. Does not call the model."""
+    return create_look(db, current_user.id, body)
+
+
+@app.get("/looks", response_model=list[SavedLookPublic])
+def get_looks(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[SavedLookPublic]:
+    return list_looks(db, current_user.id)
+
+
+@app.get("/looks/{look_id}", response_model=SavedLookPublic)
+def get_saved_look(
+    look_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SavedLookPublic:
+    return get_look(db, current_user.id, look_id)
+
+
+@app.patch("/looks/{look_id}", response_model=SavedLookPublic)
+def patch_look(
+    look_id: str,
+    body: SavedLookUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> SavedLookPublic:
+    return update_look(db, current_user.id, look_id, body)
+
+
+@app.delete("/looks/{look_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+def remove_look(
+    look_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    delete_look(db, current_user.id, look_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.get("/wardrobe", response_model=list[WardrobeItemPublic])

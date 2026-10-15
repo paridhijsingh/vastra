@@ -1,5 +1,6 @@
 """Pydantic request and response schemas."""
 
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
@@ -299,6 +300,127 @@ class RescueOutfitPublic(BaseModel):
     limitations: str
     replaced_item_id: str
     replacement_item_id: str
+
+
+LOOK_NAME_MAX = 100
+LOOK_OCCASION_MAX = 200
+LOOK_NOTES_MAX = 1000
+LOOK_ITEM_ID_MAX = 30
+REMOVED_ITEM_NOTICE = "This look includes a wardrobe item that was removed."
+
+LookName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=LOOK_NAME_MAX),
+]
+
+
+def _optional_look_text(value: object, *, max_length: int, field: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field} must be a string")
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+    if len(trimmed) > max_length:
+        raise ValueError(f"{field} must be at most {max_length} characters")
+    return trimmed
+
+
+class SavedLookCreate(BaseModel):
+    """Save an ordered plan. Ownership and item details come from the server."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: LookName
+    occasion: str | None = None
+    notes: str | None = None
+    item_ids: list[str] = Field(min_length=1, max_length=LOOK_ITEM_ID_MAX)
+
+    @field_validator("occasion", mode="before")
+    @classmethod
+    def normalize_occasion(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_OCCASION_MAX, field="occasion")
+
+    @field_validator("notes", mode="before")
+    @classmethod
+    def normalize_notes(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_NOTES_MAX, field="notes")
+
+    @field_validator("item_ids")
+    @classmethod
+    def unique_item_ids(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for item_id in value:
+            if not isinstance(item_id, str) or not item_id.strip():
+                raise ValueError("item_ids must be nonblank strings")
+            cleaned.append(item_id.strip())
+        if len(cleaned) != len(set(cleaned)):
+            raise ValueError("item_ids must be unique")
+        return cleaned
+
+
+class SavedLookUpdate(BaseModel):
+    """Rename or edit text. Item membership is unchanged in this milestone."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: LookName | None = None
+    occasion: str | None = None
+    notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_name(cls, value: object) -> object:
+        if isinstance(value, dict) and "name" in value and value["name"] is None:
+            raise ValueError("name must not be null")
+        return value
+
+    @model_validator(mode="after")
+    def reject_empty_update(self) -> "SavedLookUpdate":
+        if not self.model_fields_set:
+            raise ValueError("At least one field is required")
+        return self
+
+    @field_validator("occasion", mode="before")
+    @classmethod
+    def normalize_occasion(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_OCCASION_MAX, field="occasion")
+
+    @field_validator("notes", mode="before")
+    @classmethod
+    def normalize_notes(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_NOTES_MAX, field="notes")
+
+
+class SavedLookWardrobeItem(BaseModel):
+    """Current wardrobe details. Not a copy stored on the look."""
+
+    missing: Literal[False] = False
+    id: str
+    name: str
+    category: ItemCategory
+    color: str
+    notes: str
+    availability: AvailabilityStatus
+
+
+class SavedLookRemovedItem(BaseModel):
+    """Position kept after the wardrobe garment was deleted."""
+
+    missing: Literal[True] = True
+
+
+class SavedLookPublic(BaseModel):
+    id: str
+    name: str
+    occasion: str | None
+    notes: str | None
+    contains_removed_items: bool
+    removed_item_notice: str | None
+    items: list[SavedLookWardrobeItem | SavedLookRemovedItem]
+    created_at: datetime
+    updated_at: datetime
 
 
 DictionaryKind = Literal["garment", "fabric", "silhouette", "styling_technique"]
