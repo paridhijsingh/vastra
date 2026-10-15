@@ -3,7 +3,7 @@
 **Ready, set, styled.**
 
 Updated: October 14, 2026  
-Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, Saved Looks, and Saved Events working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue, and Saved Looks pages working; Saved Events UI is pending; image generation is post-v1  
+Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, Saved Looks, and Saved Events working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue, Saved Looks, and Events pages working; image generation is post-v1  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -36,7 +36,7 @@ The first release should complete these workflows reliably before adding more fe
 | Rescue My Outfit      | Replace a selected piece while preserving the rest of the outfit                           |
 | Weather-aware styling | Optional weather context; location requested only via "Use my location"                    |
 | Saved Looks           | Save a named outfit plan from owned wardrobe items (API and pages)                     |
-| Saved Events          | Save a dated plan and optionally attach one Saved Look (API done; UI pending)          |
+| Saved Events          | Save a dated plan and optionally attach one Saved Look (API and pages)                 |
 | Explanations          | Explain outfit choices and offer optional hair or makeup tips                              |
 | Outfit feedback       | Save ratings and explicit comments separately from lasting preferences                     |
 | Confirmed memory      | Ask before saving a lasting preference; support approval, editing, dismissal, and deletion |
@@ -78,7 +78,7 @@ Pending: AI term suggestions and live trend retrieval. A suggested term stays a 
 
 ### Saved Events
 
-`POST /events` stores a private date, name, and optional occasion, notes, and comfort needs. It can reference one owned Saved Look. The event stores that reference only: reading it returns the look’s current name, and deleting the look clears the reference without deleting the event. Deleting an event does not delete the look or wardrobe. The page is not built yet. Events do not store location or call the model.
+`/events` lists private events in date order and can create one. `/events/{id}` shows, edits, and deletes an event. A Saved Look is optional. The event stores that reference only: reading it returns the look’s current name, and deleting the look clears the reference without deleting the event. Deleting an event does not delete the look or wardrobe. Events do not store location or call the model.
 
 ### Stretch feature
 
@@ -451,8 +451,8 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI, the Style Dictionary page, Emergency Fit, Rescue My Outfit, and Saved Looks are in place. Suggestions are saved only when you choose Save a look. Saved Events can be stored through the API; the page is not built yet. The shared catalog is still empty. Image generation is post-v1. Next: Saved Events UI. Weather and shopping stay deferred.
+Wardrobe UI, the Style Dictionary page, Emergency Fit, Rescue My Outfit, Saved Looks, and Events are in place. Suggestions are saved only when you choose Save a look. The shared catalog is still empty. Image generation is post-v1. Next: AI term suggestions remain pending. Weather and shopping stay deferred.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 
-Do not implement weather lookups, shopping, or MCP yet. Saved Events has an API; its page is still pending.
+Do not implement weather lookups, shopping, or MCP yet.

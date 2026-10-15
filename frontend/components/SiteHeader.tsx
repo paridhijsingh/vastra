@@ -19,6 +19,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/emergency-fit", label: "Emergency Fit", accentVar: "var(--accent-home)" },
   { href: "/rescue", label: "Rescue", accentVar: "var(--accent-home)" },
   { href: "/looks", label: "Saved Looks", accentVar: "var(--accent-home)" },
+  { href: "/events", label: "Events", accentVar: "var(--accent-home)" },
   {
     href: "/dictionary",
     label: "Style Dictionary",

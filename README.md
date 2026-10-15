@@ -21,10 +21,10 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Suggestions are saved only when you choose Save a look. Image generation is post-v1.
 - **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Suggestions are saved only when you choose Save a look.
 - **Saved Looks** stores a named plan at `/looks`. Emergency Fit and Rescue call the model only when you generate or rescue an outfit.
-- **Saved Events** can be stored with `POST /events`. The API is implemented. The page is not built yet. An event can point at a Saved Look without copying wardrobe items.
+- **Saved Events** stores a dated plan at `/events`. It can point at a Saved Look without copying wardrobe items. There is no location, weather, or reminder.
 - Smart Shopping remains excluded.
 
-Emergency Fit, Rescue My Outfit, and Saved Looks can be used from their signed-in pages. A look is stored only when you choose Save a look.
+Emergency Fit, Rescue My Outfit, Saved Looks, and Events can be used from their signed-in pages. A look is stored only when you choose Save a look.
 
 ## Planned features
 
@@ -38,7 +38,7 @@ Emergency Fit, Rescue My Outfit, and Saved Looks can be used from their signed-i
 | **Rescue My Outfit**                   | Replace one available piece with another of the same category and keep the rest locked          | Working |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
 | **Saved Looks**                        | Save a named outfit plan from owned wardrobe items for later recall                             | Working |
-| **Saved Events**                       | Save a dated plan and optionally attach one Saved Look                                          | Working (API). UI pending |
+| **Saved Events**                       | Save a dated plan and optionally attach one Saved Look                                          | Working |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
 | **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
 | **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
@@ -91,7 +91,7 @@ The signed-in pages are `/looks` and `/looks/{id}`. A look is a named plan of ow
 
 ### Saved Events
 
-`POST /events` stores a private dated plan. `occasion`, `notes`, and `comfort_needs` are optional. `look_id` can point at one of your Saved Looks. Reading an event uses that look’s current name and does not copy wardrobe items. Deleting the look keeps the event and clears the link. Deleting the event keeps the look and the wardrobe. The page is not built yet. There is no location, weather, or reminder field.
+The signed-in pages are `/events` and `/events/{id}`. `occasion`, `notes`, and `comfort_needs` are optional. A Saved Look can be attached from the looks you already saved. Reading an event uses that look’s current name and does not copy wardrobe items. Deleting the look keeps the event and clears the link. Deleting the event keeps the look and the wardrobe. There is no location, weather, or reminder field.
 
 ## Emergency Fit
 
@@ -320,7 +320,7 @@ Saved Events (requires `Authorization: Bearer <token>`):
 {"name": "Dinner", "event_date": "2026-11-02", "occasion": "dinner with friends", "notes": "Mostly standing.", "comfort_needs": ["breathable"], "look_id": "look-id"}
 ```
 
-`name` and `event_date` are required. `event_date` is a calendar date. Unknown and another user's event or look ids both return 404. The page is not built yet.
+`name` and `event_date` are required. `event_date` is a calendar date. Unknown and another user's event or look ids both return 404. The pages are http://127.0.0.1:3000/events and http://127.0.0.1:3000/events/{id}.
 
 Required configuration in `.env`:
 
