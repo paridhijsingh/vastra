@@ -1,6 +1,6 @@
 """Pydantic request and response schemas."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
@@ -419,6 +419,166 @@ class SavedLookPublic(BaseModel):
     contains_removed_items: bool
     removed_item_notice: str | None
     items: list[SavedLookWardrobeItem | SavedLookRemovedItem]
+    created_at: datetime
+    updated_at: datetime
+
+
+EVENT_NAME_MAX = 100
+EVENT_COMFORT_MAX_ITEMS = 20
+EVENT_COMFORT_MAX_LENGTH = 200
+
+EventName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=EVENT_NAME_MAX),
+]
+
+
+def _calendar_date(value: object) -> date:
+    if isinstance(value, datetime):
+        raise ValueError("event_date must be a calendar date")
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str) or len(value) != 10 or value[4] != "-" or value[7] != "-":
+        raise ValueError("event_date must be a calendar date")
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("event_date must be a calendar date") from exc
+    if parsed.isoformat() != value:
+        raise ValueError("event_date must be a calendar date")
+    return parsed
+
+
+def _comfort_needs(value: object) -> list[str]:
+    return _normalize_string_list(
+        value,
+        max_items=EVENT_COMFORT_MAX_ITEMS,
+        max_length=EVENT_COMFORT_MAX_LENGTH,
+    )
+
+
+def _optional_look_id(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("look_id must be a string")
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError("look_id must not be blank")
+    return trimmed
+
+
+class EventCreate(BaseModel):
+    """A private event. Ownership and the look name come from the server."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: EventName
+    event_date: date
+    occasion: str | None = None
+    notes: str | None = None
+    comfort_needs: list[str] = Field(default_factory=list, max_length=EVENT_COMFORT_MAX_ITEMS)
+    look_id: str | None = None
+
+    @field_validator("event_date", mode="before")
+    @classmethod
+    def parse_event_date(cls, value: object) -> date:
+        if value is None:
+            raise ValueError("event_date must not be null")
+        return _calendar_date(value)
+
+    @field_validator("occasion", mode="before")
+    @classmethod
+    def normalize_occasion(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_OCCASION_MAX, field="occasion")
+
+    @field_validator("notes", mode="before")
+    @classmethod
+    def normalize_notes(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_NOTES_MAX, field="notes")
+
+    @field_validator("comfort_needs", mode="before")
+    @classmethod
+    def normalize_comfort_needs(cls, value: object) -> list[str]:
+        if value is None:
+            raise ValueError("comfort_needs must not be null")
+        return _comfort_needs(value)
+
+    @field_validator("look_id", mode="before")
+    @classmethod
+    def normalize_look_id(cls, value: object) -> str | None:
+        return _optional_look_id(value)
+
+
+class EventUpdate(BaseModel):
+    """Partial update. Omitted fields stay unchanged."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: EventName | None = None
+    event_date: date | None = None
+    occasion: str | None = None
+    notes: str | None = None
+    comfort_needs: list[str] | None = None
+    look_id: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_required_fields(cls, value: object) -> object:
+        if isinstance(value, dict):
+            if "name" in value and value["name"] is None:
+                raise ValueError("name must not be null")
+            if "event_date" in value and value["event_date"] is None:
+                raise ValueError("event_date must not be null")
+            if "comfort_needs" in value and value["comfort_needs"] is None:
+                raise ValueError("comfort_needs must not be null")
+        return value
+
+    @model_validator(mode="after")
+    def reject_empty_update(self) -> "EventUpdate":
+        if not self.model_fields_set:
+            raise ValueError("At least one field is required")
+        return self
+
+    @field_validator("event_date", mode="before")
+    @classmethod
+    def parse_event_date(cls, value: object) -> date | None:
+        if value is None:
+            return None
+        return _calendar_date(value)
+
+    @field_validator("occasion", mode="before")
+    @classmethod
+    def normalize_occasion(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_OCCASION_MAX, field="occasion")
+
+    @field_validator("notes", mode="before")
+    @classmethod
+    def normalize_notes(cls, value: object) -> str | None:
+        return _optional_look_text(value, max_length=LOOK_NOTES_MAX, field="notes")
+
+    @field_validator("comfort_needs", mode="before")
+    @classmethod
+    def normalize_comfort_needs(cls, value: object) -> list[str] | None:
+        if value is None:
+            return None
+        return _comfort_needs(value)
+
+    @field_validator("look_id", mode="before")
+    @classmethod
+    def normalize_look_id(cls, value: object) -> str | None:
+        return _optional_look_id(value)
+
+
+class EventPublic(BaseModel):
+    id: str
+    name: str
+    event_date: date
+    occasion: str | None
+    notes: str | None
+    comfort_needs: list[str]
+    look_id: str | None
+    look_name: str | None
     created_at: datetime
     updated_at: datetime
 

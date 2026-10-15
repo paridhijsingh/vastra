@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from vastra.auth import create_access_token, get_current_user, hash_password, verify_password
 from vastra.db import get_db, init_db
 from vastra.dictionary import find_dictionary_entry, load_dictionary, search_dictionary
+from vastra.events import create_event, delete_event, get_event, list_events, update_event
 from vastra.looks import create_look, delete_look, get_look, list_looks, update_look
 from vastra.models import PersonalDictionaryEntry, StyleProfile, User, WardrobeItem
 from vastra.outfits import OutfitRequestError, recommend_emergency_outfit, recommend_rescue_outfit
@@ -25,6 +26,9 @@ from vastra.schemas import (
     EmergencyOutfitPublic,
     RescueOutfitRequest,
     RescueOutfitPublic,
+    EventCreate,
+    EventPublic,
+    EventUpdate,
     SavedLookCreate,
     SavedLookPublic,
     SavedLookUpdate,
@@ -268,6 +272,53 @@ def remove_look(
     db: Annotated[Session, Depends(get_db)],
 ) -> Response:
     delete_look(db, current_user.id, look_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post("/events", response_model=EventPublic, status_code=status.HTTP_201_CREATED)
+def post_event(
+    body: EventCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> EventPublic:
+    """Save a private event. Does not call the model or copy wardrobe items."""
+    return create_event(db, current_user.id, body)
+
+
+@app.get("/events", response_model=list[EventPublic])
+def get_events(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[EventPublic]:
+    return list_events(db, current_user.id)
+
+
+@app.get("/events/{event_id}", response_model=EventPublic)
+def get_saved_event(
+    event_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> EventPublic:
+    return get_event(db, current_user.id, event_id)
+
+
+@app.patch("/events/{event_id}", response_model=EventPublic)
+def patch_event(
+    event_id: str,
+    body: EventUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> EventPublic:
+    return update_event(db, current_user.id, event_id, body)
+
+
+@app.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+def remove_event(
+    event_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    delete_event(db, current_user.id, event_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

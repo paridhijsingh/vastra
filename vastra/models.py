@@ -1,9 +1,9 @@
 """SQLAlchemy ORM models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
@@ -189,4 +189,44 @@ class SavedLookItem(Base):
         String(36),
         ForeignKey("wardrobe_items.id", ondelete="SET NULL"),
         nullable=True,
+    )
+
+
+class Event(Base):
+    """A private calendar plan. It references a look; it does not copy wardrobe rows."""
+
+    __tablename__ = "events"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    owner_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    event_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    occasion: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    comfort_needs: Mapped[list] = mapped_column(JSON, nullable=False, insert_default=list)
+    look_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("saved_looks.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=_utc_now,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=_utc_now,
+        onupdate=_utc_now,
+        nullable=False,
     )

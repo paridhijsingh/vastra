@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from vastra.events import detach_look
 from vastra.models import SavedLook, SavedLookItem, WardrobeItem
 from vastra.schemas import (
     REMOVED_ITEM_NOTICE,
@@ -153,5 +154,6 @@ def update_look(
 
 def delete_look(db: Session, owner_id: str, look_id: str) -> None:
     look = _require_look(db, owner_id, look_id)
+    detach_look(db, look.id)
     db.delete(look)
     db.commit()
