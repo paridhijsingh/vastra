@@ -22,6 +22,9 @@ STYLING_CHECK_PROMPT = (
     "Reply with one short sentence confirming you can help with outfit styling."
 )
 MAX_OUTPUT_TOKENS = 512
+# This model thinks by default. NVIDIA's vLLM request turns that off with
+# chat_template_kwargs.enable_thinking. Nebius accepts vLLM parameters through extra_body.
+NEMOTRON_REQUEST_EXTRA = {"chat_template_kwargs": {"enable_thinking": False}}
 
 MISSING_KEY_MESSAGE = "NEBIUS_API_KEY is missing. Set it in the backend .env file."
 MISSING_BASE_URL_MESSAGE = "NEBIUS_BASE_URL is missing."
@@ -186,6 +189,7 @@ def request_chat_completion(
             messages=messages,
             max_tokens=max_tokens,
             stream=False,
+            extra_body=NEMOTRON_REQUEST_EXTRA,
         )
     except Exception as exc:
         raise NemotronCallError(public_call_error(exc), call_error_kind(exc)) from None

@@ -781,3 +781,63 @@ class DictionaryEntryUpdate(BaseModel):
     @classmethod
     def normalize_cultural_context(cls, value: object) -> str | None:
         return _normalize_cultural_context(value)
+
+
+STYLIST_MESSAGE_MAX = 2000
+STYLIST_HISTORY_MAX = 12
+STYLIST_INPUT_MAX = 8000
+STYLIST_REPLY_MAX = 1000
+
+StylistRole = Literal["user", "assistant"]
+StylistKind = Literal["clarification", "proposal"]
+StylistPieceSource = Literal["saved_wardrobe", "described", "suggested"]
+
+
+class StylistHistoryMessage(BaseModel):
+    """One prior turn. This is conversation data, not a system instruction."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    role: StylistRole
+    content: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=STYLIST_MESSAGE_MAX)]
+
+
+class StylistChatRequest(BaseModel):
+    """The latest message and untrusted history. Profile and wardrobe come from the session."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=STYLIST_MESSAGE_MAX)]
+    history: list[StylistHistoryMessage] = Field(default_factory=list, max_length=STYLIST_HISTORY_MAX)
+
+    @model_validator(mode="after")
+    def bound_conversation_size(self) -> "StylistChatRequest":
+        total = len(self.message) + sum(len(turn.content) for turn in self.history)
+        if total > STYLIST_INPUT_MAX:
+            raise ValueError("Conversation must be at most 8000 characters")
+        return self
+
+
+class StylistPiecePublic(BaseModel):
+    """One piece in a conversational suggestion. Saved details come from the wardrobe."""
+
+    source: StylistPieceSource
+    wardrobe_item_id: str | None = None
+    name: str
+    category: ItemCategory
+    color: str | None = None
+    notes: str = ""
+
+
+class StylistSuggestionPublic(BaseModel):
+    title: str
+    note: str = ""
+    pieces: list[StylistPiecePublic]
+
+
+class StylistChatResponse(BaseModel):
+    """Assistant text for a future chat page. Suggestions are not Saved Looks."""
+
+    kind: StylistKind
+    message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=STYLIST_REPLY_MAX)]
+    suggestions: list[StylistSuggestionPublic] = Field(default_factory=list)

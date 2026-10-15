@@ -6,7 +6,7 @@ Your personal AI stylist for the clothes you already own.
 
 Vastra (Sanskrit for clothing) helps you dress for everyday occasions, celebrations, and festivities using your preferences and saved wardrobe. When one piece does not work, it helps you revise the outfit without starting over.
 
-Built for the **NVIDIA × Nebius Global AI Hackathon — Personal AI track**.
+Built for the **NVIDIA × Nebius Global AI Hackathon — Best Apps and Agents track**.
 
 ## Project status
 
@@ -22,6 +22,7 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Suggestions are saved only when you choose Save a look.
 - **Saved Looks** stores a named plan at `/looks`. Emergency Fit and Rescue call the model only when you generate or rescue an outfit.
 - **Saved Events** stores a dated plan at `/events`. It can point at a Saved Look without copying wardrobe items. There is no location, weather, or reminder.
+- **Stylist chat** is `POST /stylist/chat`. It answers from the saved profile and available wardrobe without storing the conversation. The chat page is not built yet.
 - Smart Shopping remains excluded.
 
 Emergency Fit, Rescue My Outfit, Saved Looks, and Events can be used from their signed-in pages. A look is stored only when you choose Save a look.
@@ -39,6 +40,7 @@ Emergency Fit, Rescue My Outfit, Saved Looks, and Events can be used from their 
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
 | **Saved Looks**                        | Save a named outfit plan from owned wardrobe items for later recall                             | Working |
 | **Saved Events**                       | Save a dated plan and optionally attach one Saved Look                                          | Working |
+| **Stylist chat**                       | Conversational outfit planning from saved clothes and what you describe                         | Working (API). Page pending |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
 | **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
 | **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
@@ -335,6 +337,18 @@ Optional Nebius settings in the root `.env` (the API starts without a key):
 - `NEBIUS_BASE_URL` — default `https://api.tokenfactory.nebius.com/v1/`
 - `NEMOTRON_MODEL` — default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`
 - `NEMOTRON_TIMEOUT_SECONDS` — default `60`
+
+Emergency Fit, Rescue, and Stylist chat send `chat_template_kwargs.enable_thinking` set to false. This model thinks by default, and that trace counts toward the output-token cap. A response that stops because it reached the cap is rejected, including when the partial text is JSON.
+
+Stylist chat (requires `Authorization: Bearer <token>`):
+
+- `POST /stylist/chat` — one reply. Does not save the chat or change the profile, wardrobe, looks, events, or dictionary. The page is not built yet.
+
+```json
+{"message": "I have a wedding next week and own cream trousers.", "history": [{"role": "user", "content": "Help me plan an outfit."}, {"role": "assistant", "content": "Is this indoors?"}]}
+```
+
+`message` is required. `history` is optional and accepts only `user` and `assistant` turns. A message is at most 2000 characters, history is at most 12 turns, and the combined text is at most 8000 characters. The server loads the signed-in profile and available wardrobe. A reply is `clarification` or `proposal`. A proposal can include suggestions whose pieces are `saved_wardrobe`, `described`, or `suggested`. Saved pieces use current wardrobe details. Described and suggested pieces have no wardrobe id. This is separate from Saved Looks.
 
 Manual smoke test (one paid chat completion; not part of pytest):
 

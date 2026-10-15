@@ -31,6 +31,7 @@ from vastra.schemas import (
 )
 
 OUTFIT_MAX_OUTPUT_TOKENS = 2048
+OUTFIT_REASON_REQUEST_MAX = 150
 
 NO_AVAILABLE_ITEMS = (
     "No available wardrobe items. Mark clothes as available before asking for an outfit."
@@ -51,7 +52,7 @@ def output_schema_instructions() -> str:
     return (
         "Return one JSON object and no other text. Use exactly these keys and types:\n"
         f"item_ids: array of 1 to {OUTFIT_ITEM_ID_COUNT_MAX} unique strings copied from available_items id values.\n"
-        f"reason: string, 1 to {OUTFIT_REASON_MAX} characters.\n"
+        f"reason: one short sentence of at most {OUTFIT_REASON_REQUEST_MAX} characters.\n"
         "No other keys. Do not include a title, item names, styling tips, or limitations.\n"
         "An incomplete selection is valid. If only a top is available, return that top's id.\n"
         "In reason, mention only clothes listed in available_items. "
@@ -71,7 +72,7 @@ def rescue_output_instructions() -> str:
     return (
         "Return one JSON object and no other text. Use exactly these keys and types:\n"
         "replacement_item_id: one string copied from candidates id values.\n"
-        f"reason: string, 1 to {OUTFIT_REASON_MAX} characters.\n"
+        f"reason: one short sentence of at most {OUTFIT_REASON_REQUEST_MAX} characters.\n"
         "No other keys. Do not include item names, a title, styling tips, or limitations.\n"
         "Choose exactly one supplied candidate. Do not return a locked item id or the item being replaced.\n"
         "saved_preferences describe taste. They are not proof of ownership. "
@@ -498,6 +499,19 @@ def _recheck_available(db: Session, owner_id: str, item_ids: list[str]) -> list[
     return [by_id[item_id] for item_id in item_ids]
 
 
+def shorten_reason(text: str, limit: int = OUTFIT_REASON_MAX) -> str:
+    """Cut an overlong reason at a sentence boundary, then a word boundary."""
+    trimmed = text.strip()
+    if len(trimmed) <= limit:
+        return trimmed
+    window = trimmed[:limit]
+    cut = _reason_cut(window)
+    shortened = window if cut is None else window[:cut].strip()
+    if not shortened:
+        return window
+    return shortened
+
+
 def _parse_model_result(chat: ChatResult) -> OutfitModelResult:
     payload = _load_chat_payload(chat, operation="emergency_fit")
     counts = _token_fields(chat)
@@ -505,7 +519,7 @@ def _parse_model_result(chat: ChatResult) -> OutfitModelResult:
         _log_result("duplicate_item_id", finish_reason=chat.finish_reason, **counts)
         raise OutfitRequestError(502, INVALID_MODEL_RESULT)
     try:
-        return OutfitModelResult.model_validate(payload)
+        return _validate_model_payload(OutfitModelResult, payload)
     except ValidationError as exc:
         _log_result(
             "schema_validation",
@@ -519,7 +533,7 @@ def _parse_model_result(chat: ChatResult) -> OutfitModelResult:
 def _parse_rescue_result(chat: ChatResult) -> RescueModelResult:
     payload = _load_chat_payload(chat, operation="rescue_outfit")
     try:
-        return RescueModelResult.model_validate(payload)
+        return _validate_model_payload(RescueModelResult, payload)
     except ValidationError as exc:
         _log_result(
             "schema_validation",
@@ -529,6 +543,40 @@ def _parse_rescue_result(chat: ChatResult) -> RescueModelResult:
             **_token_fields(chat),
         )
         raise OutfitRequestError(502, INVALID_MODEL_RESULT) from None
+
+
+def _validate_model_payload(model: type[OutfitModelResult] | type[RescueModelResult], payload: object):
+    try:
+        return model.model_validate(payload)
+    except ValidationError as exc:
+        if not isinstance(payload, dict) or not _only_overlong_reason(exc):
+            raise
+        reason = payload.get("reason")
+        if not isinstance(reason, str):
+            raise
+        repaired = dict(payload)
+        repaired["reason"] = shorten_reason(reason)
+        return model.model_validate(repaired)
+
+
+def _only_overlong_reason(exc: ValidationError) -> bool:
+    errors = exc.errors()
+    if not errors:
+        return False
+    return all(error.get("loc") == ("reason",) and error.get("type") == "string_too_long" for error in errors)
+
+
+def _reason_cut(window: str) -> int | None:
+    sentence = -1
+    for index, char in enumerate(window):
+        if char in ".!?" and (index + 1 == len(window) or window[index + 1].isspace()):
+            sentence = index + 1
+    if sentence > 0:
+        return sentence
+    whitespace = max(window.rfind(" "), window.rfind("\n"), window.rfind("\t"))
+    if whitespace > 0:
+        return whitespace
+    return None
 
 
 def _load_chat_payload(chat: ChatResult, *, operation: str) -> object:

@@ -17,6 +17,7 @@ from vastra.nemotron import (
     RATE_LIMIT_MESSAGE,
     TIMEOUT_MESSAGE,
     TRUNCATED_MESSAGE,
+    NEMOTRON_REQUEST_EXTRA,
     NemotronConfig,
     NemotronConfigError,
     TokenUsage,
@@ -200,10 +201,14 @@ def test_reasoning_token_count_is_read_and_request_parameters_stay_unchanged() -
     assert result.finish_reason == "length"
     assert result.truncated
     sent = client.calls[0]
-    assert set(sent) == {"model", "messages", "max_tokens", "stream"}
+    assert set(sent) == {"model", "messages", "max_tokens", "stream", "extra_body"}
     assert sent["max_tokens"] == 2048
     assert sent["stream"] is False
+    assert sent["extra_body"] == NEMOTRON_REQUEST_EXTRA
+    assert sent["extra_body"] == {"chat_template_kwargs": {"enable_thinking": False}}
     assert "reasoning_effort" not in sent
+    assert "response_format" not in sent
+    assert len(client.calls) == 1
     printed = format_usage(
         TokenUsage(
             prompt_tokens=result.prompt_tokens,

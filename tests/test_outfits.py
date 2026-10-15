@@ -17,8 +17,9 @@ from vastra.nemotron import (
     build_client,
     config_from_settings,
 )
-from vastra.outfits import OUTFIT_MAX_OUTPUT_TOKENS, config_from_settings as load_outfit_config
-from vastra.outfits import limitations_for_selection, output_schema_instructions
+from vastra.outfits import OUTFIT_MAX_OUTPUT_TOKENS, OUTFIT_REASON_REQUEST_MAX, config_from_settings as load_outfit_config
+from vastra.outfits import limitations_for_selection, output_schema_instructions, shorten_reason
+from vastra.schemas import OUTFIT_REASON_MAX
 from vastra.schemas import EmergencyFitRequest
 
 PASSWORD = "securepass1"
@@ -247,7 +248,9 @@ def test_malformed_and_truncated_output_is_rejected(client: TestClient, monkeypa
     assert client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"}).status_code == 502
 
     _patch_model(monkeypatch, _model_payload([item["id"]], reason="x" * 301))
-    assert client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"}).status_code == 502
+    unbroken = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"})
+    assert unbroken.status_code == 200
+    assert unbroken.json()["explanation"] == "x" * OUTFIT_REASON_MAX
 
 
 def test_items_changed_during_generation_are_not_returned(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -301,7 +304,7 @@ def test_prompt_limits_advice_to_owned_items_and_unknown_fabric() -> None:
     prompt = output_schema_instructions()
     assert "Return one JSON object and no other text." in prompt
     assert "item_ids: array of 1 to 8 unique strings" in prompt
-    assert "reason: string, 1 to 300 characters." in prompt
+    assert f"reason: one short sentence of at most {OUTFIT_REASON_REQUEST_MAX} characters." in prompt
     assert "In reason, mention only clothes listed in available_items." in prompt
     assert "saved_preferences describe taste. They are not proof of ownership." in prompt
     assert "say that it is unknown." in prompt
@@ -360,12 +363,40 @@ def test_one_available_top_is_an_incomplete_outfit(client: TestClient, monkeypat
     assert body["limitations"] == "This outfit is incomplete: a bottom and shoes are missing."
     assert len(body["items"]) == 1
     prompt = captured["messages"][0]["content"]
-    assert "reason: string, 1 to 300 characters." in prompt
+    assert f"reason: one short sentence of at most {OUTFIT_REASON_REQUEST_MAX} characters." in prompt
     assert "If only a top is available, return that top's id." in prompt
     assert "Everyday Wear" not in prompt
     assert "Everyday Wear" in captured["messages"][1]["content"]
     assert "result=completed" in caplog.text
     assert "Everyday Wear" not in caplog.text
+    assert "dinner with friends" not in caplog.text
+
+
+def test_truncated_json_is_rejected(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    headers = _login(client, "truncated-json")
+    top = _add_item(client, headers, name="Tank Top", category="top")
+    captured = _patch_model(
+        monkeypatch,
+        chat=ChatResult(
+            text=json.dumps({"item_ids": [top["id"]], "reason": REASON}),
+            truncated=True,
+            finish_reason="length",
+            prompt_tokens=669,
+            completion_tokens=2048,
+            total_tokens=2717,
+        ),
+    )
+    caplog.set_level("WARNING", logger="vastra.outfits")
+    response = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner with friends"})
+    assert response.status_code == 502
+    assert response.json()["detail"] == "The outfit suggestion could not be used. Please try again."
+    assert captured["calls"] == 1
+    assert "result=truncated_response" in caplog.text
+    assert "finish_reason=length" in caplog.text
+    assert "prompt_tokens=669" in caplog.text
+    assert "completion_tokens=2048" in caplog.text
+    assert "total_tokens=2717" in caplog.text
+    assert str(top["id"]) not in caplog.text
     assert "dinner with friends" not in caplog.text
 
 
@@ -397,6 +428,70 @@ def test_reasoning_token_count_is_logged_without_response_text(client: TestClien
     assert "secret-reasoning-trace" not in caplog.text
     assert "Everyday Wear" not in caplog.text
     assert str(top["id"]) not in caplog.text
+
+
+def test_overlong_reason_is_shortened_at_a_sentence_boundary(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    headers = _login(client, "long-reason")
+    top = _add_item(client, headers, name="Tank Top", category="top")
+    reason = "The top is available. " + ("Fabric is unknown. " * 40)
+    assert len(reason) > OUTFIT_REASON_MAX
+    _patch_model(monkeypatch, _model_payload([str(top["id"])], reason=reason))
+    response = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"})
+    assert response.status_code == 200
+    explanation = response.json()["explanation"]
+    assert explanation == shorten_reason(reason)
+    assert explanation.startswith("The top is available.")
+    assert explanation.endswith("unknown.")
+    assert len(explanation) <= OUTFIT_REASON_MAX
+    assert len(explanation) > len("The top is available.")
+    assert [item["id"] for item in response.json()["items"]] == [top["id"]]
+
+
+def test_overlong_reason_without_a_sentence_ends_on_a_word(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    headers = _login(client, "long-word-reason")
+    top = _add_item(client, headers, name="Tank Top", category="top")
+    reason = " ".join(["available"] * 80)
+    assert len(reason) > OUTFIT_REASON_MAX
+    assert "." not in reason[:OUTFIT_REASON_MAX]
+    _patch_model(monkeypatch, _model_payload([str(top["id"])], reason=reason))
+    response = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"})
+    assert response.status_code == 200
+    explanation = response.json()["explanation"]
+    assert len(explanation) <= OUTFIT_REASON_MAX
+    assert explanation == shorten_reason(reason)
+    assert explanation.endswith("available")
+    assert " " not in explanation[len(explanation) - 1 :]
+
+
+def test_other_invalid_output_is_not_repaired(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    headers = _login(client, "invalid-output")
+    top = _add_item(client, headers, name="Tank Top", category="top")
+    long_reason = "The top is available. " + ("More text. " * 40)
+    cases = [
+        {"item_ids": [str(top["id"])], "reason": long_reason, "limitations": ["extra"]},
+        {"item_ids": "not-a-list", "reason": long_reason},
+        {"item_ids": [str(top["id"])], "reason": 12},
+        {"item_ids": [str(top["id"]), str(top["id"])], "reason": long_reason},
+        {"item_ids": ["missing-item"], "reason": long_reason},
+        "not-json",
+    ]
+    for payload in cases:
+        text = payload if isinstance(payload, str) else json.dumps(payload)
+        _patch_model(monkeypatch, chat=ChatResult(text=text, truncated=False, finish_reason="stop"))
+        response = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"})
+        assert response.status_code == 502
+        assert response.json()["detail"] == "The outfit suggestion could not be used. Please try again."
+
+    _patch_model(
+        monkeypatch,
+        chat=ChatResult(
+            text=json.dumps({"item_ids": [str(top["id"])], "reason": long_reason}),
+            truncated=True,
+            finish_reason="length",
+        ),
+    )
+    truncated = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"})
+    assert truncated.status_code == 502
 
 
 def test_schema_mismatch_is_logged_without_private_text(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:

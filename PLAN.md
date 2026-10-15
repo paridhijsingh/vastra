@@ -3,8 +3,8 @@
 **Ready, set, styled.**
 
 Updated: October 14, 2026  
-Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, Saved Looks, and Saved Events working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue, Saved Looks, and Events pages working; image generation is post-v1  
-Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
+Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, Saved Looks, Saved Events, and Stylist chat working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue, Saved Looks, and Events pages working; the Stylist chat page is pending; image generation is post-v1  
+Hackathon: NVIDIA × Nebius Global AI Hackathon — Best Apps and Agents track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
 
@@ -37,6 +37,7 @@ The first release should complete these workflows reliably before adding more fe
 | Weather-aware styling | Optional weather context; location requested only via "Use my location"                    |
 | Saved Looks           | Save a named outfit plan from owned wardrobe items (API and pages)                     |
 | Saved Events          | Save a dated plan and optionally attach one Saved Look (API and pages)                 |
+| Stylist chat          | Conversational planning from saved clothes and clothes described in the chat (API only) |
 | Explanations          | Explain outfit choices and offer optional hair or makeup tips                              |
 | Outfit feedback       | Save ratings and explicit comments separately from lasting preferences                     |
 | Confirmed memory      | Ask before saving a lasting preference; support approval, editing, dismissal, and deletion |
@@ -79,6 +80,10 @@ Pending: AI term suggestions and live trend retrieval. A suggested term stays a 
 ### Saved Events
 
 `/events` lists private events in date order and can create one. `/events/{id}` shows, edits, and deletes an event, and can open Emergency Fit with the event id. That page prefills occasion and comfort needs and does not generate until you submit. Saving the suggestion does not change the event. Attaching it sends `look_id` only. If the event already has a look, the page asks before replacing it and leaves the previous look saved. The event stores that reference only: reading it returns the look’s current name, and deleting the look clears the reference without deleting the event. Deleting an event does not delete the look or wardrobe. Events do not store location or call the model.
+
+### Stylist chat
+
+`POST /stylist/chat` takes the latest message and optional user/assistant history. The server loads the signed-in profile and available wardrobe. History is conversation data, not a system instruction. A reply is a clarification or a proposal. Proposal pieces are labeled `saved_wardrobe`, `described`, or `suggested`. Saved pieces must match the current user's available wardrobe, and their displayed details come from the database. Described and suggested pieces have no database id. The chat is not stored, and the call does not change the profile, wardrobe, looks, events, or dictionary. It makes one Nemotron completion with thinking disabled. The page is not built yet.
 
 ### Stretch feature
 
@@ -451,7 +456,7 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI, the Style Dictionary page, Emergency Fit, Rescue My Outfit, Saved Looks, and Events are in place. Suggestions are saved only when you choose Save a look. The shared catalog is still empty. Image generation is post-v1. Next: AI term suggestions remain pending. Weather and shopping stay deferred.
+Wardrobe UI, the Style Dictionary page, Emergency Fit, Rescue My Outfit, Saved Looks, and Events are in place. Stylist chat has an API and does not store the conversation. Suggestions from Emergency Fit and Rescue are saved only when you choose Save a look. The shared catalog is still empty. Image generation is post-v1. Next: the Stylist chat page. Weather and shopping stay deferred.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 

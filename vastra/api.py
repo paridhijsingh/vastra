@@ -18,6 +18,7 @@ from vastra.events import create_event, delete_event, get_event, list_events, up
 from vastra.looks import create_look, delete_look, get_look, list_looks, update_look
 from vastra.models import PersonalDictionaryEntry, StyleProfile, User, WardrobeItem
 from vastra.outfits import OutfitRequestError, recommend_emergency_outfit, recommend_rescue_outfit
+from vastra.stylist import StylistRequestError, chat_with_stylist
 from vastra.schemas import (
     AvailabilityStatus,
     DictionaryEntry,
@@ -26,6 +27,8 @@ from vastra.schemas import (
     EmergencyOutfitPublic,
     RescueOutfitRequest,
     RescueOutfitPublic,
+    StylistChatRequest,
+    StylistChatResponse,
     EventCreate,
     EventPublic,
     EventUpdate,
@@ -225,6 +228,19 @@ def rescue_outfit(
     try:
         return recommend_rescue_outfit(db, current_user, body)
     except OutfitRequestError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
+
+
+@app.post("/stylist/chat", response_model=StylistChatResponse)
+def stylist_chat(
+    body: StylistChatRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> StylistChatResponse:
+    """One conversational styling reply. Does not save the chat or change stored records."""
+    try:
+        return chat_with_stylist(db, current_user, body)
+    except StylistRequestError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
 
 
