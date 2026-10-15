@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { SaveLookForm } from "@/components/SaveLookForm";
 import {
   AI_SUGGESTION_NOTE,
   CHANGE_REQUEST_MAX,
@@ -432,6 +433,12 @@ function RescueResult({ outfit }: { outfit: RescueView }) {
         ))}
       </ul>
       <p className="text-sm text-muted">{AI_SUGGESTION_NOTE}</p>
+      <SaveLookForm
+        key={`${outfit.itemIds.join("|")}::${outfit.title}`}
+        itemIds={outfit.itemIds}
+        defaultName={outfit.title}
+        defaultOccasion={outfit.title}
+      />
     </section>
   );
 }

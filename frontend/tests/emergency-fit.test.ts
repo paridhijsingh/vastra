@@ -19,8 +19,10 @@ import {
   emergencyFitBody,
   generationRequest,
   outfitFromApi,
+  renderedOutfitFromProxy,
   wardrobeGate,
 } from "@/lib/emergency/form";
+import { saveLookRequest } from "@/lib/looks/form";
 
 const OUTFIT = {
   title: "dinner with friends",
@@ -111,11 +113,12 @@ describe("emergency fit form", () => {
         notes: "Everyday Wear",
       },
     ]);
+    expect(view?.itemIds).toEqual(["item-secret-id"]);
+    expect(JSON.stringify(view?.items)).not.toContain("item-secret-id");
     expect(view?.explanation).toBe("This top is available. Fabric is unknown.");
     expect(view?.styling_tips).toEqual([]);
     expect(view?.limitations).toContain("a bottom and shoes are missing");
-    expect(JSON.stringify(view)).not.toContain("item-secret-id");
-    expect(JSON.stringify(view)).not.toContain("<");
+    expect(JSON.stringify(view?.items)).not.toContain("<");
   });
 
   it("hides empty styling tips and keeps limitations text as text", () => {
@@ -162,7 +165,8 @@ describe("POST /api/outfits/emergency", () => {
     const body = await response.json();
     expect(body.outfit.items[0].name).toBe("Tank Top");
     expect(body.outfit.items[0].notes).toBe("Everyday Wear");
-    expect(JSON.stringify(body)).not.toContain("item-secret-id");
+    expect(body.outfit.itemIds).toEqual(["item-secret-id"]);
+    expect(JSON.stringify(body.outfit.items)).not.toContain("item-secret-id");
     expect(JSON.stringify(body)).not.toContain("valid-token");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const sent = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
@@ -170,6 +174,42 @@ describe("POST /api/outfits/emergency", () => {
       occasion: "dinner with friends",
       vibe: "relaxed",
       comfort_needs: ["breathable"],
+    });
+  });
+
+  it("renders a successful backend outfit and exposes Save a look", async () => {
+    cookieState.token = "valid-token";
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(OUTFIT)));
+    const response = await createEmergencyOutfit(
+      sameOrigin({ occasion: "dinner with friends", comfort_needs: [] }),
+    );
+    expect(response.status).toBe(200);
+    const view = renderedOutfitFromProxy(await response.json());
+    expect(view?.title).toBe("dinner with friends");
+    expect(view?.items).toEqual([
+      {
+        name: "Tank Top",
+        category: "top",
+        color: "Blue",
+        notes: "Everyday Wear",
+      },
+    ]);
+    expect(view?.limitations).toContain("a bottom and shoes are missing");
+    expect(JSON.stringify(view?.items)).not.toContain("item-secret-id");
+    const save = saveLookRequest({
+      pending: false,
+      name: view?.title ?? "",
+      occasion: view?.title ?? "",
+      notes: "",
+      itemIds: view?.itemIds ?? [],
+    });
+    expect(save).toEqual({
+      status: "ready",
+      body: {
+        name: "dinner with friends",
+        occasion: "dinner with friends",
+        item_ids: ["item-secret-id"],
+      },
     });
   });
 

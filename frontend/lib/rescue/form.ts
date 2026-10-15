@@ -14,7 +14,7 @@ export const CHANGE_REQUEST_MAX = 300;
 export const OUTFIT_ITEM_MAX = 8;
 
 export const RESCUE_EXPLANATION =
-  "Replace one piece while keeping the rest. Uses available items from your wardrobe. The result is not saved.";
+  "Replace one piece while keeping the rest. Uses available items from your wardrobe. Suggestions are saved only when you choose Save a look.";
 export const SAME_CATEGORY_NOTE =
   "Replacements must be another available item of the same category.";
 export const FINDING_REPLACEMENT_MESSAGE = "Finding a replacement…";
@@ -58,6 +58,7 @@ export type RescueView = {
   title: string;
   headline: string;
   cards: RescueCard[];
+  itemIds: string[];
   explanation: string;
   limitations: string;
   styling_tips: string[];
@@ -343,6 +344,7 @@ export function rescueViewFromApi(data: unknown, namesById: Record<string, strin
     return null;
   }
   const cards: RescueCard[] = [];
+  const itemIds: string[] = [];
   let replacementName = "";
   for (const item of record.items) {
     if (!item || typeof item !== "object") return null;
@@ -359,6 +361,7 @@ export function rescueViewFromApi(data: unknown, namesById: Record<string, strin
     if (row.id === record.replacement_item_id) {
       replacementName = row.name;
     }
+    itemIds.push(row.id);
     cards.push({
       name: row.name,
       category: row.category,
@@ -374,10 +377,12 @@ export function rescueViewFromApi(data: unknown, namesById: Record<string, strin
     if (typeof tip !== "string") return null;
     styling_tips.push(tip);
   }
+  if (new Set(itemIds).size !== itemIds.length) return null;
   return {
     title: record.title,
     headline: `Replaced ${originalName} with ${replacementName}`,
     cards,
+    itemIds,
     explanation: record.explanation,
     limitations: record.limitations,
     styling_tips,

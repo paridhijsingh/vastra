@@ -141,7 +141,7 @@ describe("rescue selection", () => {
   });
 
   it("keeps entered values when validation fails and clears a stale result when the selection changes", () => {
-    const previous = { title: "old", headline: "old", cards: [], explanation: "old", limitations: "", styling_tips: [] } satisfies RescueView;
+    const previous = { title: "old", headline: "old", cards: [], itemIds: [], explanation: "old", limitations: "", styling_tips: [] } satisfies RescueView;
     const saved = form({ selectedIds: [TOP.id], replaceItemId: TOP.id, result: previous, changeRequest: "" });
     const decision = rescueDecision({
       pending: false,
@@ -166,9 +166,10 @@ describe("rescue selection", () => {
       ["Linen shirt", "Replaced"],
       ["Trousers", "Kept"],
     ]);
-    expect(JSON.stringify(view)).not.toContain("top-secret");
-    expect(JSON.stringify(view)).not.toContain("shirt-secret");
-    expect(JSON.stringify(view)).not.toContain("bottom-secret");
+    expect(view?.itemIds).toEqual(["shirt-secret", "bottom-secret"]);
+    expect(JSON.stringify(view?.cards)).not.toContain("top-secret");
+    expect(JSON.stringify(view?.cards)).not.toContain("shirt-secret");
+    expect(JSON.stringify(view?.cards)).not.toContain("bottom-secret");
   });
 });
 

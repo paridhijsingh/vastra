@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { SaveLookForm } from "@/components/SaveLookForm";
 import {
   AI_SUGGESTION_NOTE,
   CREATING_OUTFIT_MESSAGE,
@@ -14,7 +15,7 @@ import {
   canGenerateOutfit,
   categoryLabel,
   generationRequest,
-  outfitFromApi,
+  renderedOutfitFromProxy,
   wardrobeGate,
   type EmergencyFieldErrors,
   type EmergencyOutfitView,
@@ -201,11 +202,7 @@ export function EmergencyFitPanel({ userId }: Props) {
         );
         return;
       }
-      const outfit = outfitFromApi(
-        payload && typeof payload === "object" && "outfit" in payload
-          ? (payload as { outfit: unknown }).outfit
-          : null,
-      );
+      const outfit = renderedOutfitFromProxy(payload);
       if (!outfit) {
         setFormError("The outfit suggestion could not be used. Please try again.");
         return;
@@ -428,6 +425,12 @@ function OutfitResult({ outfit }: { outfit: EmergencyOutfitView }) {
         </div>
       ) : null}
       <p className="text-sm text-muted">{AI_SUGGESTION_NOTE}</p>
+      <SaveLookForm
+        key={`${outfit.itemIds.join("|")}::${outfit.title}`}
+        itemIds={outfit.itemIds}
+        defaultName={outfit.title}
+        defaultOccasion={outfit.title}
+      />
     </section>
   );
 }

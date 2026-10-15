@@ -6,7 +6,7 @@ export const COMFORT_NEED_COUNT_MAX = 16;
 export const CREATING_OUTFIT_MESSAGE = "Creating your outfit…";
 export const AI_SUGGESTION_NOTE = "AI suggestion—check suitability and comfort yourself.";
 export const EMERGENCY_FIT_EXPLANATION =
-  "Uses your available wardrobe items and saved style preferences. The suggestion is not saved.";
+  "Uses your available wardrobe items and saved style preferences. Suggestions are saved only when you choose Save a look.";
 export const NO_AVAILABLE_ITEMS_MESSAGE =
   "Available wardrobe items are needed before an outfit can be suggested.";
 export const WARDROBE_LOAD_ERROR =
@@ -34,6 +34,7 @@ export type OutfitItemView = {
 export type EmergencyOutfitView = {
   title: string;
   items: OutfitItemView[];
+  itemIds: string[];
   explanation: string;
   styling_tips: string[];
   limitations: string;
@@ -272,8 +273,78 @@ export function outfitFromApi(data: unknown): EmergencyOutfitView | null {
     return null;
   }
   const items: OutfitItemView[] = [];
+  const itemIds: string[] = [];
   for (const item of record.items) {
     if (!item || typeof item !== "object") {
+      return null;
+    }
+    const row = item as Record<string, unknown>;
+    if (
+      typeof row.id !== "string" ||
+      !row.id.trim() ||
+      typeof row.name !== "string" ||
+      typeof row.category !== "string" ||
+      typeof row.color !== "string" ||
+      typeof row.notes !== "string" ||
+      !(ITEM_CATEGORIES as readonly string[]).includes(row.category)
+    ) {
+      return null;
+    }
+    itemIds.push(row.id.trim());
+    items.push({
+      name: row.name,
+      category: row.category,
+      color: row.color,
+      notes: row.notes,
+    });
+  }
+  if (new Set(itemIds).size !== itemIds.length) {
+    return null;
+  }
+  const styling_tips: string[] = [];
+  for (const tip of record.styling_tips) {
+    if (typeof tip !== "string") {
+      return null;
+    }
+    styling_tips.push(tip);
+  }
+  return {
+    title: record.title,
+    items,
+    itemIds,
+    explanation: record.explanation,
+    styling_tips,
+    limitations: record.limitations,
+  };
+}
+
+/** The proxy already moved item ids off each card. Do not require the backend item shape again. */
+export function renderedOutfitFromProxy(data: unknown): EmergencyOutfitView | null {
+  if (!data || typeof data !== "object" || !("outfit" in data)) {
+    return null;
+  }
+  const outfit = (data as { outfit: unknown }).outfit;
+  if (!outfit || typeof outfit !== "object") {
+    return null;
+  }
+  const record = outfit as Record<string, unknown>;
+  if (
+    typeof record.title !== "string" ||
+    typeof record.explanation !== "string" ||
+    typeof record.limitations !== "string" ||
+    !Array.isArray(record.items) ||
+    !Array.isArray(record.itemIds) ||
+    !Array.isArray(record.styling_tips) ||
+    record.itemIds.length !== record.items.length
+  ) {
+    return null;
+  }
+  const items: OutfitItemView[] = [];
+  const itemIds: string[] = [];
+  for (let index = 0; index < record.items.length; index += 1) {
+    const item = record.items[index];
+    const itemId = record.itemIds[index];
+    if (!item || typeof item !== "object" || typeof itemId !== "string" || !itemId.trim()) {
       return null;
     }
     const row = item as Record<string, unknown>;
@@ -292,6 +363,10 @@ export function outfitFromApi(data: unknown): EmergencyOutfitView | null {
       color: row.color,
       notes: row.notes,
     });
+    itemIds.push(itemId.trim());
+  }
+  if (new Set(itemIds).size !== itemIds.length) {
+    return null;
   }
   const styling_tips: string[] = [];
   for (const tip of record.styling_tips) {
@@ -303,6 +378,7 @@ export function outfitFromApi(data: unknown): EmergencyOutfitView | null {
   return {
     title: record.title,
     items,
+    itemIds,
     explanation: record.explanation,
     styling_tips,
     limitations: record.limitations,

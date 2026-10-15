@@ -18,12 +18,12 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
 - **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
 - **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
-- **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Generated outfits are not saved. Image generation is post-v1.
-- **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Revisions are not saved.
-- **Saved Looks** can be stored with `POST /looks`. The API is implemented. The page is not built yet. Emergency Fit and Rescue still do not save results on their own.
+- **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Suggestions are saved only when you choose Save a look. Image generation is post-v1.
+- **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Suggestions are saved only when you choose Save a look.
+- **Saved Looks** stores a named plan at `/looks`. Emergency Fit and Rescue call the model only when you generate or rescue an outfit.
 - Smart Shopping remains excluded.
 
-Emergency Fit and Rescue My Outfit can be used from their signed-in pages. A look is stored only when you call `POST /looks`.
+Emergency Fit, Rescue My Outfit, and Saved Looks can be used from their signed-in pages. A look is stored only when you choose Save a look.
 
 ## Planned features
 
@@ -36,7 +36,7 @@ Emergency Fit and Rescue My Outfit can be used from their signed-in pages. A loo
 | **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working |
 | **Rescue My Outfit**                   | Replace one available piece with another of the same category and keep the rest locked          | Working |
 | **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
-| **Saved Looks**                        | Save a named outfit plan from owned wardrobe items for later recall                             | Working (API). UI pending |
+| **Saved Looks**                        | Save a named outfit plan from owned wardrobe items for later recall                             | Working |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
 | **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
 | **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
@@ -85,7 +85,7 @@ Optional location permission is requested only when the user clicks **Use my loc
 
 ### Saved Looks
 
-The API saves a named plan of owned wardrobe items. Laundry and packed-away items can be included. Generating an Emergency Fit or Rescue outfit does not save it. The page is not built yet. Saved events remain later work.
+The signed-in pages are `/looks` and `/looks/{id}`. A look is a named plan of owned wardrobe items, including laundry and packed-away pieces. Emergency Fit and Rescue show **Save a look** only after a suggestion. Saving does not generate another outfit. A deleted wardrobe item stays in its position as “Wardrobe item removed.” Saved events remain later work.
 
 ## Emergency Fit
 
@@ -100,13 +100,13 @@ Vastra will:
 5. Validate ownership, availability, and constraints.
 6. Display the outfit and explain the choices.
 
-The signed-in page is `/emergency-fit`. It asks for an occasion, an optional vibe, and optional comfort needs, then shows the outfit. The suggestion stays in page memory and is not saved. If your wardrobe lacks suitable pieces, the page explains the limitation.
+The signed-in page is `/emergency-fit`. It asks for an occasion, an optional vibe, and optional comfort needs, then shows the outfit. Suggestions are saved only when you choose Save a look. If your wardrobe lacks suitable pieces, the page explains the limitation.
 
 ## Rescue My Outfit
 
 > “These shoes are uncomfortable. Replace only the shoes and keep the rest.”
 
-The signed-in page is `/rescue`. It locks every piece except the one being replaced, asks for one available replacement of the same category, and shows the revision. The revision is not saved.
+The signed-in page is `/rescue`. It locks every piece except the one being replaced, asks for one available replacement of the same category, and shows the revision. Suggestions are saved only when you choose Save a look. Saving stores the replacement outfit.
 
 If no other available item in that category exists, the API explains that and does not call the model. It does not replace a second piece.
 
@@ -300,7 +300,7 @@ Saved Looks (requires `Authorization: Bearer <token>`):
 {"name": "Dinner", "occasion": "dinner with friends", "notes": "Mostly standing.", "item_ids": ["top-id", "bottom-id", "shoes-id"]}
 ```
 
-`name` and `item_ids` are required. `occasion` and `notes` are optional. Unknown and another user's item ids both return 404. A deleted wardrobe item stays in its position as a missing marker. The page is not built yet.
+`name` and `item_ids` are required. `occasion` and `notes` are optional. Unknown and another user's item ids both return 404. A deleted wardrobe item stays in its position as a missing marker. The pages are http://127.0.0.1:3000/looks and http://127.0.0.1:3000/looks/{id}.
 
 Required configuration in `.env`:
 

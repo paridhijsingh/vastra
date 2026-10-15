@@ -2,8 +2,8 @@
 
 **Ready, set, styled.**
 
-Updated: October 11, 2026  
-Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, and Saved Looks working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, and Rescue pages working; Saved Looks UI is pending; image generation is post-v1  
+Updated: October 14, 2026  
+Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, and Saved Looks working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue, and Saved Looks pages working; image generation is post-v1  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Personal AI track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -35,7 +35,7 @@ The first release should complete these workflows reliably before adding more fe
 | Emergency Fit         | Recommend an outfit for an occasion and time limit using available owned items             |
 | Rescue My Outfit      | Replace a selected piece while preserving the rest of the outfit                           |
 | Weather-aware styling | Optional weather context; location requested only via "Use my location"                    |
-| Saved Looks           | Save a named outfit plan from owned wardrobe items (API done; UI pending)                 |
+| Saved Looks           | Save a named outfit plan from owned wardrobe items (API and pages)                     |
 | Explanations          | Explain outfit choices and offer optional hair or makeup tips                              |
 | Outfit feedback       | Save ratings and explicit comments separately from lasting preferences                     |
 | Confirmed memory      | Ask before saving a lasting preference; support approval, editing, dismissal, and deletion |
@@ -73,7 +73,7 @@ Pending: AI term suggestions and live trend retrieval. A suggested term stays a 
 
 ### Saved Looks
 
-`POST /looks` stores a private, ordered plan of owned wardrobe items, including laundry and packed-away pieces. Reads resolve current names, colors, categories, notes, and availability. Deleting a garment leaves a missing marker in that position. `PATCH` can rename the look or edit occasion and notes. The page is not built yet. Emergency Fit and Rescue do not save results on their own. Saved events remain later work.
+`/looks` lists private looks, and `/looks/{id}` shows the ordered pieces with current availability. Emergency Fit and Rescue can save the displayed outfit when you choose Save a look. Saving does not call the model. Deleting a garment leaves “Wardrobe item removed” in that position. `PATCH` can rename the look or edit occasion and notes. Saved events remain later work.
 
 ### Stretch feature
 
@@ -446,7 +446,7 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI, the Style Dictionary page, Emergency Fit, and Rescue My Outfit are in place. Those two flows still do not save results on their own. Saved Looks can be stored through the API; the page is not built yet. The shared catalog is still empty. Image generation is post-v1. Next: Saved Looks UI.
+Wardrobe UI, the Style Dictionary page, Emergency Fit, Rescue My Outfit, and Saved Looks are in place. Suggestions are saved only when you choose Save a look. The shared catalog is still empty. Image generation is post-v1. Next: AI term suggestions remain pending. Saved events, weather, and shopping stay deferred.
 
 Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
 
