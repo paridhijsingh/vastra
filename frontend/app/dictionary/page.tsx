@@ -1,4 +1,5 @@
 import { DictionaryBrowser } from "@/components/DictionaryBrowser";
+import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { requireUser } from "@/lib/auth/require-user";
 import {
   dictionaryListHref,
@@ -19,18 +20,11 @@ export default async function DictionaryPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <div className="flex max-w-2xl min-w-0 flex-col gap-3">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-dictionary-text">
-          Style Dictionary
+      <WorkspaceHeader kicker="Style Dictionary" title="Explore fashion terms" kickerClassName="text-accent-dictionary-text">
+        <p className="text-base text-muted">
+          Learn about Indian, Western, fusion, and cultural styles, including pairings, occasions, weather, and comfort.
         </p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground break-words sm:text-4xl md:text-5xl">
-          Explore fashion terms
-        </h1>
-        <p className="text-lg text-muted">
-          Learn about Indian, Western, fusion, and cultural styles, including
-          pairings, occasions, weather, and comfort.
-        </p>
-      </div>
+      </WorkspaceHeader>
       <DictionaryBrowser
         key={user.id}
         initialFilters={parsed.filters}

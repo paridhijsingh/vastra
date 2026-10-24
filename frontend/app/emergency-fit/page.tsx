@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { EmergencyFitPanel } from "@/components/EmergencyFitPanel";
+import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/cookies";
 import { requireUser } from "@/lib/auth/require-user";
 import { emergencyFitEventPath } from "@/lib/emergency/event-fit";
@@ -31,14 +32,7 @@ export default async function EmergencyFitPage({
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <div className="flex max-w-2xl min-w-0 flex-col gap-3">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-primary">
-          Emergency Fit
-        </p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground break-words sm:text-4xl md:text-5xl">
-          What can you wear?
-        </h1>
-      </div>
+      <WorkspaceHeader kicker="Emergency Fit" title="What can you wear?" />
       {loaded.status === "not_found" ? (
         <div className="flex max-w-2xl flex-col gap-3" role="status">
           <p>That saved event could not be found.</p>

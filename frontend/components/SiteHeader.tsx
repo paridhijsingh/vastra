@@ -15,9 +15,11 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Home", accentVar: "var(--accent-home)" },
   { href: "/profile", label: "Style Profile", accentVar: "var(--accent-profile)" },
+  { href: "/preferences", label: "Preferences", accentVar: "var(--accent-profile)" },
   { href: "/wardrobe", label: "Wardrobe", accentVar: "var(--accent-wardrobe)" },
   { href: "/emergency-fit", label: "Emergency Fit", accentVar: "var(--accent-home)" },
   { href: "/rescue", label: "Rescue", accentVar: "var(--accent-home)" },
+  { href: "/stylist", label: "Stylist", accentVar: "var(--accent-home)" },
   { href: "/looks", label: "Saved Looks", accentVar: "var(--accent-home)" },
   { href: "/events", label: "Events", accentVar: "var(--accent-home)" },
   {

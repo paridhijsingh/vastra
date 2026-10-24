@@ -86,6 +86,36 @@ def _patch_model(monkeypatch: pytest.MonkeyPatch, payload: dict[str, object] | N
     return captured
 
 
+def test_emergency_fit_keeps_the_nano_model(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    class SettingsView:
+        nebius_api_key = "test-key"
+        nebius_base_url = "https://api.tokenfactory.nebius.com/v1/"
+        nemotron_model = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
+        nemotron_timeout_seconds = 60
+        stylist_model = "nvidia/nemotron-3-super-120b-a12b"
+
+    headers = _login(client, "nano-route")
+    item = _add_item(client, headers, name="Navy kurta", category="top")
+    captured: dict[str, object] = {}
+
+    def fake(config: NemotronConfig, messages: list[dict[str, str]], *, max_tokens: int, client: object = None, extra_body: object = None) -> ChatResult:
+        captured["model"] = config.model
+        captured["timeout"] = config.timeout_seconds
+        captured["extra_body"] = extra_body
+        captured["max_tokens"] = max_tokens
+        return ChatResult(text=json.dumps(_model_payload([str(item["id"])])), truncated=False)
+
+    monkeypatch.setattr("vastra.outfits.get_settings", lambda: SettingsView())
+    monkeypatch.setattr("vastra.outfits.request_chat_completion", fake)
+    response = client.post("/outfits/emergency", headers=headers, json={"occasion": "dinner"})
+    assert response.status_code == 200
+    assert captured["model"] == SettingsView.nemotron_model
+    assert captured["model"] != SettingsView.stylist_model
+    assert captured["extra_body"] is None
+    assert captured["timeout"] == 60
+    assert captured["max_tokens"] == OUTFIT_MAX_OUTPUT_TOKENS
+
+
 def test_emergency_fit_requires_authentication(client: TestClient) -> None:
     response = client.post("/outfits/emergency", json={"occasion": "dinner"})
     assert response.status_code == 401
@@ -515,15 +545,15 @@ def test_schema_mismatch_is_logged_without_private_text(client: TestClient, monk
 def test_config_and_client_do_not_call_the_provider() -> None:
     with pytest.raises(NemotronConfigError):
         config_from_settings(type("Settings", (), {"nebius_api_key": "  "})())
-    client = build_client(
-        NemotronConfig(
-            api_key="test-key",
-            base_url="https://example.invalid/v1/",
-            model="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
-            timeout_seconds=60,
+    with pytest.raises(AssertionError, match="not allowed in tests"):
+        build_client(
+            NemotronConfig(
+                api_key="test-key",
+                base_url="https://example.invalid/v1/",
+                model="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+                timeout_seconds=60,
+            )
         )
-    )
-    assert client.max_retries == 0
 
 
 def test_request_validation_limits(client: TestClient) -> None:

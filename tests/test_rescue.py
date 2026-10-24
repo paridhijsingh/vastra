@@ -91,6 +91,38 @@ def _patch_model(
     return captured
 
 
+def test_rescue_keeps_the_nano_model(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    class SettingsView:
+        nebius_api_key = "test-key"
+        nebius_base_url = "https://api.tokenfactory.nebius.com/v1/"
+        nemotron_model = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
+        nemotron_timeout_seconds = 60
+        stylist_model = "nvidia/nemotron-3-super-120b-a12b"
+
+    headers = _login(client, "rescue-nano-route")
+    top = _add_item(client, headers, name="Tank Top", category="top")
+    bottom = _add_item(client, headers, name="Trousers", category="bottom")
+    shoes = _add_item(client, headers, name="Sandals", category="shoes")
+    alternate = _add_item(client, headers, name="Linen shirt", category="top")
+    captured: dict[str, object] = {}
+
+    def fake(config: NemotronConfig, messages: list[dict[str, str]], *, max_tokens: int, client: object = None, extra_body: object = None) -> ChatResult:
+        captured["model"] = config.model
+        captured["extra_body"] = extra_body
+        return ChatResult(text=json.dumps(_model_payload(str(alternate["id"]))), truncated=False)
+
+    monkeypatch.setattr("vastra.outfits.get_settings", lambda: SettingsView())
+    monkeypatch.setattr("vastra.outfits.request_chat_completion", fake)
+    response = client.post(
+        "/outfits/rescue",
+        headers=headers,
+        json=_rescue_body([str(top["id"]), str(bottom["id"]), str(shoes["id"])], str(top["id"])),
+    )
+    assert response.status_code == 200
+    assert captured["model"] == SettingsView.nemotron_model
+    assert captured["extra_body"] is None
+
+
 def test_rescue_requires_authentication(client: TestClient) -> None:
     response = client.post(
         "/outfits/rescue",

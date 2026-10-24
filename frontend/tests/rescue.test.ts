@@ -14,6 +14,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { POST as rescueOutfit } from "@/app/api/outfits/rescue/route";
+import { MODEL_PROXY_TIMEOUT_MS } from "@/lib/config";
 import {
   canSubmitRescue,
   chooseReplacement,
@@ -231,5 +232,50 @@ describe("POST /api/outfits/rescue", () => {
     );
     expect(forbidden.status).toBe(403);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a malformed backend outfit without leaking internals", async () => {
+    cookieState.token = "valid-token";
+    const fetchMock = vi.fn(async () =>
+      Response.json({ title: "dinner", shopping_url: "https://shop.example/secret-coat" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await rescueOutfit(
+      sameOrigin({
+        item_ids: [TOP.id],
+        replace_item_id: TOP.id,
+        occasion: "dinner",
+        change_request: "Warmer top",
+      }),
+    );
+    expect(response.status).toBe(502);
+    const body = await response.json();
+    expect(body.error).toBe("The outfit suggestion could not be used. Please try again.");
+    expect(JSON.stringify(body)).not.toContain("shop.example");
+    expect(JSON.stringify(body)).not.toContain("secret-coat");
+  });
+
+  it("maps a fetch abort to a timeout without leaking internals", async () => {
+    cookieState.token = "valid-token";
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
+    const fetchMock = vi.fn(async () => {
+      throw new DOMException("The operation timed out.", "TimeoutError");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await rescueOutfit(
+      sameOrigin({
+        item_ids: [TOP.id],
+        replace_item_id: TOP.id,
+        occasion: "dinner",
+        change_request: "Warmer top",
+      }),
+    );
+    expect(timeoutSpy).toHaveBeenCalledWith(MODEL_PROXY_TIMEOUT_MS);
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeDefined();
+    expect(response.status).toBe(504);
+    const body = await response.json();
+    expect(body.error).toBe("The outfit request timed out. Please try again.");
+    expect(body.kind).toBe("timeout");
+    expect(JSON.stringify(body)).not.toContain("The operation timed out");
   });
 });

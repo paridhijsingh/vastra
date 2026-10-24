@@ -1,4 +1,4 @@
-import { getApiUrl } from "@/lib/config";
+import { getApiUrl, isProxyTimeoutError, MODEL_PROXY_TIMEOUT_MS } from "@/lib/config";
 import {
   fieldErrorsFromApiDetail,
   NO_AVAILABLE_ITEMS_MESSAGE,
@@ -54,10 +54,14 @@ export async function backendCreateEmergencyOutfit(
     response = await fetch(`${getApiUrl()}/outfits/emergency`, {
       method: "POST",
       cache: "no-store",
+      signal: AbortSignal.timeout(MODEL_PROXY_TIMEOUT_MS),
       headers: authHeaders(accessToken),
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (error) {
+    if (isProxyTimeoutError(error)) {
+      return failure("timeout", "The outfit request timed out. Please try again.", 504);
+    }
     return failure(
       "unavailable",
       "Outfit suggestions are temporarily unavailable. Please try again later.",

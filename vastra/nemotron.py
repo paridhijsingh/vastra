@@ -180,8 +180,12 @@ def request_chat_completion(
     *,
     max_tokens: int,
     client: OpenAI | None = None,
+    extra_body: Mapping[str, object] | None = None,
 ) -> ChatResult:
-    """One non-streaming completion. Retries are disabled. Raises NemotronCallError on provider failure."""
+    """One non-streaming completion. Retries are disabled. Raises NemotronCallError on provider failure.
+
+    extra_body defaults to the Nano thinking control. Stylist passes its own body.
+    """
     openai_client = client or build_client(config)
     try:
         response = openai_client.chat.completions.create(
@@ -189,7 +193,7 @@ def request_chat_completion(
             messages=messages,
             max_tokens=max_tokens,
             stream=False,
-            extra_body=NEMOTRON_REQUEST_EXTRA,
+            extra_body=NEMOTRON_REQUEST_EXTRA if extra_body is None else dict(extra_body),
         )
     except Exception as exc:
         raise NemotronCallError(public_call_error(exc), call_error_kind(exc)) from None

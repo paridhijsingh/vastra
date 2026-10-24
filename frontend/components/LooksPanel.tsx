@@ -89,9 +89,9 @@ export function LooksPanel({ userId, showDeleted }: Props) {
           </Link>
         </div>
       ) : (
-        <ul className="flex min-w-0 flex-col gap-4">
+        <ul className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {looks.map((look) => (
-            <li key={look.id} className="border-t-[3px] border-primary bg-surface px-4 py-4">
+            <li key={look.id} className="rounded-lg border border-border border-t-[3px] border-t-primary bg-surface px-4 py-4">
               <h2 className="font-display text-2xl font-semibold break-words">
                 <Link href={`/looks/${look.id}`} className="text-foreground underline">
                   {look.name}

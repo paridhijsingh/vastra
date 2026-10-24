@@ -329,6 +329,75 @@ export function availableItemsFromApi(data: unknown): AvailableItem[] | null {
   return items;
 }
 
+export function rescueOutfitFromApi(data: unknown): {
+  title: string;
+  items: Array<{ id: string; name: string; category: string; color: string; notes: string }>;
+  explanation: string;
+  styling_tips: string[];
+  limitations: string;
+  replaced_item_id: string;
+  replacement_item_id: string;
+} | null {
+  if (!data || typeof data !== "object") return null;
+  const record = data as Record<string, unknown>;
+  if (
+    typeof record.title !== "string" ||
+    typeof record.explanation !== "string" ||
+    typeof record.limitations !== "string" ||
+    typeof record.replaced_item_id !== "string" ||
+    !record.replaced_item_id.trim() ||
+    typeof record.replacement_item_id !== "string" ||
+    !record.replacement_item_id.trim() ||
+    !Array.isArray(record.items) ||
+    record.items.length === 0 ||
+    !Array.isArray(record.styling_tips)
+  ) {
+    return null;
+  }
+  const items: Array<{ id: string; name: string; category: string; color: string; notes: string }> = [];
+  const itemIds: string[] = [];
+  for (const item of record.items) {
+    if (!item || typeof item !== "object") return null;
+    const row = item as Record<string, unknown>;
+    if (
+      typeof row.id !== "string" ||
+      !row.id.trim() ||
+      typeof row.name !== "string" ||
+      typeof row.category !== "string" ||
+      typeof row.color !== "string" ||
+      typeof row.notes !== "string" ||
+      !(ITEM_CATEGORIES as readonly string[]).includes(row.category)
+    ) {
+      return null;
+    }
+    itemIds.push(row.id.trim());
+    items.push({
+      id: row.id.trim(),
+      name: row.name,
+      category: row.category,
+      color: row.color,
+      notes: row.notes,
+    });
+  }
+  if (new Set(itemIds).size !== itemIds.length) return null;
+  const replacementId = record.replacement_item_id.trim();
+  if (!itemIds.includes(replacementId)) return null;
+  const styling_tips: string[] = [];
+  for (const tip of record.styling_tips) {
+    if (typeof tip !== "string") return null;
+    styling_tips.push(tip);
+  }
+  return {
+    title: record.title,
+    items,
+    explanation: record.explanation,
+    styling_tips,
+    limitations: record.limitations,
+    replaced_item_id: record.replaced_item_id.trim(),
+    replacement_item_id: replacementId,
+  };
+}
+
 export function rescueViewFromApi(data: unknown, namesById: Record<string, string>): RescueView | null {
   if (!data || typeof data !== "object") return null;
   const record = data as Record<string, unknown>;

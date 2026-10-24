@@ -10,7 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from vastra.config import get_settings
-from vastra.models import StyleProfile, User, WardrobeItem
+from vastra.models import ConfirmedPreference, StyleProfile, User, WardrobeItem
+from vastra.preferences import list_preferences, preference_prompt_rows
 from vastra.nemotron import (
     ChatResult,
     NemotronCallError,
@@ -58,6 +59,8 @@ def output_schema_instructions() -> str:
         "In reason, mention only clothes listed in available_items. "
         "Those are the owned items currently marked available. "
         "saved_preferences describe taste. They are not proof of ownership. "
+        "confirmed_preferences are guidance the user saved. They are not a hard constraint, "
+        "and they do not change ownership or availability. "
         "Do not recommend a preferred color, fit, style, or comfort preference unless an available_items entry is that item. "
         "If an item's notes do not state fabric or breathability, say that it is unknown. "
         "Do not infer fabric or breathability from the name, category, color, or a comfort need. "
@@ -76,6 +79,8 @@ def rescue_output_instructions() -> str:
         "No other keys. Do not include item names, a title, styling tips, or limitations.\n"
         "Choose exactly one supplied candidate. Do not return a locked item id or the item being replaced.\n"
         "saved_preferences describe taste. They are not proof of ownership. "
+        "confirmed_preferences are guidance the user saved. They are not a hard constraint, "
+        "and they do not change ownership or availability. "
         "Do not recommend a preferred color, fit, style, or comfort preference unless a candidates entry is that item. "
         "If an item's notes do not state fabric or breathability, say that it is unknown. "
         "Do not infer fabric or breathability from the name, category, color, change request, or a comfort need. "
@@ -106,7 +111,7 @@ def recommend_emergency_outfit(
         raise OutfitRequestError(503, NOT_CONFIGURED) from exc
 
     profile = db.scalar(select(StyleProfile).where(StyleProfile.owner_id == user.id))
-    messages = build_emergency_messages(body, profile, available)
+    messages = build_emergency_messages(body, profile, available, list_preferences(db, user.id))
     try:
         chat = request_chat_completion(
             config,
@@ -138,12 +143,14 @@ def build_emergency_messages(
     body: EmergencyFitRequest,
     profile: StyleProfile | None,
     available: list[WardrobeItem],
+    preferences: list[ConfirmedPreference] | None = None,
 ) -> list[dict[str, str]]:
     payload = {
         "occasion": body.occasion,
         "vibe": body.vibe,
         "comfort_needs": body.comfort_needs,
         "saved_preferences": _preference_payload(profile),
+        "confirmed_preferences": preference_prompt_rows(preferences or []),
         "available_items": [
             {
                 "id": item.id,
@@ -193,7 +200,14 @@ def recommend_rescue_outfit(
         raise OutfitRequestError(503, NOT_CONFIGURED) from exc
 
     profile = db.scalar(select(StyleProfile).where(StyleProfile.owner_id == user.id))
-    messages = build_rescue_messages(body, profile, replaced, [by_id[item_id] for item_id in locked_ids], candidates)
+    messages = build_rescue_messages(
+        body,
+        profile,
+        replaced,
+        [by_id[item_id] for item_id in locked_ids],
+        candidates,
+        list_preferences(db, user.id),
+    )
     try:
         chat = request_chat_completion(
             config,
@@ -244,12 +258,14 @@ def build_rescue_messages(
     replaced: WardrobeItem,
     locked: list[WardrobeItem],
     candidates: list[WardrobeItem],
+    preferences: list[ConfirmedPreference] | None = None,
 ) -> list[dict[str, str]]:
     payload = {
         "occasion": body.occasion,
         "change_request": body.change_request,
         "comfort_needs": body.comfort_needs,
         "saved_preferences": _preference_payload(profile),
+        "confirmed_preferences": preference_prompt_rows(preferences or []),
         "replace_item": _item_data(replaced),
         "locked_items": [_item_data(item) for item in locked],
         "candidates": [_item_data(item) for item in candidates],

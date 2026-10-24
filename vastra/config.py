@@ -32,6 +32,10 @@ class Settings(BaseSettings):
         default="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
         validation_alias="NEMOTRON_MODEL",
     )
+    stylist_model: str = Field(
+        default="nvidia/nemotron-3-super-120b-a12b",
+        validation_alias="STYLIST_MODEL",
+    )
     nemotron_timeout_seconds: float = Field(default=60, validation_alias="NEMOTRON_TIMEOUT_SECONDS")
 
 

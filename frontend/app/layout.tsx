@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 
-import { SiteHeader } from "@/components/SiteHeader";
+import { StudioShell } from "@/components/StudioShell";
 import { getCurrentUser } from "@/lib/auth/session";
+import { EntranceProvider } from "@/lib/studio/entrance-context";
 
 import "./globals.css";
 
@@ -33,13 +34,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body
-        className={`${sourceSans.variable} ${fraunces.variable} min-h-screen antialiased`}
-      >
-        <SiteHeader user={user} />
-        <main className="mx-auto w-full min-w-0 max-w-5xl px-4 py-8 sm:px-8 sm:py-12">
-          {children}
-        </main>
+      <body className={`${sourceSans.variable} ${fraunces.variable} antialiased`}>
+        <EntranceProvider>
+          <StudioShell user={user}>{children}</StudioShell>
+        </EntranceProvider>
       </body>
     </html>
   );

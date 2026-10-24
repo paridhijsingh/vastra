@@ -1,0 +1,10 @@
+{
+  "nvidia/nemotron-3-super-120b-a12b": {
+    "extra_body": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "experimental_note": "Experimental. NVIDIA documents chat_template_kwargs.enable_thinking false for this model. Nebius Token Factory has not confirmed that its endpoint honors that control for nvidia/nemotron-3-super-120b-a12b."
+  }
+}

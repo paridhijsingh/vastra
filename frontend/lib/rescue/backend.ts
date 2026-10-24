@@ -1,7 +1,8 @@
-import { getApiUrl } from "@/lib/config";
+import { getApiUrl, isProxyTimeoutError, MODEL_PROXY_TIMEOUT_MS } from "@/lib/config";
 import {
   ITEMS_CHANGED_MESSAGE,
   fieldErrorsFromApiDetail,
+  rescueOutfitFromApi,
   type RescueBody,
   type RescueFieldErrors,
 } from "@/lib/rescue/form";
@@ -44,6 +45,7 @@ export async function backendRescueOutfit(
     response = await fetch(`${getApiUrl()}/outfits/rescue`, {
       method: "POST",
       cache: "no-store",
+      signal: AbortSignal.timeout(MODEL_PROXY_TIMEOUT_MS),
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -52,7 +54,10 @@ export async function backendRescueOutfit(
       },
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (error) {
+    if (isProxyTimeoutError(error)) {
+      return failure("timeout", "The outfit request timed out. Please try again.", 504);
+    }
     return failure(
       "unavailable",
       "Outfit suggestions are temporarily unavailable. Please try again later.",
@@ -103,10 +108,11 @@ export async function backendRescueOutfit(
   } catch {
     return failure("failed", "The outfit suggestion could not be used. Please try again.", 502);
   }
-  if (!payload || typeof payload !== "object") {
+  const outfit = rescueOutfitFromApi(payload);
+  if (!outfit) {
     return failure("failed", "The outfit suggestion could not be used. Please try again.", 502);
   }
-  return { ok: true, data: payload, status: response.status };
+  return { ok: true, data: outfit, status: response.status };
 }
 
 async function readDetail(response: Response): Promise<unknown> {

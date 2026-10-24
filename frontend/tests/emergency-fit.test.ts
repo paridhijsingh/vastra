@@ -14,6 +14,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { POST as createEmergencyOutfit } from "@/app/api/outfits/emergency/route";
+import { MODEL_PROXY_TIMEOUT_MS } from "@/lib/config";
 import {
   canGenerateOutfit,
   emergencyFitBody,
@@ -247,6 +248,23 @@ describe("POST /api/outfits/emergency", () => {
     expect(response.status).toBe(422);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(JSON.stringify(await response.json())).not.toContain("other");
+  });
+
+  it("maps a fetch abort to a timeout without leaking internals", async () => {
+    cookieState.token = "valid-token";
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
+    const fetchMock = vi.fn(async () => {
+      throw new DOMException("The operation was aborted.", "AbortError");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await createEmergencyOutfit(sameOrigin({ occasion: "dinner" }));
+    expect(timeoutSpy).toHaveBeenCalledWith(MODEL_PROXY_TIMEOUT_MS);
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeDefined();
+    expect(response.status).toBe(504);
+    const body = await response.json();
+    expect(body.error).toBe("The outfit request timed out. Please try again.");
+    expect(body.kind).toBe("timeout");
+    expect(JSON.stringify(body)).not.toContain("The operation was aborted");
   });
 
   it("rejects a cross-origin submit", async () => {

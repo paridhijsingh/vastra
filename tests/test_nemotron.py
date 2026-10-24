@@ -169,14 +169,29 @@ def test_call_errors_do_not_include_the_secret() -> None:
     assert SECRET not in exc.value.message
 
 
+def test_default_test_setup_cannot_make_a_live_provider_request() -> None:
+    from vastra.nemotron import build_client, config_from_settings
+
+    config = config_from_settings(get_settings())
+    with pytest.raises(AssertionError, match="not allowed in tests"):
+        build_client(config)
+    with pytest.raises(AssertionError, match="not allowed in tests"):
+        request_chat_completion(config, [{"role": "user", "content": "hello"}], max_tokens=8)
+    source = Path(__file__).resolve().parents[1] / "vastra" / "nemotron.py"
+    assert "max_retries=0" in source.read_text(encoding="utf-8")
+
+
 def test_settings_start_without_a_nebius_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".env").write_text("SECRET_KEY=test-only-secret-key-not-for-production-use\n", encoding="utf-8")
     monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
+    monkeypatch.delenv("STYLIST_MODEL", raising=False)
+    monkeypatch.delenv("NEMOTRON_MODEL", raising=False)
     clear_settings_cache()
     settings = get_settings()
     assert settings.nebius_api_key is None
     assert settings.nemotron_model == "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
+    assert settings.stylist_model == "nvidia/nemotron-3-super-120b-a12b"
     assert settings.nemotron_timeout_seconds == 60
     clear_settings_cache()
 

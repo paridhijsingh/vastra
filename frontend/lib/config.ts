@@ -2,6 +2,8 @@
 
 const DEFAULT_API_URL = "http://127.0.0.1:8000";
 const DEFAULT_COOKIE_HOURS = 72;
+/** Backend model timeout is 60s. Extra time covers FastAPI processing after the provider returns. */
+export const MODEL_PROXY_TIMEOUT_MS = 70_000;
 
 export function getApiUrl(): string {
   const raw = process.env.API_URL?.trim();
@@ -22,4 +24,12 @@ export function getAuthCookieMaxAgeSeconds(): number {
 
 export function isProduction(): boolean {
   return process.env.NODE_ENV === "production";
+}
+
+export function isProxyTimeoutError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const name = "name" in error ? String((error as { name: unknown }).name) : "";
+  return name === "TimeoutError" || name === "AbortError";
 }

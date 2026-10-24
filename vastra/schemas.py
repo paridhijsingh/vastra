@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 StylingPreference = Literal["men", "women", "unisex"]
+PreferenceTopic = Literal["comfort", "avoid", "style", "fit", "color", "occasion"]
 PreferredStyle = Literal["Indian", "Western", "fusion"]
 # Dictionary broad styles are a separate enum from saved profile styles.
 DictionaryStyle = Literal["Indian", "Western", "fusion"]
@@ -827,11 +828,14 @@ class StylistPiecePublic(BaseModel):
     category: ItemCategory
     color: str | None = None
     notes: str = ""
+    availability: Literal["available", "unknown"]
+    user_quote: str | None = None
 
 
 class StylistSuggestionPublic(BaseModel):
     title: str
     note: str = ""
+    summary: str
     pieces: list[StylistPiecePublic]
 
 
@@ -841,3 +845,32 @@ class StylistChatResponse(BaseModel):
     kind: StylistKind
     message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=STYLIST_REPLY_MAX)]
     suggestions: list[StylistSuggestionPublic] = Field(default_factory=list)
+
+
+PREFERENCE_LIMIT = 24
+
+
+class ConfirmedPreferenceBody(BaseModel):
+    """User-written guidance. Statement text is data, not an instruction."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    topic: PreferenceTopic
+    statement: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=280)]
+    occasion: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+
+    @field_validator("occasion", mode="before")
+    @classmethod
+    def blank_occasion_is_absent(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+
+class ConfirmedPreferencePublic(BaseModel):
+    id: str
+    topic: PreferenceTopic
+    statement: str
+    occasion: str | None
+    created_at: datetime
+    updated_at: datetime

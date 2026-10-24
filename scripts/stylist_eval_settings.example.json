@@ -1,0 +1,10 @@
+{
+  "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+    "extra_body": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    }
+  },
+  "nvidia/nemotron-3-super-120b-a12b": {}
+}

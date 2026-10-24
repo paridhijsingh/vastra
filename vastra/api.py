@@ -16,13 +16,23 @@ from vastra.db import get_db, init_db
 from vastra.dictionary import find_dictionary_entry, load_dictionary, search_dictionary
 from vastra.events import create_event, delete_event, get_event, list_events, update_event
 from vastra.looks import create_look, delete_look, get_look, list_looks, update_look
-from vastra.models import PersonalDictionaryEntry, StyleProfile, User, WardrobeItem
+from vastra.models import ConfirmedPreference, PersonalDictionaryEntry, StyleProfile, User, WardrobeItem
 from vastra.outfits import OutfitRequestError, recommend_emergency_outfit, recommend_rescue_outfit
+from vastra.preferences import (
+    PreferenceLimitError,
+    create_preference,
+    delete_preference,
+    get_preference,
+    list_preferences,
+    update_preference,
+)
 from vastra.stylist import StylistRequestError, chat_with_stylist
 from vastra.schemas import (
     AvailabilityStatus,
     DictionaryEntry,
     DictionaryEntryCreate,
+    ConfirmedPreferenceBody,
+    ConfirmedPreferencePublic,
     EmergencyFitRequest,
     EmergencyOutfitPublic,
     RescueOutfitRequest,
@@ -188,6 +198,56 @@ def delete_profile(
     if profile is not None:
         db.delete(profile)
         db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+NOT_FOUND = "Preference not found."
+PREFERENCE_LIMIT_DETAIL = "You can save at most 24 preferences."
+
+
+@app.get("/preferences", response_model=list[ConfirmedPreferencePublic])
+def get_preferences(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[ConfirmedPreference]:
+    return list_preferences(db, current_user.id)
+
+
+@app.post("/preferences", response_model=ConfirmedPreferencePublic, status_code=status.HTTP_201_CREATED)
+def post_preference(
+    body: ConfirmedPreferenceBody,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ConfirmedPreference:
+    try:
+        return create_preference(db, current_user.id, body)
+    except PreferenceLimitError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=PREFERENCE_LIMIT_DETAIL) from None
+
+
+@app.patch("/preferences/{preference_id}", response_model=ConfirmedPreferencePublic)
+def patch_preference(
+    preference_id: str,
+    body: ConfirmedPreferenceBody,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ConfirmedPreference:
+    row = get_preference(db, current_user.id, preference_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND)
+    return update_preference(db, row, body)
+
+
+@app.delete("/preferences/{preference_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+def remove_preference(
+    preference_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    row = get_preference(db, current_user.id, preference_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND)
+    delete_preference(db, row)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
