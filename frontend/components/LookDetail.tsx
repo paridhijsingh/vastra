@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
-import { categoryLabel } from "@/lib/emergency/form";
+import { StudioGarmentCard } from "@/components/StudioGarmentCard";
 import {
   LOOK_NAME_MAX,
   LOOK_NOTES_MAX,
@@ -40,6 +40,7 @@ export function LookDetail({ userId, lookId }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,7 +87,7 @@ export function LookDetail({ userId, lookId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [lookId, router, userId]);
+  }, [lookId, router, userId, retryNonce]);
 
   async function onSave(event: FormEvent) {
     event.preventDefault();
@@ -187,16 +188,16 @@ export function LookDetail({ userId, lookId }: Props) {
 
   if (loading) {
     return (
-      <p role="status" className="text-base text-muted">
+      <p role="status" className="status-card text-base text-muted">
         Loading saved look…
       </p>
     );
   }
   if (missing) {
     return (
-      <div className="flex flex-col gap-3" role="status">
+      <div className="status-card flex max-w-2xl flex-col gap-3" role="status">
         <p>That saved look could not be found.</p>
-        <Link href="/looks" className="font-semibold text-primary underline">
+        <Link href="/looks" className="text-sm font-semibold text-primary underline">
           Back to Saved Looks
         </Link>
       </div>
@@ -204,9 +205,16 @@ export function LookDetail({ userId, lookId }: Props) {
   }
   if (failed || !look) {
     return (
-      <p role="alert" className="text-base text-accent-profile-text">
-        Could not load this saved look.
-      </p>
+      <div className="error-alert flex max-w-2xl flex-col gap-3" role="alert">
+        <p>Could not load this saved look.</p>
+        <button
+          type="button"
+          onClick={() => setRetryNonce((value) => value + 1)}
+          className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+        >
+          Try again
+        </button>
+      </div>
     );
   }
 
@@ -219,44 +227,34 @@ export function LookDetail({ userId, lookId }: Props) {
         <p className="text-sm text-muted">{LOOK_PLAN_NOTE}</p>
       </div>
       {look.removedItemNotice ? (
-        <p role="status" className="max-w-2xl rounded-md border border-primary bg-surface px-4 py-4 text-base font-semibold">
+        <p role="status" className="status-card max-w-2xl text-base font-semibold">
           {look.removedItemNotice}
         </p>
       ) : null}
-      <ul className="grid min-w-0 gap-4 sm:grid-cols-2">
+      <ul className="studio-garment-grid">
         {look.items.map((item, index) =>
           item.missing ? (
-            <li key={`removed-${index}`} className="border-t-[3px] border-primary bg-surface px-4 py-4">
-              <p className="font-display text-xl font-semibold">{item.label}</p>
+            <li key={`removed-${index}`}>
+              <article className="studio-garment">
+                <h3 className="font-display text-xl font-semibold">{item.label}</h3>
+              </article>
             </li>
           ) : (
-            <li key={`${item.name}-${index}`} className="flex min-w-0 flex-col gap-3 border-t-[3px] border-primary bg-surface px-4 py-4">
-              <h3 className="font-display text-xl font-semibold break-words">{item.name}</h3>
-              <dl className="grid gap-2 text-sm">
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-semibold text-muted">Category</dt>
-                  <dd>{categoryLabel(item.category)}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-semibold text-muted">Color</dt>
-                  <dd>{item.color}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-semibold text-muted">Notes</dt>
-                  <dd className="break-words">{item.notes}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-semibold text-muted">Availability</dt>
-                  <dd>{item.availabilityLabel}</dd>
-                </div>
-              </dl>
+            <li key={`${item.name}-${index}`}>
+              <StudioGarmentCard
+                name={item.name}
+                category={item.category}
+                color={item.color}
+                notes={item.notes}
+                availability={item.availabilityLabel}
+              />
             </li>
           ),
         )}
       </ul>
 
       {editing ? (
-        <form onSubmit={(event) => void onSave(event)} noValidate className="flex max-w-2xl flex-col gap-4">
+        <form onSubmit={(event) => void onSave(event)} noValidate className="studio-fieldset max-w-2xl">
           <div className="flex flex-col gap-2">
             <label htmlFor={`${formId}-name`} className="text-sm font-semibold">
               Name
@@ -271,7 +269,7 @@ export function LookDetail({ userId, lookId }: Props) {
               onChange={(event) => setName(event.target.value)}
               className="min-h-12 rounded-md border border-border bg-surface px-3 text-base"
             />
-            {errors.name ? <p className="text-sm text-accent-profile-text">{errors.name}</p> : null}
+            {errors.name ? <p className="error-alert text-sm">{errors.name}</p> : null}
           </div>
           <div className="flex flex-col gap-2">
             <label htmlFor={`${formId}-occasion`} className="text-sm font-semibold">
@@ -285,7 +283,7 @@ export function LookDetail({ userId, lookId }: Props) {
               onChange={(event) => setOccasion(event.target.value)}
               className="min-h-12 rounded-md border border-border bg-surface px-3 text-base"
             />
-            {errors.occasion ? <p className="text-sm text-accent-profile-text">{errors.occasion}</p> : null}
+            {errors.occasion ? <p className="error-alert text-sm">{errors.occasion}</p> : null}
           </div>
           <div className="flex flex-col gap-2">
             <label htmlFor={`${formId}-notes`} className="text-sm font-semibold">
@@ -300,15 +298,15 @@ export function LookDetail({ userId, lookId }: Props) {
               onChange={(event) => setNotes(event.target.value)}
               className="rounded-md border border-border bg-surface px-3 py-2 text-base"
             />
-            {errors.notes ? <p className="text-sm text-accent-profile-text">{errors.notes}</p> : null}
+            {errors.notes ? <p className="error-alert text-sm">{errors.notes}</p> : null}
           </div>
           {formError ? (
-            <p role="alert" className="text-base text-accent-profile-text">
+            <p role="alert" className="error-alert text-base">
               {formError}
             </p>
           ) : null}
           {formStatus ? (
-            <p role="status" className="text-base text-foreground">
+            <p role="status" className="status-card text-base text-foreground">
               {formStatus}
             </p>
           ) : null}
@@ -332,17 +330,17 @@ export function LookDetail({ userId, lookId }: Props) {
                 setFormError(null);
                 setFormStatus(null);
               }}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold"
+              className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Cancel
             </button>
           </div>
         </form>
       ) : confirmingDelete ? (
-        <div className="flex max-w-2xl flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4">
-          <p>Delete {look.name}?</p>
+        <div className="error-alert flex max-w-2xl flex-col gap-3" role="alertdialog" aria-labelledby={`${formId}-delete`}>
+          <p id={`${formId}-delete`}>Delete {look.name}?</p>
           {deleteError ? (
-            <p role="alert" className="text-base text-accent-profile-text">
+            <p role="alert" className="text-base font-semibold">
               {deleteError}
             </p>
           ) : null}
@@ -351,7 +349,7 @@ export function LookDetail({ userId, lookId }: Props) {
               type="button"
               disabled={deleting}
               onClick={() => void onDelete()}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text"
+              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text hover:bg-[#b94732]/10 disabled:opacity-70"
             >
               {deleting ? "Deleting…" : "Delete look"}
             </button>
@@ -362,7 +360,7 @@ export function LookDetail({ userId, lookId }: Props) {
                 setConfirmingDelete(false);
                 setDeleteError(null);
               }}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold"
+              className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Cancel
             </button>
@@ -379,7 +377,7 @@ export function LookDetail({ userId, lookId }: Props) {
               setEditing(true);
               setConfirmingDelete(false);
             }}
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold"
+            className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
           >
             Edit
           </button>
@@ -389,7 +387,7 @@ export function LookDetail({ userId, lookId }: Props) {
               setConfirmingDelete(true);
               setDeleteError(null);
             }}
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text"
+            className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text hover:bg-[#b94732]/10"
           >
             Delete
           </button>

@@ -5,6 +5,7 @@ type Props = {
   category: string;
   color: string;
   notes: string;
+  availability?: string;
   kicker?: string;
   kickerClassName?: string;
 };
@@ -14,6 +15,7 @@ export function StudioGarmentCard({
   category,
   color,
   notes,
+  availability,
   kicker,
   kickerClassName = "text-accent-wardrobe-text",
 }: Props) {
@@ -38,6 +40,12 @@ export function StudioGarmentCard({
           <dt className="font-semibold text-muted">Notes</dt>
           <dd className="break-words text-foreground">{notes.trim() ? notes : "None"}</dd>
         </div>
+        {availability ? (
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <dt className="font-semibold text-muted">Availability</dt>
+            <dd className="text-foreground">{availability}</dd>
+          </div>
+        ) : null}
       </dl>
     </article>
   );

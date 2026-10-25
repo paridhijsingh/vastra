@@ -44,6 +44,7 @@ export function EventDetail({ userId, eventId }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +107,7 @@ export function EventDetail({ userId, eventId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [eventId, router, userId]);
+  }, [eventId, router, userId, retryNonce]);
 
   async function onSave(submitEvent: FormEvent) {
     submitEvent.preventDefault();
@@ -213,16 +214,16 @@ export function EventDetail({ userId, eventId }: Props) {
 
   if (loading) {
     return (
-      <p role="status" className="text-base text-muted">
+      <p role="status" className="status-card text-base text-muted">
         Loading saved event…
       </p>
     );
   }
   if (missing) {
     return (
-      <div className="flex flex-col gap-3" role="status">
+      <div className="status-card flex max-w-2xl flex-col gap-3" role="status">
         <p>That saved event could not be found.</p>
-        <Link href="/events" className="font-semibold text-primary underline">
+        <Link href="/events" className="text-sm font-semibold text-primary underline">
           Back to Events
         </Link>
       </div>
@@ -230,23 +231,30 @@ export function EventDetail({ userId, eventId }: Props) {
   }
   if (failed || !event) {
     return (
-      <p role="alert" className="text-base text-accent-profile-text">
-        Could not load this saved event.
-      </p>
+      <div className="error-alert flex max-w-2xl flex-col gap-3" role="alert">
+        <p>Could not load this saved event.</p>
+        <button
+          type="button"
+          onClick={() => setRetryNonce((value) => value + 1)}
+          className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+        >
+          Try again
+        </button>
+      </div>
     );
   }
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex max-w-2xl flex-col gap-2">
-        <h2 className="font-display text-3xl font-semibold tracking-tight break-words">{event.name}</h2>
-        <p className="text-base text-foreground">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
           <time dateTime={event.eventDate}>{displayCalendarDate(event.eventDate)}</time>
         </p>
-        {event.occasion ? <p className="text-base text-foreground">{event.occasion}</p> : null}
-        {event.notes ? <p className="text-base text-foreground">{event.notes}</p> : null}
+        <h2 className="font-display text-3xl font-semibold tracking-tight break-words">{event.name}</h2>
+        {event.occasion ? <p className="text-lg text-foreground">{event.occasion}</p> : null}
+        {event.notes ? <p className="text-base text-muted">{event.notes}</p> : null}
         {event.comfortNeeds.length > 0 ? (
-          <div>
+          <div className="flex flex-col gap-1">
             <h3 className="text-sm font-semibold text-foreground">Comfort needs</h3>
             <ul className="list-disc pl-5 text-base text-foreground">
               {event.comfortNeeds.map((need, index) => (
@@ -263,12 +271,12 @@ export function EventDetail({ userId, eventId }: Props) {
             </Link>
           </p>
         ) : event.lookId ? (
-          <p className="text-base text-foreground">{REMOVED_LOOK_LABEL}</p>
+          <p className="status-card text-base text-foreground">{REMOVED_LOOK_LABEL}</p>
         ) : null}
       </div>
 
       {editing ? (
-        <form onSubmit={(submitEvent) => void onSave(submitEvent)} noValidate className="flex max-w-2xl flex-col gap-4">
+        <form onSubmit={(submitEvent) => void onSave(submitEvent)} noValidate className="studio-fieldset max-w-2xl">
           <EventFields
             formId={formId}
             values={{ name, eventDate, occasion, notes, comfortText, lookId }}
@@ -285,12 +293,12 @@ export function EventDetail({ userId, eventId }: Props) {
             }}
           />
           {formError ? (
-            <p role="alert" className="text-base text-accent-profile-text">
+            <p role="alert" className="error-alert text-base">
               {formError}
             </p>
           ) : null}
           {formStatus ? (
-            <p role="status" className="text-base text-foreground">
+            <p role="status" className="status-card text-base text-foreground">
               {formStatus}
             </p>
           ) : null}
@@ -317,17 +325,17 @@ export function EventDetail({ userId, eventId }: Props) {
                 setFormError(null);
                 setFormStatus(null);
               }}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold"
+              className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Cancel
             </button>
           </div>
         </form>
       ) : confirmingDelete ? (
-        <div className="flex max-w-2xl flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4">
-          <p>Delete {event.name}?</p>
+        <div className="error-alert flex max-w-2xl flex-col gap-3" role="alertdialog" aria-labelledby={`${formId}-delete`}>
+          <p id={`${formId}-delete`}>Delete {event.name}?</p>
           {deleteError ? (
-            <p role="alert" className="text-base text-accent-profile-text">
+            <p role="alert" className="text-base font-semibold">
               {deleteError}
             </p>
           ) : null}
@@ -336,7 +344,7 @@ export function EventDetail({ userId, eventId }: Props) {
               type="button"
               disabled={deleting}
               onClick={() => void onDelete()}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text"
+              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text hover:bg-[#b94732]/10 disabled:opacity-70"
             >
               {deleting ? "Deleting…" : "Delete event"}
             </button>
@@ -347,7 +355,7 @@ export function EventDetail({ userId, eventId }: Props) {
                 setConfirmingDelete(false);
                 setDeleteError(null);
               }}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold"
+              className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Cancel
             </button>
@@ -373,7 +381,7 @@ export function EventDetail({ userId, eventId }: Props) {
               setEditing(true);
               setConfirmingDelete(false);
             }}
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold"
+            className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
           >
             Edit
           </button>
@@ -383,7 +391,7 @@ export function EventDetail({ userId, eventId }: Props) {
               setConfirmingDelete(true);
               setDeleteError(null);
             }}
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text"
+            className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text hover:bg-[#b94732]/10"
           >
             Delete
           </button>

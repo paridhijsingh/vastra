@@ -46,6 +46,7 @@ export function EventsPanel({ userId, showDeleted }: Props) {
   const [formError, setFormError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +109,7 @@ export function EventsPanel({ userId, showDeleted }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [router, userId, status]);
+  }, [router, userId, status, retryNonce]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -155,7 +156,13 @@ export function EventsPanel({ userId, showDeleted }: Props) {
 
   return (
     <div className="flex min-w-0 flex-col gap-8">
-      <form onSubmit={(event) => void onSubmit(event)} noValidate className="flex max-w-2xl flex-col gap-4">
+      <form onSubmit={(event) => void onSubmit(event)} noValidate className="studio-fieldset max-w-2xl">
+        <div className="flex flex-col gap-1">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+            New occasion
+          </p>
+          <h2 className="font-display text-xl font-semibold text-foreground">Add an event</h2>
+        </div>
         <EventFields
           formId={formId}
           values={form}
@@ -164,14 +171,14 @@ export function EventsPanel({ userId, showDeleted }: Props) {
           disabled={pending}
           onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
         />
-        {looksNote ? <p className="text-sm text-muted">{looksNote}</p> : null}
+        {looksNote ? <p className="status-card text-sm text-muted">{looksNote}</p> : null}
         {formError ? (
-          <p role="alert" className="text-base text-accent-profile-text">
+          <p role="alert" className="error-alert text-base">
             {formError}
           </p>
         ) : null}
         {status ? (
-          <p role="status" className="text-base text-foreground">
+          <p role="status" className="status-card text-base text-foreground">
             {status}
           </p>
         ) : null}
@@ -185,43 +192,52 @@ export function EventsPanel({ userId, showDeleted }: Props) {
       </form>
 
       {loading ? (
-        <p role="status" className="text-base text-muted">
+        <p role="status" className="status-card text-base text-muted">
           Loading saved events…
         </p>
       ) : failed ? (
-        <p role="alert" className="text-base text-accent-profile-text">
-          Could not load your saved events.
-        </p>
+        <div className="error-alert flex max-w-2xl flex-col gap-3" role="alert">
+          <p>Could not load your saved events.</p>
+          <button
+            type="button"
+            onClick={() => setRetryNonce((value) => value + 1)}
+            className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+          >
+            Try again
+          </button>
+        </div>
       ) : (
         <div className="flex min-w-0 flex-col gap-4">
           {showDeleted ? (
-            <p role="status" className="text-base text-foreground">
+            <p role="status" className="status-card text-base text-foreground">
               {EVENT_DELETED_MESSAGE}
             </p>
           ) : null}
           {events.length === 0 ? (
-            <p className="max-w-2xl rounded-md border border-border bg-surface px-4 py-4">You have no saved events yet.</p>
+            <p className="status-card max-w-2xl">You have no saved events yet.</p>
           ) : (
             <ul className="flex min-w-0 flex-col gap-4">
               {events.map((item) => (
-                <li key={item.id} className="border-t-[3px] border-primary bg-surface px-4 py-4">
-                  <h2 className="font-display text-2xl font-semibold break-words">
-                    <Link href={`/events/${item.id}`} className="text-foreground underline">
-                      {item.name}
-                    </Link>
-                  </h2>
-                  <p className="mt-2 text-base text-foreground">
-                    <time dateTime={item.eventDate}>{displayCalendarDate(item.eventDate)}</time>
-                  </p>
-                  {item.occasion ? <p className="mt-1 text-base text-foreground">{item.occasion}</p> : null}
-                  {item.lookId && item.lookName ? (
-                    <p className="mt-2 text-sm text-foreground">
-                      Saved look:{" "}
-                      <Link href={`/looks/${item.lookId}`} className="font-semibold text-primary underline">
-                        {item.lookName}
-                      </Link>
+                <li key={item.id}>
+                  <article className="studio-garment">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+                      <time dateTime={item.eventDate}>{displayCalendarDate(item.eventDate)}</time>
                     </p>
-                  ) : null}
+                    <h2 className="font-display text-2xl font-semibold leading-snug break-words">
+                      <Link href={`/events/${item.id}`} className="text-foreground underline">
+                        {item.name}
+                      </Link>
+                    </h2>
+                    {item.occasion ? <p className="text-base text-foreground">{item.occasion}</p> : null}
+                    {item.lookId && item.lookName ? (
+                      <p className="text-sm text-muted">
+                        Saved look:{" "}
+                        <Link href={`/looks/${item.lookId}`} className="font-semibold text-primary underline">
+                          {item.lookName}
+                        </Link>
+                      </p>
+                    ) : null}
+                  </article>
                 </li>
               ))}
             </ul>
@@ -263,7 +279,7 @@ export function EventFields({
           onChange={(event) => onChange({ name: event.target.value })}
           className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
         />
-        {errors.name ? <p className="text-sm text-accent-profile-text">{errors.name}</p> : null}
+        {errors.name ? <p className="error-alert text-sm">{errors.name}</p> : null}
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor={`${formId}-date`} className="text-sm font-semibold text-foreground">
@@ -279,7 +295,7 @@ export function EventFields({
           onChange={(event) => onChange({ eventDate: event.target.value })}
           className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
         />
-        {errors.event_date ? <p className="text-sm text-accent-profile-text">{errors.event_date}</p> : null}
+        {errors.event_date ? <p className="error-alert text-sm">{errors.event_date}</p> : null}
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor={`${formId}-occasion`} className="text-sm font-semibold text-foreground">
@@ -297,7 +313,7 @@ export function EventFields({
           onChange={(event) => onChange({ occasion: event.target.value })}
           className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
         />
-        {errors.occasion ? <p className="text-sm text-accent-profile-text">{errors.occasion}</p> : null}
+        {errors.occasion ? <p className="error-alert text-sm">{errors.occasion}</p> : null}
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor={`${formId}-notes`} className="text-sm font-semibold text-foreground">
@@ -316,7 +332,7 @@ export function EventFields({
           onChange={(event) => onChange({ notes: event.target.value })}
           className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground"
         />
-        {errors.notes ? <p className="text-sm text-accent-profile-text">{errors.notes}</p> : null}
+        {errors.notes ? <p className="error-alert text-sm">{errors.notes}</p> : null}
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor={`${formId}-comfort`} className="text-sm font-semibold text-foreground">
@@ -335,7 +351,7 @@ export function EventFields({
           onChange={(event) => onChange({ comfortText: event.target.value })}
           className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground"
         />
-        {errors.comfort_needs ? <p className="text-sm text-accent-profile-text">{errors.comfort_needs}</p> : null}
+        {errors.comfort_needs ? <p className="error-alert text-sm">{errors.comfort_needs}</p> : null}
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor={`${formId}-look`} className="text-sm font-semibold text-foreground">

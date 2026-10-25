@@ -14,8 +14,13 @@ export default async function EventsPage({ searchParams }: PageProps) {
   const deleted = Array.isArray(query.deleted) ? query.deleted[0] : query.deleted;
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <WorkspaceHeader kicker="Events" title="Dates you want to dress for" />
+    <div className="flex min-w-0 flex-col gap-6 pb-8">
+      <WorkspaceHeader kicker="Events" title="Dates you want to dress for" kickerClassName="text-accent-wardrobe-text">
+        <p className="text-base text-muted">
+          Keep occasions you want to dress for, optionally attach a saved look, and open Emergency Fit when you need an
+          outfit.
+        </p>
+      </WorkspaceHeader>
       <EventsPanel key={user.id} userId={user.id} showDeleted={deleted === "1"} />
     </div>
   );
