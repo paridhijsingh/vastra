@@ -5,16 +5,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { SaveLookForm } from "@/components/SaveLookForm";
+import { StudioGarmentCard } from "@/components/StudioGarmentCard";
 import { emergencyFitFields, type EventFitContext } from "@/lib/emergency/event-fit";
 import {
   AI_SUGGESTION_NOTE,
   CREATING_OUTFIT_MESSAGE,
-  EMERGENCY_FIT_EXPLANATION,
   NO_AVAILABLE_ITEMS_MESSAGE,
   PROFILE_MISSING_MESSAGE,
   WARDROBE_LOAD_ERROR,
   canGenerateOutfit,
-  categoryLabel,
   generationRequest,
   renderedOutfitFromProxy,
   wardrobeGate,
@@ -227,13 +226,10 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
         onSubmit={onSubmit}
         noValidate
         className="flex min-w-0 max-w-2xl flex-col gap-5"
-        aria-describedby={`${formId}-explain`}
+        aria-describedby="emergency-fit-purpose"
       >
-        <p id={`${formId}-explain`} className="text-base text-muted">
-          {EMERGENCY_FIT_EXPLANATION}
-        </p>
         {event ? (
-          <p className="text-base text-foreground">
+          <p className="status-card text-base text-foreground">
             Styling for {event.name}.{" "}
             <Link href={`/events/${event.id}`} className="font-semibold text-primary underline">
               Back to this event
@@ -242,44 +238,44 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
         ) : null}
 
         {gate.status === "loading" ? (
-          <p role="status" className="text-base text-muted">
+          <p role="status" className="status-card text-base text-muted">
             Loading wardrobe…
           </p>
         ) : null}
         {gate.status === "error" ? (
-          <div className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4" role="alert">
+          <div className="error-alert flex flex-col gap-3" role="alert">
             <p>{WARDROBE_LOAD_ERROR}</p>
             <button
               type="button"
               onClick={() => {
                 void reloadWardrobe();
               }}
-              className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold text-foreground"
+              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Try again
             </button>
           </div>
         ) : null}
         {gate.status === "empty" ? (
-          <div className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4" role="status">
+          <div className="status-card flex flex-col gap-3" role="status">
             <p>{NO_AVAILABLE_ITEMS_MESSAGE}</p>
             <Link
               href="/wardrobe"
-              className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold text-foreground"
+              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Go to Wardrobe
             </Link>
           </div>
         ) : null}
         {profileMissing ? (
-          <p className="text-base text-muted">
+          <p className="status-card text-base text-muted">
             {PROFILE_MISSING_MESSAGE}{" "}
             <Link href="/profile" className="font-semibold text-primary underline">
               Style Profile
             </Link>
           </p>
         ) : null}
-        {profileNote ? <p className="text-base text-muted">{profileNote}</p> : null}
+        {profileNote ? <p className="status-card text-base text-muted">{profileNote}</p> : null}
 
         <div className="flex flex-col gap-2">
           <label htmlFor={`${formId}-occasion`} className="text-sm font-semibold text-foreground">
@@ -358,12 +354,12 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
         </div>
 
         {formError ? (
-          <p role="alert" className="text-base text-accent-profile-text">
+          <p role="alert" className="error-alert text-sm">
             {formError}
           </p>
         ) : null}
         {pending ? (
-          <p role="status" className="text-base text-muted">
+          <p role="status" className="status-card text-sm font-semibold text-primary">
             {CREATING_OUTFIT_MESSAGE}
           </p>
         ) : null}
@@ -371,7 +367,7 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
         <button
           type="submit"
           disabled={!generateEnabled}
-          className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+          className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto"
         >
           Generate outfit
         </button>
@@ -384,51 +380,39 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
 
 function OutfitResult({ outfit, event }: { outfit: EmergencyOutfitView; event: EventFitContext | null }) {
   return (
-    <section aria-labelledby="emergency-result-title" className="flex min-w-0 flex-col gap-5">
-      <div className="flex max-w-2xl flex-col gap-2">
+    <section aria-labelledby="emergency-result-title" className="studio-outfit scroll-mt-4">
+      <div className="studio-outfit-hero">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+          Proposed look
+        </p>
         <h2
           id="emergency-result-title"
           className="font-display text-3xl font-semibold tracking-tight text-foreground break-words"
         >
           {outfit.title}
         </h2>
-        <p className="text-base text-foreground">{outfit.explanation}</p>
+        <p className="text-base leading-relaxed text-foreground">{outfit.explanation}</p>
       </div>
       {outfit.limitations ? (
-        <p
-          role="status"
-          className="max-w-2xl rounded-md border border-primary bg-surface px-4 py-4 text-base font-semibold text-foreground"
-        >
+        <p role="status" className="status-card max-w-2xl text-base font-semibold text-foreground">
           {outfit.limitations}
         </p>
       ) : null}
-      <ul className="grid min-w-0 gap-4 sm:grid-cols-2">
+      <ul className="studio-garment-grid">
         {outfit.items.map((item, index) => (
-          <li
-            key={`${item.name}-${item.category}-${index}`}
-            className="flex min-w-0 flex-col gap-3 border-t-[3px] border-primary bg-surface px-4 py-4"
-          >
-            <h3 className="font-display text-xl font-semibold text-foreground break-words">{item.name}</h3>
-            <dl className="grid gap-2 text-sm">
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold text-muted">Category</dt>
-                <dd className="text-foreground">{categoryLabel(item.category)}</dd>
-              </div>
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold text-muted">Color</dt>
-                <dd className="text-foreground">{item.color}</dd>
-              </div>
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold text-muted">Notes</dt>
-                <dd className="text-foreground break-words">{item.notes}</dd>
-              </div>
-            </dl>
+          <li key={`${item.name}-${item.category}-${index}`}>
+            <StudioGarmentCard
+              name={item.name}
+              category={item.category}
+              color={item.color}
+              notes={item.notes}
+            />
           </li>
         ))}
       </ul>
       {outfit.styling_tips.length > 0 ? (
         <div className="flex max-w-2xl flex-col gap-2">
-          <h3 className="text-sm font-semibold text-foreground">Styling tips</h3>
+          <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">Styling tips</h3>
           <ul className="list-disc pl-5 text-base text-foreground">
             {outfit.styling_tips.map((tip, index) => (
               <li key={`${index}-${tip}`}>{tip}</li>
@@ -437,13 +421,18 @@ function OutfitResult({ outfit, event }: { outfit: EmergencyOutfitView; event: E
         </div>
       ) : null}
       <p className="text-sm text-muted">{AI_SUGGESTION_NOTE}</p>
-      <SaveLookForm
-        key={`${outfit.itemIds.join("|")}::${outfit.title}`}
-        itemIds={outfit.itemIds}
-        defaultName={outfit.title}
-        defaultOccasion={outfit.title}
-        attachEvent={event}
-      />
+      <div className="studio-save">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+          Save a look
+        </p>
+        <SaveLookForm
+          key={`${outfit.itemIds.join("|")}::${outfit.title}`}
+          itemIds={outfit.itemIds}
+          defaultName={outfit.title}
+          defaultOccasion={outfit.title}
+          attachEvent={event}
+        />
+      </div>
     </section>
   );
 }

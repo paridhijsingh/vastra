@@ -1,6 +1,12 @@
 export const STYLING_PREFERENCES = ["men", "women", "unisex"] as const;
 export type StylingPreference = (typeof STYLING_PREFERENCES)[number];
 
+export const STYLING_PREFERENCE_LABELS: Record<StylingPreference, string> = {
+  men: "Men",
+  women: "Women",
+  unisex: "Unisex",
+};
+
 export const PREFERRED_STYLES = ["Indian", "Western", "fusion"] as const;
 export type PreferredStyle = (typeof PREFERRED_STYLES)[number];
 

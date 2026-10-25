@@ -1,8 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
+import { WardrobeCard } from "@/components/WardrobeCard";
+import {
+  recentlyAdded,
+  visibleWardrobeItems,
+  wardrobeCountLabel,
+  type WardrobeSort,
+} from "@/lib/wardrobe/display";
 import {
   AVAILABILITY_LABELS,
   AVAILABILITY_STATUSES,
@@ -33,6 +40,8 @@ const FILTERS: { value: FilterValue; label: string }[] = [
 export function WardrobePanel({ userId }: Props) {
   const router = useRouter();
   const [filter, setFilter] = useState<FilterValue>("all");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<WardrobeSort>("added");
   const [items, setItems] = useState<WardrobeItemPublic[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +65,11 @@ export function WardrobePanel({ userId }: Props) {
       setLoadState("loading");
       setError(null);
       try {
-        const query =
+        const queryString =
           activeFilter === "all"
             ? ""
             : `?availability=${encodeURIComponent(activeFilter)}`;
-        const response = await fetch(`/api/wardrobe${query}`, {
+        const response = await fetch(`/api/wardrobe${queryString}`, {
           method: "GET",
           headers: { Accept: "application/json" },
           cache: "no-store",
@@ -103,6 +112,7 @@ export function WardrobePanel({ userId }: Props) {
     resetForm();
     setSuccess(null);
     setError(null);
+    setQuery("");
     void loadItems(filter);
   }, [userId, filter, loadItems, resetForm]);
 
@@ -118,6 +128,18 @@ export function WardrobePanel({ userId }: Props) {
     });
     setSuccess(null);
     setError(null);
+    window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      nameInputRef.current?.focus();
+    });
+  }
+
+  function scrollToForm() {
+    resetForm();
+    window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      nameInputRef.current?.focus();
+    });
   }
 
   function updateField<K extends keyof WardrobeItemCreate>(
@@ -186,7 +208,6 @@ export function WardrobePanel({ userId }: Props) {
       }
 
       if (!response.ok) {
-        // Preserve unsaved form input.
         setError(
           body.error ??
             (response.status === 503
@@ -264,20 +285,118 @@ export function WardrobePanel({ userId }: Props) {
   }
 
   const busy = saving || Boolean(deletingId);
+  const visible = useMemo(
+    () => visibleWardrobeItems(items, query, sort),
+    [items, query, sort],
+  );
+  const featured = useMemo(
+    () => (query.trim() ? [] : recentlyAdded(items)),
+    [items, query],
+  );
   const emptyWardrobe = loadState === "ready" && filter === "all" && items.length === 0;
   const emptyFilter =
     loadState === "ready" && filter !== "all" && items.length === 0;
+  const emptySearch =
+    loadState === "ready" && items.length > 0 && visible.length === 0;
 
   return (
-    <div className="flex min-w-0 flex-col gap-8">
-      <section className="flex min-w-0 flex-col gap-4" aria-labelledby="wardrobe-filter-heading">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <h2
-            id="wardrobe-filter-heading"
-            className="font-display text-2xl font-semibold text-foreground"
-          >
-            Your items
+    <div className="flex min-w-0 flex-col gap-8 pb-8">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted">
+          {loadState === "ready" ? wardrobeCountLabel(items.length, visible.length, query) : " "}
+        </p>
+        <button
+          type="button"
+          onClick={scrollToForm}
+          className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+        >
+          Add item
+        </button>
+      </div>
+
+      {success ? (
+        <p className="status-card text-sm" role="status">
+          {success}
+        </p>
+      ) : null}
+
+      {error ? (
+        <p className="error-alert text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {loadState === "loading" ? (
+        <p className="status-card text-base text-muted" role="status">
+          Loading wardrobe…
+        </p>
+      ) : null}
+
+      {featured.length > 0 ? (
+        <section className="flex min-w-0 flex-col gap-3" aria-labelledby="wardrobe-featured-heading">
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+              Recently added
+            </p>
+            <h2 id="wardrobe-featured-heading" className="font-display text-2xl font-semibold text-foreground">
+              Latest pieces
+            </h2>
+            <p className="text-sm text-muted">
+              The newest garments in this list, in the order they were saved. They also appear in the collection below.
+            </p>
+          </div>
+          <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+            {featured.map((item) => (
+              <li key={`featured-${item.id}`}>
+                <WardrobeCard
+                  item={item}
+                  busy={busy}
+                  deleting={deletingId === item.id}
+                  onEdit={startEdit}
+                  onDelete={(entry) => void onDelete(entry)}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="flex min-w-0 flex-col gap-4" aria-labelledby="wardrobe-collection-heading">
+        <div className="flex min-w-0 flex-col gap-3">
+          <h2 id="wardrobe-collection-heading" className="font-display text-2xl font-semibold text-foreground">
+            Collection
           </h2>
+          <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <label htmlFor="wardrobe-search" className="text-sm font-semibold text-foreground">
+                Search
+              </label>
+              <input
+                id="wardrobe-search"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Name, color, notes…"
+                className="min-h-12 w-full max-w-md rounded-md border border-border bg-surface px-3 text-base text-foreground"
+              />
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <label htmlFor="wardrobe-sort" className="text-sm font-semibold text-foreground">
+                Sort
+              </label>
+              <select
+                id="wardrobe-sort"
+                value={sort}
+                onChange={(event) =>
+                  setSort(event.target.value === "name" ? "name" : "added")
+                }
+                className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
+              >
+                <option value="added">As added</option>
+                <option value="name">Name A–Z</option>
+              </select>
+            </div>
+          </div>
           <div
             className="flex flex-wrap gap-2"
             role="group"
@@ -305,46 +424,15 @@ export function WardrobePanel({ userId }: Props) {
           </div>
         </div>
 
-        {success ? (
-          <p
-            className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground"
-            role="status"
-          >
-            {success}
-          </p>
-        ) : null}
-
-        {error ? (
-          <p
-            className="rounded-md border border-[#b94732]/40 bg-[#b94732]/10 px-4 py-3 text-sm text-accent-profile-text"
-            role="alert"
-          >
-            {error}
-          </p>
-        ) : null}
-
-        {loadState === "loading" ? (
-          <p className="rounded-md border border-border bg-surface px-4 py-4 text-base text-muted" role="status">
-            Loading wardrobe…
-          </p>
-        ) : null}
-
         {emptyWardrobe ? (
-          <div
-            className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4"
-            role="status"
-          >
+          <div className="status-card flex flex-col gap-3" role="status">
             <p className="text-base text-muted">
               Your wardrobe is empty. Your style profile stores your preferences;
               add your clothing and accessories here.
             </p>
             <button
               type="button"
-              onClick={() => {
-                resetForm();
-                formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                nameInputRef.current?.focus();
-              }}
+              onClick={scrollToForm}
               className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Add your first item
@@ -353,66 +441,28 @@ export function WardrobePanel({ userId }: Props) {
         ) : null}
 
         {emptyFilter ? (
-          <p className="rounded-md border border-border bg-surface px-4 py-4 text-base text-muted" role="status">
+          <p className="status-card text-base text-muted" role="status">
             No items match this filter. Try “All” or another availability status.
           </p>
         ) : null}
 
-        {items.length > 0 ? (
-          <ul className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className="flex min-w-0 flex-col gap-3 border-t-[3px] border-[var(--accent-wardrobe)] bg-surface px-4 py-4"
-              >
-                <div className="flex min-w-0 flex-col gap-1">
-                  <h3 className="font-display text-xl font-semibold text-foreground break-words">
-                    {item.name}
-                  </h3>
-                  <p className="text-xs font-medium tracking-wide text-muted">
-                    ID: <span className="font-mono text-foreground">{item.id}</span>
-                  </p>
-                </div>
-                <dl className="grid gap-2 text-sm">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-semibold text-muted">Category</dt>
-                    <dd className="text-foreground">{CATEGORY_LABELS[item.category]}</dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-semibold text-muted">Color</dt>
-                    <dd className="text-foreground">{item.color}</dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-semibold text-muted">Availability</dt>
-                    <dd className="text-foreground">
-                      {AVAILABILITY_LABELS[item.availability]}
-                    </dd>
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <dt className="font-semibold text-muted">Notes</dt>
-                    <dd className="text-foreground break-words">
-                      {item.notes ? item.notes : "—"}
-                    </dd>
-                  </div>
-                </dl>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(item)}
-                    disabled={busy}
-                    className="btn-primary inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold disabled:opacity-70"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void onDelete(item)}
-                    disabled={busy}
-                    className="inline-flex min-h-11 items-center rounded-md border border-[#b94732]/50 px-3 text-sm font-semibold text-accent-profile-text hover:bg-[#b94732]/10 disabled:opacity-70"
-                  >
-                    {deletingId === item.id ? "Deleting…" : "Delete"}
-                  </button>
-                </div>
+        {emptySearch ? (
+          <p className="status-card text-base text-muted" role="status">
+            No pieces match this search. Try a different name, color, or note.
+          </p>
+        ) : null}
+
+        {visible.length > 0 ? (
+          <ul className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
+            {visible.map((item) => (
+              <li key={item.id}>
+                <WardrobeCard
+                  item={item}
+                  busy={busy}
+                  deleting={deletingId === item.id}
+                  onEdit={startEdit}
+                  onDelete={(entry) => void onDelete(entry)}
+                />
               </li>
             ))}
           </ul>
@@ -430,14 +480,11 @@ export function WardrobePanel({ userId }: Props) {
           >
             {editingId ? "Edit item" : "Add item"}
           </h2>
-          {editingId ? (
-            <p className="text-sm text-muted">
-              Editing item ID{" "}
-              <span className="font-mono text-foreground">{editingId}</span>
-            </p>
+          {editingId && original ? (
+            <p className="text-sm text-muted">Editing {original.name}.</p>
           ) : (
             <p className="text-sm text-muted">
-              Multiple items can share a category or name. Each item has its own ID.
+              Multiple items can share a category or name. Each item is stored separately.
             </p>
           )}
         </div>
@@ -445,7 +492,7 @@ export function WardrobePanel({ userId }: Props) {
         <form
           ref={formRef}
           id="wardrobe-item-form"
-          className="flex flex-col gap-4"
+          className="flex scroll-mb-24 flex-col gap-4"
           onSubmit={onSubmit}
           noValidate
         >
@@ -554,7 +601,7 @@ export function WardrobePanel({ userId }: Props) {
             <button
               type="submit"
               disabled={busy}
-              className="btn-primary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+              className="btn-primary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               {saving
                 ? "Saving…"
@@ -571,7 +618,7 @@ export function WardrobePanel({ userId }: Props) {
                   setSuccess(null);
                   setError(null);
                 }}
-                className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground hover:bg-black/5 disabled:opacity-70"
+                className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold"
               >
                 Cancel edit
               </button>

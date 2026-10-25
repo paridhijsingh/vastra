@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   EMPTY_PROFILE_FORM,
   PROFILE_CREATED_MESSAGE,
+  STYLING_PREFERENCES,
+  STYLING_PREFERENCE_LABELS,
   STYLING_PREFERENCE_REQUIRED_MESSAGE,
   draftFromProfile,
   offerWardrobeNext,
@@ -40,6 +42,19 @@ describe("new profile styling preference", () => {
     const payload = toProfilePayload(draft);
     expect(payload?.styling_preference).toBe("women");
     expect(payload?.preferred_colors).toEqual(["navy"]);
+  });
+
+  it("shows Men, Women, and Unisex without changing stored values", () => {
+    expect(STYLING_PREFERENCE_LABELS).toEqual({
+      men: "Men",
+      women: "Women",
+      unisex: "Unisex",
+    });
+    expect(STYLING_PREFERENCES).toEqual(["men", "women", "unisex"]);
+    expect(toProfilePayload({ ...EMPTY_PROFILE_FORM, styling_preference: "men" })?.styling_preference).toBe("men");
+    expect(toProfilePayload({ ...EMPTY_PROFILE_FORM, styling_preference: "unisex" })?.styling_preference).toBe(
+      "unisex",
+    );
   });
 
   it("resets to the placeholder after deletion", () => {

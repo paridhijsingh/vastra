@@ -9,10 +9,9 @@ export default async function WardrobePage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <WorkspaceHeader kicker="Wardrobe" title="Clothes you already own" kickerClassName="text-accent-wardrobe-text">
+      <WorkspaceHeader kicker="Wardrobe" title="My Wardrobe" kickerClassName="text-accent-wardrobe-text">
         <p className="text-base text-muted">
-          Add, edit, and delete clothing and accessories, and mark items available, in the laundry, or packed away.
-          Your wardrobe is private to your account.
+          The clothes you already own, ready to be styled. Private to your account.
         </p>
       </WorkspaceHeader>
       <WardrobePanel key={user.id} userId={user.id} />

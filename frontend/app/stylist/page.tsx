@@ -8,7 +8,7 @@ export default async function StylistPage() {
   const user = await requireUser("/stylist");
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col">
+    <div className="stylist-page">
       <WorkspaceHeader kicker="Stylist" title="Your personal stylist">
         <p className="text-base text-muted">
           Ask for Indian, Western, fusion, or cultural outfits from your saved profile and wardrobe.

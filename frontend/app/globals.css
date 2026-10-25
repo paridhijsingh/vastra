@@ -85,6 +85,43 @@ a {
   color: var(--primary-foreground);
 }
 
+.btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-secondary {
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  background-color: color-mix(in srgb, var(--foreground) 5%, var(--surface));
+}
+
+.btn-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.status-card {
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background-color: var(--surface);
+  padding: 0.75rem 1rem;
+  color: var(--foreground);
+}
+
+.error-alert {
+  border: 1px solid color-mix(in srgb, var(--accent-profile) 40%, transparent);
+  border-radius: 0.375rem;
+  background-color: color-mix(in srgb, var(--accent-profile) 10%, transparent);
+  padding: 0.75rem 1rem;
+  color: var(--accent-profile-text);
+}
+
 .studio-root {
   min-height: 100dvh;
   background:
@@ -95,8 +132,10 @@ a {
 
 .studio-app {
   display: flex;
+  height: 100dvh;
   min-height: 100dvh;
   min-width: 0;
+  overflow: hidden;
 }
 
 .studio-app[inert] {
@@ -118,6 +157,7 @@ a {
   position: relative;
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex: 1;
   flex-direction: column;
 }
@@ -148,15 +188,25 @@ a {
 }
 
 .studio-workspace {
+  display: flex;
   min-width: 0;
+  min-height: 0;
   flex: 1;
+  flex-direction: column;
   overflow: auto;
   padding: 1rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
 }
 
+.studio-workspace-plain {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 .studio-home-main {
+  display: flex;
   min-width: 0;
+  min-height: 0;
   flex: 1;
+  flex-direction: column;
 }
 
 .studio-mobile-bar {
@@ -209,8 +259,9 @@ a {
 .home-studio {
   position: relative;
   display: flex;
-  height: 100dvh;
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   overflow: hidden;
   background: #efe6d8;
@@ -496,6 +547,340 @@ a {
   text-align: center;
   text-transform: uppercase;
   transition: opacity 0.4s ease;
+}
+
+.wardrobe-card {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+}
+
+.wardrobe-stage {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--sage) 28%, #f4eee4), #efe6d8);
+}
+
+@media (min-width: 768px) {
+  .wardrobe-stage {
+    aspect-ratio: 4 / 5;
+  }
+}
+
+.wardrobe-stage[data-washed="true"] {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--wardrobe-wash, var(--sage)) 26%, #f4eee4),
+      color-mix(in srgb, var(--wardrobe-wash, var(--sage)) 8%, #efe6d8)
+    );
+}
+
+.wardrobe-hanger {
+  width: 2.7rem;
+  height: 3.1rem;
+  border: 1.5px solid color-mix(in srgb, var(--accent-wardrobe) 75%, transparent);
+  border-radius: 42% 42% 18% 18%;
+  box-shadow: inset 0 1px 0 rgba(255, 248, 230, 0.45);
+}
+
+.wardrobe-stage[data-category="bottom"] .wardrobe-hanger {
+  height: 3.35rem;
+  border-radius: 12% 12% 38% 38%;
+}
+
+.wardrobe-stage[data-category="one_piece"] .wardrobe-hanger {
+  height: 3.6rem;
+  border-radius: 36% 36% 12% 12%;
+}
+
+.wardrobe-stage[data-category="outerwear"] .wardrobe-hanger {
+  width: 3.15rem;
+  border-radius: 28% 28% 16% 16%;
+}
+
+.wardrobe-stage[data-category="shoes"] .wardrobe-hanger {
+  width: 3.1rem;
+  height: 1.7rem;
+  border-radius: 70% 70% 35% 35%;
+}
+
+.wardrobe-stage[data-category="accessory"] .wardrobe-hanger {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+}
+
+.wardrobe-stage[data-category="other"] .wardrobe-hanger {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.35rem;
+}
+
+.stylist-page {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.stylist-page > header {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.stylist-panel {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "thread"
+    "outfit"
+    "composer";
+  gap: 0.75rem;
+}
+
+.stylist-panel:not(:has(.stylist-outfit-card)) {
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "thread"
+    "composer";
+}
+
+.stylist-thread {
+  grid-area: thread;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.stylist-outfit {
+  grid-area: outfit;
+  min-width: 0;
+  min-height: 0;
+  max-height: 36%;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.stylist-panel:not(:has(.stylist-outfit-card)) .stylist-outfit {
+  display: none;
+}
+
+.stylist-composer {
+  grid-area: composer;
+  z-index: 12;
+  display: flex;
+  min-width: 0;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 0.75rem 0.85rem;
+  padding-bottom: max(0.75rem, var(--stylist-keyboard, 0px));
+}
+
+.stylist-empty {
+  display: flex;
+  max-width: 36rem;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 1.15rem 1.15rem 1.25rem;
+}
+
+.stylist-you,
+.stylist-reply {
+  min-width: 0;
+  max-width: min(100%, 40rem);
+  border: 1px solid var(--border);
+  padding: 0.85rem 1rem;
+}
+
+.stylist-you {
+  margin-left: auto;
+  max-width: min(100%, 28rem);
+  border-radius: 1rem 1rem 0.35rem 1rem;
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+.stylist-reply {
+  margin-right: auto;
+  border-radius: 1rem 1rem 1rem 0.35rem;
+  background: var(--surface);
+}
+
+.stylist-prompt {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: var(--background);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+}
+
+.stylist-prompt:hover,
+.stylist-prompt:focus-visible {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+
+.stylist-prompt:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.stylist-outfit-empty {
+  display: none;
+  border: 1px dashed var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 1.1rem 1.15rem;
+  color: var(--muted);
+}
+
+@media (max-width: 767px) {
+  .studio-workspace:has(.stylist-page) {
+    overflow: hidden;
+    padding-bottom: 0.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .stylist-prompt {
+    width: auto;
+    max-width: 20rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stylist-panel,
+  .stylist-panel:not(:has(.stylist-outfit-card)) {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 26rem);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "thread outfit"
+      "composer outfit";
+    gap: 1.15rem 1.35rem;
+  }
+
+  .stylist-outfit {
+    display: block;
+    max-height: none;
+  }
+
+  .stylist-panel:not(:has(.stylist-outfit-card)) .stylist-outfit {
+    display: block;
+  }
+
+  .stylist-outfit-empty {
+    display: block;
+  }
+
+  .stylist-composer {
+    padding: 1rem 1.1rem;
+  }
+}
+
+.studio-outfit {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.studio-outfit-hero {
+  display: flex;
+  max-width: 42rem;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.studio-garment-grid {
+  display: grid;
+  min-width: 0;
+  gap: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .studio-garment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.studio-garment {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 1rem 1.05rem;
+}
+
+.studio-save {
+  display: flex;
+  max-width: 42rem;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 1.1rem 1.15rem;
+}
+
+.studio-pick {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 0.85rem 1rem;
+}
+
+.studio-pick[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border));
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+
+.studio-fieldset {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 1.1rem 1.15rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

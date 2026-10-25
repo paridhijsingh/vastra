@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 
 import { StudioShell } from "@/components/StudioShell";
@@ -23,6 +23,12 @@ export const metadata: Metadata = {
   title: "Vastra (वस्त्र)",
   description:
     "Your personal AI stylist for the clothes you already own. Ready, set, styled.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
 };
 
 export default async function RootLayout({

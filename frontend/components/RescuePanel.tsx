@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { SaveLookForm } from "@/components/SaveLookForm";
+import { StudioGarmentCard } from "@/components/StudioGarmentCard";
 import {
   AI_SUGGESTION_NOTE,
   CHANGE_REQUEST_MAX,
@@ -12,7 +13,6 @@ import {
   FINDING_REPLACEMENT_MESSAGE,
   ITEMS_CHANGED_MESSAGE,
   NO_CANDIDATE_MESSAGE,
-  RESCUE_EXPLANATION,
   SAME_CATEGORY_NOTE,
   WARDROBE_LOAD_ERROR,
   availableItemsFromApi,
@@ -179,34 +179,33 @@ export function RescuePanel({ userId }: Props) {
   return (
     <div className="flex min-w-0 flex-col gap-8">
       <form onSubmit={onSubmit} noValidate className="flex min-w-0 max-w-2xl flex-col gap-5">
-        <p className="text-base text-muted">{RESCUE_EXPLANATION}</p>
-        <p className="text-base text-muted">{SAME_CATEGORY_NOTE}</p>
+        <p className="status-card text-base text-muted">{SAME_CATEGORY_NOTE}</p>
 
         {gate.status === "loading" ? (
-          <p role="status" className="text-base text-muted">
+          <p role="status" className="status-card text-base text-muted">
             Loading wardrobe…
           </p>
         ) : null}
         {gate.status === "error" ? (
-          <div className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4" role="alert">
+          <div className="error-alert flex flex-col gap-3" role="alert">
             <p>{WARDROBE_LOAD_ERROR}</p>
             <button
               type="button"
               onClick={() => {
                 void loadWardrobe();
               }}
-              className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold"
+              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Try again
             </button>
           </div>
         ) : null}
         {gate.status === "empty" ? (
-          <div className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4" role="status">
+          <div className="status-card flex flex-col gap-3" role="status">
             <p>{EMPTY_WARDROBE_MESSAGE}</p>
             <Link
               href="/wardrobe"
-              className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold"
+              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Go to Wardrobe
             </Link>
@@ -224,7 +223,7 @@ export function RescuePanel({ userId }: Props) {
                 const checked = form.selectedIds.includes(item.id);
                 const replaceChecked = form.replaceItemId === item.id;
                 return (
-                  <li key={item.id} className="rounded-md border border-border bg-surface px-4 py-3">
+                  <li key={item.id} className="studio-pick" data-selected={checked ? "true" : undefined}>
                     <label className="flex min-h-11 items-start gap-3">
                       <input
                         type="checkbox"
@@ -235,11 +234,10 @@ export function RescuePanel({ userId }: Props) {
                           setErrors({});
                         }}
                       />
-                      <span className="text-base text-foreground">
-                        <span className="font-semibold">{item.name}</span>
-                        <span className="text-muted">
-                          {" "}
-                          · {item.color} · {categoryLabel(item.category)}
+                      <span className="min-w-0 text-base text-foreground">
+                        <span className="font-display text-lg font-semibold leading-snug break-words">{item.name}</span>
+                        <span className="block text-sm text-muted">
+                          {categoryLabel(item.category)} · {item.color}
                         </span>
                       </span>
                     </label>
@@ -274,11 +272,11 @@ export function RescuePanel({ userId }: Props) {
         ) : null}
 
         {form.replaceItemId && candidateCount === 0 && gate.status === "ready" ? (
-          <div className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4" role="status">
+          <div className="status-card flex flex-col gap-3" role="status">
             <p>{NO_CANDIDATE_MESSAGE}</p>
             <Link
               href="/wardrobe"
-              className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold"
+              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
             >
               Go to Wardrobe
             </Link>
@@ -354,8 +352,8 @@ export function RescuePanel({ userId }: Props) {
         </div>
 
         {formError ? (
-          <div className="flex flex-col gap-3" role="alert">
-            <p className="text-base text-accent-profile-text">{formError}</p>
+          <div className="error-alert flex flex-col gap-3" role="alert">
+            <p className="text-base">{formError}</p>
             {reloadOffer ? (
               <button
                 type="button"
@@ -363,7 +361,7 @@ export function RescuePanel({ userId }: Props) {
                   setReloadOffer(false);
                   void loadWardrobe();
                 }}
-                className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold"
+                className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
               >
                 Reload wardrobe
               </button>
@@ -371,7 +369,7 @@ export function RescuePanel({ userId }: Props) {
           </div>
         ) : null}
         {pending ? (
-          <p role="status" className="text-base text-muted">
+          <p role="status" className="status-card text-sm font-semibold text-primary">
             {FINDING_REPLACEMENT_MESSAGE}
           </p>
         ) : null}
@@ -379,7 +377,7 @@ export function RescuePanel({ userId }: Props) {
         <button
           type="submit"
           disabled={!submitEnabled}
-          className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+          className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto"
         >
           Rescue my outfit
         </button>
@@ -391,54 +389,61 @@ export function RescuePanel({ userId }: Props) {
 
 function RescueResult({ outfit }: { outfit: RescueView }) {
   return (
-    <section aria-labelledby="rescue-result-title" className="flex min-w-0 flex-col gap-5">
-      <div className="flex max-w-2xl flex-col gap-2">
-        <h2 id="rescue-result-title" className="font-display text-3xl font-semibold tracking-tight break-words">
+    <section aria-labelledby="rescue-result-title" className="studio-outfit scroll-mt-4">
+      <div className="studio-outfit-hero">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+          Rescued look
+        </p>
+        <h2
+          id="rescue-result-title"
+          className="font-display text-3xl font-semibold tracking-tight text-foreground break-words"
+        >
           {outfit.title}
         </h2>
         <p className="text-base font-semibold text-foreground">{outfit.headline}</p>
-        <p className="text-base text-foreground">{outfit.explanation}</p>
+        <p className="text-base leading-relaxed text-foreground">{outfit.explanation}</p>
       </div>
       {outfit.limitations ? (
-        <p
-          role="status"
-          className="max-w-2xl rounded-md border border-primary bg-surface px-4 py-4 text-base font-semibold"
-        >
+        <p role="status" className="status-card max-w-2xl text-base font-semibold text-foreground">
           {outfit.limitations}
         </p>
       ) : null}
-      <ul className="grid min-w-0 gap-4 sm:grid-cols-2">
+      <ul className="studio-garment-grid">
         {outfit.cards.map((card, index) => (
-          <li
-            key={`${card.role}-${card.name}-${index}`}
-            className="flex min-w-0 flex-col gap-3 border-t-[3px] border-primary bg-surface px-4 py-4"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">{card.role}</p>
-            <h3 className="font-display text-xl font-semibold break-words">{card.name}</h3>
-            <dl className="grid gap-2 text-sm">
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold text-muted">Category</dt>
-                <dd>{categoryLabel(card.category)}</dd>
-              </div>
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold text-muted">Color</dt>
-                <dd>{card.color}</dd>
-              </div>
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold text-muted">Notes</dt>
-                <dd className="break-words">{card.notes}</dd>
-              </div>
-            </dl>
+          <li key={`${card.role}-${card.name}-${index}`}>
+            <StudioGarmentCard
+              name={card.name}
+              category={card.category}
+              color={card.color}
+              notes={card.notes}
+              kicker={card.role}
+              kickerClassName={card.role === "Replaced" ? "text-primary" : "text-muted"}
+            />
           </li>
         ))}
       </ul>
+      {outfit.styling_tips.length > 0 ? (
+        <div className="flex max-w-2xl flex-col gap-2">
+          <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">Styling tips</h3>
+          <ul className="list-disc pl-5 text-base text-foreground">
+            {outfit.styling_tips.map((tip, index) => (
+              <li key={`${index}-${tip}`}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <p className="text-sm text-muted">{AI_SUGGESTION_NOTE}</p>
-      <SaveLookForm
-        key={`${outfit.itemIds.join("|")}::${outfit.title}`}
-        itemIds={outfit.itemIds}
-        defaultName={outfit.title}
-        defaultOccasion={outfit.title}
-      />
+      <div className="studio-save">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+          Save a look
+        </p>
+        <SaveLookForm
+          key={`${outfit.itemIds.join("|")}::${outfit.title}`}
+          itemIds={outfit.itemIds}
+          defaultName={outfit.title}
+          defaultOccasion={outfit.title}
+        />
+      </div>
     </section>
   );
 }

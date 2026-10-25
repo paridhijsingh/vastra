@@ -9,6 +9,7 @@ import {
   PREFERRED_STYLES,
   PROFILE_CREATED_MESSAGE,
   STYLING_PREFERENCES,
+  STYLING_PREFERENCE_LABELS,
   STYLING_PREFERENCE_REQUIRED_MESSAGE,
   draftFromProfile,
   linesToList,
@@ -298,7 +299,7 @@ export function ProfileForm() {
 
   if (loadState === "loading") {
     return (
-      <p className="rounded-md border border-border bg-surface px-4 py-4 text-base text-muted" role="status">
+      <p className="status-card text-base text-muted" role="status">
         Loading your style profile…
       </p>
     );
@@ -309,17 +310,13 @@ export function ProfileForm() {
   return (
     <div className="flex max-w-2xl min-w-0 flex-col gap-5">
       {!exists ? (
-        <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-muted" role="status">
+        <p className="status-card text-sm text-muted" role="status">
           No saved profile yet. Fill in your preferences and save to create one.
         </p>
       ) : null}
 
       {success ? (
-        <div
-          ref={wardrobeNextRef}
-          className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-3"
-          role="status"
-        >
+        <div ref={wardrobeNextRef} className="status-card flex flex-col gap-3" role="status">
           <p className="text-sm text-foreground">{success}</p>
           {showWardrobeNext ? (
             <Link
@@ -333,105 +330,123 @@ export function ProfileForm() {
       ) : null}
 
       {error ? (
-        <p
-          className="rounded-md border border-[#b94732]/40 bg-[#b94732]/10 px-4 py-3 text-sm text-accent-profile-text"
-          role="alert"
-        >
+        <p className="error-alert text-sm" role="alert">
           {error}
         </p>
       ) : null}
 
-      <form className="flex flex-col gap-6" onSubmit={onSave} noValidate>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="styling_preference" className="text-sm font-semibold text-foreground">
-            Styling preference
-          </label>
-          <select
-            id="styling_preference"
-            name="styling_preference"
-            value={stylingPreference}
-            required
-            disabled={busy}
-            onChange={(event) => {
-              const value = event.target.value;
-              setStylingPreference(
-                value === "men" || value === "women" || value === "unisex" ? value : "",
-              );
-            }}
-            className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
-          >
-            <option value="" disabled>
-              Choose a styling preference
-            </option>
-            {STYLING_PREFERENCES.map((value) => (
-              <option key={value} value={value}>
-                {value}
+      <form className="flex flex-col gap-5" onSubmit={onSave} noValidate>
+        <div className="studio-fieldset">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-profile-text">
+            Dressing
+          </p>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="styling_preference" className="text-sm font-semibold text-foreground">
+              Styling preference
+            </label>
+            <select
+              id="styling_preference"
+              name="styling_preference"
+              value={stylingPreference}
+              required
+              disabled={busy}
+              onChange={(event) => {
+                const value = event.target.value;
+                setStylingPreference(
+                  value === "men" || value === "women" || value === "unisex" ? value : "",
+                );
+              }}
+              className="min-h-12 rounded-md border border-border bg-background px-3 text-base text-foreground"
+            >
+              <option value="" disabled>
+                Choose a styling preference
               </option>
-            ))}
-          </select>
+              {STYLING_PREFERENCES.map((value) => (
+                <option key={value} value={value}>
+                  {STYLING_PREFERENCE_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <fieldset className="flex flex-col gap-2" disabled={busy}>
-          <legend className="text-sm font-semibold text-foreground">
+        <fieldset className="studio-fieldset" disabled={busy}>
+          <legend className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-profile-text">
             Preferred styles
           </legend>
           <p className="text-sm text-muted">
             Select any combination of Indian, Western, and fusion. Leave all unchecked for none.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-4">
-            {PREFERRED_STYLES.map((style) => (
-              <label key={style} className="inline-flex min-h-11 items-center gap-2 text-base text-foreground">
-                <input
-                  type="checkbox"
-                  name="preferred_styles"
-                  value={style}
-                  checked={preferredStyles.includes(style)}
-                  onChange={() => toggleStyle(style)}
-                  className="h-4 w-4"
-                />
-                {style}
-              </label>
-            ))}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {PREFERRED_STYLES.map((style) => {
+              const checked = preferredStyles.includes(style);
+              return (
+                <label
+                  key={style}
+                  className={[
+                    "inline-flex min-h-11 items-center gap-2 rounded-md border px-3 text-base text-foreground",
+                    checked
+                      ? "border-transparent bg-primary text-primary-foreground"
+                      : "border-border bg-background",
+                  ].join(" ")}
+                >
+                  <input
+                    type="checkbox"
+                    name="preferred_styles"
+                    value={style}
+                    checked={checked}
+                    onChange={() => toggleStyle(style)}
+                    className="h-4 w-4"
+                  />
+                  {style}
+                </label>
+              );
+            })}
           </div>
         </fieldset>
 
-        <TextListField
-          id="preferred_colors"
-          label="Preferred colors"
-          hint="Enter one color per line. Leave blank for none."
-          value={preferredColorsText}
-          disabled={busy}
-          onChange={setPreferredColorsText}
-        />
-        <TextListField
-          id="fit_preferences"
-          label="Fit preferences"
-          hint="Describe how you like clothes to fit—for example, relaxed, fitted, straight-leg, or wide-leg. Enter one preference per line."
-          value={fitText}
-          disabled={busy}
-          onChange={setFitText}
-        />
-        <TextListField
-          id="comfort_preferences"
-          label="Comfort preferences"
-          hint="Enter one comfort preference per line. Leave blank for none."
-          value={comfortText}
-          disabled={busy}
-          onChange={setComfortText}
-        />
-        <TextListField
-          id="clothing_to_avoid"
-          label="Clothing to avoid"
-          hint="Enter one item to avoid per line. Leave blank for none."
-          value={avoidText}
-          disabled={busy}
-          onChange={setAvoidText}
-        />
+        <div className="studio-fieldset">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-profile-text">
+            Details
+          </p>
+          <TextListField
+            id="preferred_colors"
+            label="Preferred colors"
+            hint="Enter one color per line. Leave blank for none."
+            value={preferredColorsText}
+            disabled={busy}
+            onChange={setPreferredColorsText}
+          />
+          <TextListField
+            id="fit_preferences"
+            label="Fit preferences"
+            hint="Describe how you like clothes to fit—for example, relaxed, fitted, straight-leg, or wide-leg. Enter one preference per line."
+            value={fitText}
+            disabled={busy}
+            onChange={setFitText}
+          />
+          <TextListField
+            id="comfort_preferences"
+            label="Comfort preferences"
+            hint="Enter one comfort preference per line. Leave blank for none."
+            value={comfortText}
+            disabled={busy}
+            onChange={setComfortText}
+          />
+          <TextListField
+            id="clothing_to_avoid"
+            label="Clothing to avoid"
+            hint="Enter one item to avoid per line. Leave blank for none."
+            value={avoidText}
+            disabled={busy}
+            onChange={setAvoidText}
+          />
+        </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
             type="submit"
-            className="btn-primary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+            className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto"
             disabled={busy}
           >
             {saving ? "Saving…" : exists ? "Save profile" : "Create profile"}
@@ -441,7 +456,7 @@ export function ProfileForm() {
               type="button"
               onClick={() => void onDelete()}
               disabled={busy}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text transition-colors hover:bg-[#b94732]/10 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text hover:bg-[#b94732]/10 disabled:opacity-70 sm:w-auto"
             >
               {deleting ? "Deleting…" : "Delete profile"}
             </button>
@@ -480,7 +495,7 @@ function TextListField({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground"
+        className="rounded-md border border-border bg-background px-3 py-2 text-base text-foreground"
       />
     </div>
   );

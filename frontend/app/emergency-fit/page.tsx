@@ -8,6 +8,7 @@ import { AUTH_COOKIE_NAME } from "@/lib/auth/cookies";
 import { requireUser } from "@/lib/auth/require-user";
 import { emergencyFitEventPath } from "@/lib/emergency/event-fit";
 import { prepareEmergencyFit } from "@/lib/emergency/event-fit-server";
+import { EMERGENCY_FIT_EXPLANATION } from "@/lib/emergency/form";
 
 export const dynamic = "force-dynamic";
 
@@ -31,17 +32,21 @@ export default async function EmergencyFitPage({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <WorkspaceHeader kicker="Emergency Fit" title="What can you wear?" />
+    <div className="flex min-w-0 flex-col gap-6 pb-8">
+      <WorkspaceHeader kicker="Emergency Fit" title="What can you wear?">
+        <p id="emergency-fit-purpose" className="text-base text-muted">
+          {EMERGENCY_FIT_EXPLANATION}
+        </p>
+      </WorkspaceHeader>
       {loaded.status === "not_found" ? (
-        <div className="flex max-w-2xl flex-col gap-3" role="status">
+        <div className="status-card flex max-w-2xl flex-col gap-3" role="status">
           <p>That saved event could not be found.</p>
           <Link href="/events" className="font-semibold text-primary underline">
             Back to Events
           </Link>
         </div>
       ) : loaded.status === "unavailable" ? (
-        <p role="alert" className="text-base text-accent-profile-text">
+        <p role="alert" className="error-alert text-base">
           Could not load this saved event.
         </p>
       ) : (

@@ -113,19 +113,13 @@ export function AuthForm({ mode, nextPath = "/", initialMessage }: Props) {
       </p>
 
       {info ? (
-        <p
-          className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground"
-          role="status"
-        >
+        <p className="status-card text-sm" role="status">
           {info}
         </p>
       ) : null}
 
       {error ? (
-        <p
-          className="rounded-md border border-[#b94732]/40 bg-[#b94732]/10 px-4 py-3 text-sm text-accent-profile-text"
-          role="alert"
-        >
+        <p className="error-alert text-sm" role="alert">
           {error}
         </p>
       ) : null}

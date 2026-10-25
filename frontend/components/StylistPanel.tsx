@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
 import { SaveLookForm } from "@/components/SaveLookForm";
 import {
@@ -30,6 +30,7 @@ export function StylistPanel({ userId }: Props) {
   const router = useRouter();
   const formId = useId();
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const threadEndRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef(false);
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<StylistTurn[]>([]);
@@ -37,6 +38,30 @@ export function StylistPanel({ userId }: Props) {
   const [pending, setPending] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const page = document.querySelector(".stylist-page");
+    const viewport = window.visualViewport;
+    if (!(page instanceof HTMLElement) || !viewport) return;
+
+    const syncKeyboard = () => {
+      const obscured = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      page.style.setProperty("--stylist-keyboard", `${obscured}px`);
+    };
+
+    viewport.addEventListener("resize", syncKeyboard);
+    viewport.addEventListener("scroll", syncKeyboard);
+    syncKeyboard();
+    return () => {
+      viewport.removeEventListener("resize", syncKeyboard);
+      viewport.removeEventListener("scroll", syncKeyboard);
+      page.style.removeProperty("--stylist-keyboard");
+    };
+  }, []);
+
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [entries, pending]);
 
   function fillExample(prompt: string) {
     if (pendingRef.current) return;
@@ -97,14 +122,11 @@ export function StylistPanel({ userId }: Props) {
   const latestOutfit = [...entries].reverse().find((entry) => entry.reply.suggestions.length > 0)?.reply.suggestions[0] ?? null;
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col gap-4 lg:h-[calc(100dvh-7.5rem)] lg:flex-row" key={userId}>
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-      <section className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto" aria-label="Conversation">
+    <div className="stylist-panel" key={userId}>
+      <section className="stylist-thread" aria-label="Conversation">
         {entries.length === 0 ? (
-          <div
-            className="flex max-w-xl flex-col gap-4 rounded-lg border border-border bg-surface px-5 py-6 sm:px-6"
-            role="status"
-          >
+          <div className="stylist-empty" role="status">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">Consultation</p>
             <p className="font-display text-xl font-semibold text-foreground">Start a conversation</p>
             <p className="text-base text-muted">
               Describe the occasion, a garment you already own, or a style you want to keep. Choose an
@@ -113,39 +135,49 @@ export function StylistPanel({ userId }: Props) {
             <ExamplePrompts disabled={pending} onSelect={fillExample} />
           </div>
         ) : (
-          <ol className="flex flex-col gap-6" aria-live="polite">
+          <ol className="flex flex-col gap-5" aria-live="polite">
             {entries.map((entry, index) => (
-              <li key={`${index}-${entry.user.slice(0, 24)}`} className="flex flex-col gap-3">
-                <article
-                  className="ml-auto w-full max-w-[min(100%,28rem)] rounded-2xl rounded-br-md border border-primary/25 bg-primary/[0.08] px-4 py-3 sm:px-5 sm:py-4"
-                  aria-label="Your message"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">You</p>
-                  <p className="mt-2 whitespace-pre-wrap text-base text-foreground">{entry.user}</p>
+              <li key={`${index}-${entry.user.slice(0, 24)}`} className="flex min-w-0 flex-col gap-3">
+                <article className="stylist-you" aria-label="Your message">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">You</p>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-base text-foreground">{entry.user}</p>
                 </article>
                 <article
-                  className="mr-auto w-full max-w-[min(100%,40rem)] rounded-2xl rounded-bl-md border border-border bg-surface px-4 py-4"
+                  className="stylist-reply"
                   aria-label={entry.reply.kind === "clarification" ? "Stylist question" : "Stylist reply"}
                 >
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-wardrobe-text">Stylist</p>
-                  <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-foreground">{entry.reply.message}</p>
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+                    Stylist
+                  </p>
+                  <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed text-foreground">
+                    {entry.reply.message}
+                  </p>
                 </article>
               </li>
             ))}
           </ol>
         )}
+        <div ref={threadEndRef} />
       </section>
 
-      <form
-        onSubmit={onSubmit}
-        className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border border-border bg-background px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:bg-surface sm:px-5 sm:py-4"
-        aria-busy={pending}
-      >
+      <aside className="stylist-outfit" aria-label="Latest outfit">
+        {latestOutfit ? (
+          <div className="stylist-outfit-card">
+            <OutfitCard suggestion={latestOutfit} />
+          </div>
+        ) : (
+          <div className="stylist-outfit-empty" role="status">
+            Proposed outfits appear here. On a wide screen they sit beside the conversation.
+          </div>
+        )}
+      </aside>
+
+      <form onSubmit={onSubmit} className="stylist-composer" aria-busy={pending}>
         {entries.length > 0 ? (
           <ExamplePrompts disabled={pending} onSelect={fillExample} compact />
         ) : null}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
           <label htmlFor={`${formId}-message`} className="text-base font-semibold text-foreground">
             Message
           </label>
@@ -158,30 +190,30 @@ export function StylistPanel({ userId }: Props) {
             name="message"
             value={message}
             maxLength={STYLIST_MESSAGE_MAX}
-            rows={4}
+            rows={3}
             disabled={pending}
             aria-invalid={fieldError ? true : undefined}
             aria-describedby={
               fieldError ? `${formId}-message-hint ${formId}-message-error` : `${formId}-message-hint`
             }
             onChange={(event) => setMessage(event.target.value)}
-            className="min-h-28 w-full rounded-lg border border-border bg-background px-3 py-3 text-base text-foreground transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-70 sm:bg-surface"
+            className="min-h-[4.75rem] w-full rounded-lg border border-border bg-background px-3 py-3 text-base text-foreground transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-70 sm:min-h-28 sm:bg-surface"
             placeholder="Describe the occasion or the clothes you want to style…"
           />
         </div>
 
         {fieldError ? (
-          <p id={`${formId}-message-error`} className="text-base text-accent-profile-text" role="alert">
+          <p id={`${formId}-message-error`} className="error-alert text-sm" role="alert">
             {fieldError}
           </p>
         ) : null}
         {formError ? (
-          <p className="rounded-md border border-accent-profile/30 bg-surface px-4 py-3 text-base text-accent-profile-text" role="alert">
+          <p className="error-alert text-sm" role="alert">
             {formError}
           </p>
         ) : null}
         {pending ? (
-          <p role="status" className="text-base font-semibold text-primary">
+          <p role="status" className="status-card text-sm font-semibold text-primary">
             Asking the stylist…
           </p>
         ) : null}
@@ -193,26 +225,12 @@ export function StylistPanel({ userId }: Props) {
           <button
             type="submit"
             disabled={pending}
-            className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto"
           >
             Send
           </button>
         </div>
       </form>
-      </div>
-
-      <aside
-        className="min-w-0 lg:w-[min(100%,28rem)] lg:shrink-0 lg:overflow-auto"
-        aria-label="Latest outfit"
-      >
-        {latestOutfit ? (
-          <OutfitCard suggestion={latestOutfit} />
-        ) : (
-          <div className="rounded-xl border border-dashed border-border bg-surface px-4 py-5 text-base text-muted" role="status">
-            Proposed outfits appear here. On a wide screen they sit beside the conversation.
-          </div>
-        )}
-      </aside>
     </div>
   );
 }
@@ -227,19 +245,14 @@ function ExamplePrompts({
   compact?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       <p className="text-sm font-semibold text-foreground">
         {compact ? "Try another prompt" : "Example prompts"}
       </p>
-      <ul className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <ul className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
         {STYLIST_EXAMPLE_PROMPTS.map((prompt) => (
-          <li key={prompt} className="min-w-0 sm:max-w-xs">
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onSelect(prompt)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-primary/40 hover:bg-primary/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
+          <li key={prompt} className="min-w-0">
+            <button type="button" disabled={disabled} onClick={() => onSelect(prompt)} className="stylist-prompt">
               {prompt}
             </button>
           </li>
@@ -252,12 +265,15 @@ function ExamplePrompts({
 function OutfitCard({ suggestion }: { suggestion: StylistSuggestionView }) {
   return (
     <section
-      className="flex flex-col gap-4 rounded-xl border border-border bg-surface px-4 py-4 sm:px-5 sm:py-5"
+      className="flex flex-col gap-4 rounded-[0.85rem] border border-border bg-surface px-4 py-4 sm:px-5 sm:py-5"
       aria-label={suggestion.title}
     >
       <div className="flex flex-col gap-2 border-b border-border pb-4">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 shrink-0 rounded-full bg-accent-wardrobe" aria-hidden="true" />
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
+          Proposed look
+        </p>
+        <div className="flex items-start gap-2">
+          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent-wardrobe" aria-hidden="true" />
           <h3 className="font-display text-2xl font-semibold tracking-tight text-foreground break-words">
             {suggestion.title}
           </h3>
@@ -268,7 +284,7 @@ function OutfitCard({ suggestion }: { suggestion: StylistSuggestionView }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-muted">Garments</h4>
+        <h4 className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">Garments</h4>
         <ul className="flex flex-col gap-3">
           {suggestion.pieces.map((piece, pieceIndex) => (
             <GarmentRow key={`${piece.source}-${piece.wardrobeItemId ?? piece.name}-${pieceIndex}`} piece={piece} />
@@ -283,7 +299,7 @@ function OutfitCard({ suggestion }: { suggestion: StylistSuggestionView }) {
             <SaveLookForm itemIds={suggestion.lookItemIds} defaultName={suggestion.title} defaultOccasion="" />
           </div>
         ) : (
-          <p className="rounded-md border border-border bg-surface px-4 py-3 text-base text-muted" role="status">
+          <p className="status-card text-base text-muted" role="status">
             {MIXED_OUTFIT_SAVE_MESSAGE}
           </p>
         )}
@@ -294,7 +310,7 @@ function OutfitCard({ suggestion }: { suggestion: StylistSuggestionView }) {
 
 function GarmentRow({ piece }: { piece: StylistPieceView }) {
   return (
-    <li className="rounded-lg border border-border bg-surface px-4 py-3">
+    <li className="rounded-lg border border-border bg-background px-4 py-3">
       <p className="font-display text-lg font-semibold text-foreground break-words">{piece.name}</p>
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-0.5">

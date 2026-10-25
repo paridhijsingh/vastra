@@ -8,7 +8,15 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { WardrobeEntrance } from "@/components/WardrobeEntrance";
 import { HOME_HOTSPOTS_WIDE } from "@/lib/home/room";
 import type { PublicUser } from "@/lib/auth/cookies";
-import { MOBILE_PRIMARY_NAV, NAV_ITEMS, isActivePath, navAccentVar } from "@/lib/nav";
+import {
+  MOBILE_PRIMARY_NAV,
+  NAV_ITEMS,
+  compactNavLabel,
+  isAuthPath,
+  isActivePath,
+  navAccentVar,
+  showsAppNav,
+} from "@/lib/nav";
 import { useEntrance } from "@/lib/studio/entrance-context";
 
 type Props = {
@@ -20,6 +28,8 @@ export function StudioShell({ user, children }: Props) {
   const pathname = usePathname();
   const { visible, replayEntrance } = useEntrance();
   const isHome = pathname === "/";
+  const isAuth = isAuthPath(pathname);
+  const showAppNav = showsAppNav(pathname);
   const [helpOpen, setHelpOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -31,57 +41,70 @@ export function StudioShell({ user, children }: Props) {
     <div className="studio-root">
       <WardrobeEntrance />
       <div className="studio-app" inert={visible} aria-hidden={visible || undefined}>
-        {isHome ? null : (
+        {showAppNav ? (
           <aside className="studio-sidebar" aria-label="Studio">
             <BrandLink compact />
             <NavList pathname={pathname} />
           </aside>
-        )}
+        ) : null}
 
         <div className="studio-main-column">
           <header className={isHome ? "studio-home-bar" : "studio-topbar"}>
             <div className="flex min-w-0 items-center gap-3">
-              {isHome ? <BrandLink /> : <p className="truncate text-sm font-semibold text-foreground md:hidden">Vastra</p>}
+              {isHome || isAuth ? (
+                <BrandLink />
+              ) : (
+                <p className="truncate text-sm font-semibold text-foreground md:hidden">Vastra</p>
+              )}
             </div>
             <div className="flex min-w-0 items-center gap-2">
               <AccountLinks user={user} />
               <button
                 type="button"
                 onClick={() => setHelpOpen(true)}
-                className="inline-flex min-h-11 items-center rounded-md border border-border bg-surface px-3 text-sm font-semibold text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="btn-secondary inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
               >
                 Help
               </button>
-              {isHome ? null : (
+              {showAppNav ? (
                 <button
                   type="button"
-                  className="inline-flex min-h-11 items-center rounded-md border border-border bg-surface px-3 text-sm font-semibold md:hidden"
+                  className="btn-secondary inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold md:hidden"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((open) => !open)}
                 >
                   Menu
                 </button>
-              )}
+              ) : null}
             </div>
           </header>
 
-          {menuOpen && !isHome ? (
+          {menuOpen && showAppNav ? (
             <nav className="studio-mobile-sheet md:hidden" aria-label="All pages">
               <NavList pathname={pathname} />
             </nav>
           ) : null}
 
-          <main className={isHome ? "studio-home-main" : "studio-workspace"}>{children}</main>
+          <main
+            className={
+              isHome ? "studio-home-main" : showAppNav ? "studio-workspace" : "studio-workspace studio-workspace-plain"
+            }
+          >
+            {children}
+          </main>
 
-          {isHome ? null : (
+          {showAppNav ? (
             <nav className="studio-mobile-bar md:hidden" aria-label="Primary mobile">
               <ul className="flex items-stretch justify-around gap-1">
-                {NAV_ITEMS.filter((item) => MOBILE_PRIMARY_NAV.includes(item.href)).map((item) => {
+                {MOBILE_PRIMARY_NAV.map((href) => {
+                  const item = NAV_ITEMS.find((entry) => entry.href === href);
+                  if (!item) return null;
                   const active = isActivePath(pathname, item.href);
                   return (
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        aria-label={item.label}
                         aria-current={active ? "page" : undefined}
                         className="inline-flex min-h-12 min-w-16 flex-col items-center justify-center px-2 text-xs font-semibold text-foreground"
                       >
@@ -90,14 +113,14 @@ export function StudioShell({ user, children }: Props) {
                           style={{ backgroundColor: navAccentVar(item.accent) }}
                           aria-hidden="true"
                         />
-                        {item.label === "Saved Looks" ? "Looks" : item.label}
+                        {compactNavLabel(item)}
                       </Link>
                     </li>
                   );
                 })}
               </ul>
             </nav>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -204,7 +227,7 @@ function HelpDialog({ onClose, onReplay }: { onClose: () => void; onReplay: () =
           <button
             type="button"
             onClick={onReplay}
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-semibold"
+            className="btn-secondary inline-flex min-h-11 items-center justify-center rounded-md px-4 text-sm font-semibold"
           >
             Replay entrance
           </button>

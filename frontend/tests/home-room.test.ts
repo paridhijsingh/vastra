@@ -8,7 +8,13 @@ import {
   HOME_TUTORIAL_STEPS,
   hotspotById,
 } from "@/lib/home/room";
-import { NAV_ITEMS } from "@/lib/nav";
+import {
+  MOBILE_PRIMARY_NAV,
+  NAV_ITEMS,
+  compactNavLabel,
+  isAuthPath,
+  showsAppNav,
+} from "@/lib/nav";
 
 const REQUIRED_ROUTES = [
   "/profile",
@@ -76,5 +82,26 @@ describe("studio navigation", () => {
     for (const route of REQUIRED_ROUTES) {
       expect(hrefs).toContain(route);
     }
+  });
+
+  it("puts Emergency Fit on the mobile bar without dropping Saved Looks from the menu", () => {
+    expect(MOBILE_PRIMARY_NAV).toEqual(["/", "/stylist", "/wardrobe", "/emergency-fit"]);
+    expect(NAV_ITEMS.some((item) => item.href === "/looks")).toBe(true);
+    expect(NAV_ITEMS.some((item) => item.href === "/rescue")).toBe(true);
+    const emergency = NAV_ITEMS.find((item) => item.href === "/emergency-fit");
+    expect(emergency).toBeDefined();
+    expect(compactNavLabel(emergency!)).toBe("Emergency");
+    expect(emergency?.label).toBe("Emergency Fit");
+  });
+
+  it("hides app navigation on home and authentication routes", () => {
+    expect(showsAppNav("/")).toBe(false);
+    expect(showsAppNav("/signin")).toBe(false);
+    expect(showsAppNav("/register")).toBe(false);
+    expect(showsAppNav("/wardrobe")).toBe(true);
+    expect(showsAppNav("/emergency-fit")).toBe(true);
+    expect(isAuthPath("/signin")).toBe(true);
+    expect(isAuthPath("/register")).toBe(true);
+    expect(isAuthPath("/wardrobe")).toBe(false);
   });
 });
