@@ -230,13 +230,13 @@ export function DictionaryBrowser({
   return (
     <div className="flex max-w-3xl min-w-0 flex-col gap-6">
       {showDeletedNotice ? (
-        <p className="text-base font-semibold text-foreground" role="status">
+        <p className="status-card text-base font-semibold text-foreground" role="status">
           {TERM_DELETED_MESSAGE}
         </p>
       ) : null}
 
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-muted">{DICTIONARY_PRIVACY_NOTE}</p>
+        <p className="status-card text-sm text-muted">{DICTIONARY_PRIVACY_NOTE}</p>
         <button
           type="button"
           aria-expanded={adding}
@@ -245,12 +245,12 @@ export function DictionaryBrowser({
             setFormError(null);
             setFieldErrors({});
           }}
-          className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+          className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
         >
           Add a term
         </button>
         {adding ? (
-          <div className="rounded-md border border-border bg-surface px-4 py-4">
+          <div className="studio-fieldset">
             <h2 className="font-display text-2xl font-semibold text-foreground">Add a term</h2>
             <DictionaryTermForm
               values={formValues}
@@ -271,20 +271,26 @@ export function DictionaryBrowser({
         ) : null}
       </div>
 
-      <p className="text-sm text-muted">{DICTIONARY_FILTER_NOTE}</p>
-
       {unsupportedStyle ? (
-        <p className="rounded-md border border-[#7a4e72]/40 bg-[#7a4e72]/10 px-4 py-3 text-sm text-accent-dictionary-text" role="alert">
-          “{unsupportedStyle}” is not one of the broad styles. Those are Indian, Western, and fusion. Type a cultural or style tag in the tag field instead.
+        <p className="status-card text-sm text-accent-dictionary-text" role="alert">
+          “{unsupportedStyle}” is not one of the broad styles. Those are Indian, Western, and fusion. Type a cultural or
+          style tag in the tag field instead.
         </p>
       ) : null}
       {unsupportedKind ? (
-        <p className="rounded-md border border-[#7a4e72]/40 bg-[#7a4e72]/10 px-4 py-3 text-sm text-accent-dictionary-text" role="alert">
+        <p className="status-card text-sm text-accent-dictionary-text" role="alert">
           “{unsupportedKind}” is not a dictionary type.
         </p>
       ) : null}
 
-      <form className="flex flex-col gap-4" onSubmit={onSearch}>
+      <form className="studio-fieldset" onSubmit={onSearch}>
+        <div className="flex flex-col gap-1">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-dictionary-text">
+            Browse
+          </p>
+          <h2 className="font-display text-xl font-semibold text-foreground">Find a term</h2>
+          <p className="text-sm text-muted">{DICTIONARY_FILTER_NOTE}</p>
+        </div>
         <div className="flex flex-col gap-2">
           <label htmlFor="dictionary-q" className="text-sm font-semibold text-foreground">
             Search
@@ -295,7 +301,7 @@ export function DictionaryBrowser({
             type="search"
             value={q}
             onChange={(event) => setQ(event.target.value)}
-            className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
+            className="min-h-12 w-full min-w-0 rounded-md border border-border bg-background px-3 text-base text-foreground"
           />
         </div>
 
@@ -313,11 +319,11 @@ export function DictionaryBrowser({
             value={tag}
             aria-describedby="dictionary-tag-hint"
             onChange={(event) => setTag(event.target.value)}
-            className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
+            className="min-h-12 w-full min-w-0 rounded-md border border-border bg-background px-3 text-base text-foreground"
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <label htmlFor="dictionary-style" className="text-sm font-semibold text-foreground">
               Style
@@ -332,7 +338,7 @@ export function DictionaryBrowser({
                   value === "Indian" || value === "Western" || value === "fusion" ? value : "",
                 );
               }}
-              className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
+              className="min-h-12 w-full min-w-0 rounded-md border border-border bg-background px-3 text-base text-foreground"
             >
               <option value="">All styles</option>
               {DICTIONARY_STYLES.map((value) => (
@@ -361,7 +367,7 @@ export function DictionaryBrowser({
                     : "",
                 );
               }}
-              className="min-h-12 rounded-md border border-border bg-surface px-3 text-base text-foreground"
+              className="min-h-12 w-full min-w-0 rounded-md border border-border bg-background px-3 text-base text-foreground"
             >
               <option value="">All types</option>
               {DICTIONARY_KINDS.map((value) => (
@@ -382,7 +388,7 @@ export function DictionaryBrowser({
           </button>
           <Link
             href="/dictionary"
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground"
+            className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold text-foreground"
           >
             Clear filters
           </Link>
@@ -390,14 +396,14 @@ export function DictionaryBrowser({
       </form>
 
       {loadState === "loading" ? (
-        <p className="rounded-md border border-border bg-surface px-4 py-4 text-base text-muted" role="status">
+        <p className="status-card text-base text-muted" role="status">
           Loading dictionary…
         </p>
       ) : null}
 
       {loadState === "error" ? (
-        <div className="flex flex-col gap-3 rounded-md border border-[#b94732]/40 bg-[#b94732]/10 px-4 py-3" role="alert">
-          <p className="text-sm text-accent-profile-text">{error ?? DICTIONARY_LOAD_ERROR}</p>
+        <div className="error-alert flex flex-col gap-3" role="alert">
+          <p className="text-sm">{error ?? DICTIONARY_LOAD_ERROR}</p>
           <button
             type="button"
             onClick={() =>
@@ -408,7 +414,7 @@ export function DictionaryBrowser({
                 tag: submittedTag,
               })
             }
-            className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+            className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
           >
             Retry
           </button>
@@ -416,13 +422,13 @@ export function DictionaryBrowser({
       ) : null}
 
       {loadState === "ready" && entries.length === 0 ? (
-        <div className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4" role="status">
+        <div className="status-card flex flex-col gap-3" role="status">
           {filtersActive ? (
             <>
               <p className="text-base font-semibold text-foreground">{NO_MATCH_TITLE}</p>
               <Link
                 href="/dictionary"
-                className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-background px-5 text-base font-semibold text-foreground"
+                className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold text-foreground"
               >
                 Clear filters
               </Link>
@@ -437,66 +443,71 @@ export function DictionaryBrowser({
       ) : null}
 
       {loadState === "ready" && entries.length > 0 ? (
-        <ul className="flex flex-col gap-4">
+        <ul className="flex min-w-0 flex-col gap-4">
           {entries.map((entry) => (
-            <li
-              key={entry.id}
-              className="flex flex-col gap-3 rounded-md border border-border bg-surface px-4 py-4"
-            >
-              <Link
-                href={`/dictionary/${encodeURIComponent(entry.id)}`}
-                className="flex flex-col gap-2 hover:underline"
-              >
-                <span className="font-display text-2xl font-semibold text-foreground">
-                  {entry.term}
-                </span>
-                <span className="text-base text-foreground">{entry.definition}</span>
-                {entry.style_tags.length > 0 ? (
-                  <span className="flex flex-wrap gap-2">
-                    {entry.style_tags.map((tag) => (
-                      <span
-                        key={`${entry.id}-${tag}`}
-                        className="rounded-sm bg-[#7a4e72]/10 px-2 py-1 text-sm font-semibold text-accent-dictionary-text"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </span>
-                ) : null}
-              </Link>
-              {canManageDictionaryEntry(entry) ? (
-                confirmId === entry.id ? (
-                  <DictionaryDeleteConfirm
-                    term={entry.term}
-                    busy={deletingId === entry.id}
-                    error={deleteError}
-                    onConfirm={() => void onDelete(entry)}
-                    onCancel={() => {
-                      setConfirmId(null);
-                      setDeleteError(null);
-                    }}
-                  />
-                ) : (
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <Link
-                      href={`/dictionary/${encodeURIComponent(entry.id)}?edit=1`}
-                      className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground"
-                    >
-                      Edit
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConfirmId(entry.id);
+            <li key={entry.id}>
+              <article className="studio-garment">
+                <Link
+                  href={`/dictionary/${encodeURIComponent(entry.id)}`}
+                  className="flex min-w-0 flex-col gap-2 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+                >
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-dictionary-text">
+                    {DICTIONARY_KIND_LABELS[entry.kind]}
+                  </p>
+                  <h2 className="font-display text-2xl font-semibold leading-snug text-foreground break-words underline">
+                    {entry.term}
+                  </h2>
+                  <p className="text-base text-foreground line-clamp-3">{entry.definition}</p>
+                  {entry.styles.length > 0 ? (
+                    <p className="text-sm text-muted">{entry.styles.join(" · ")}</p>
+                  ) : null}
+                  {entry.style_tags.length > 0 ? (
+                    <span className="flex flex-wrap gap-2">
+                      {entry.style_tags.map((tag) => (
+                        <span
+                          key={`${entry.id}-${tag}`}
+                          className="rounded-sm bg-[#7a4e72]/10 px-2 py-1 text-sm font-semibold text-accent-dictionary-text"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </span>
+                  ) : null}
+                </Link>
+                {canManageDictionaryEntry(entry) ? (
+                  confirmId === entry.id ? (
+                    <DictionaryDeleteConfirm
+                      term={entry.term}
+                      busy={deletingId === entry.id}
+                      error={deleteError}
+                      onConfirm={() => void onDelete(entry)}
+                      onCancel={() => {
+                        setConfirmId(null);
                         setDeleteError(null);
                       }}
-                      className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#b94732]/50 px-3 text-sm font-semibold text-accent-profile-text"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )
-              ) : null}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <Link
+                        href={`/dictionary/${encodeURIComponent(entry.id)}?edit=1`}
+                        className="btn-secondary inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-semibold text-foreground"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmId(entry.id);
+                          setDeleteError(null);
+                        }}
+                        className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#b94732]/50 px-3 text-sm font-semibold text-accent-profile-text hover:bg-[#b94732]/10"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )
+                ) : null}
+              </article>
             </li>
           ))}
         </ul>

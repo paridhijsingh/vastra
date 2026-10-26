@@ -47,12 +47,12 @@ export function DictionaryDeleteConfirm({
   onCancel: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-[#b94732]/40 bg-[#b94732]/10 px-4 py-3" role="alertdialog" aria-labelledby="delete-term-title">
+    <div className="error-alert flex flex-col gap-3" role="alertdialog" aria-labelledby="delete-term-title">
       <p id="delete-term-title" className="text-base font-semibold text-foreground">
         {deleteConfirmationLabel(term)}
       </p>
       {error ? (
-        <p className="text-sm text-accent-profile-text" role="alert">
+        <p className="text-sm font-semibold" role="alert">
           {error}
         </p>
       ) : null}
@@ -69,7 +69,7 @@ export function DictionaryDeleteConfirm({
           type="button"
           disabled={busy}
           onClick={onCancel}
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-3 text-sm font-semibold text-foreground disabled:opacity-70"
+          className="btn-secondary inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-semibold text-foreground disabled:opacity-70"
         >
           Cancel
         </button>
@@ -122,12 +122,12 @@ export function DictionaryTermForm({
   return (
     <form ref={formRef} className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
       {formError ? (
-        <p className="rounded-md border border-[#b94732]/40 bg-[#b94732]/10 px-4 py-3 text-sm text-accent-profile-text" role="alert">
+        <p className="error-alert text-sm" role="alert">
           {formError}
         </p>
       ) : null}
       {status ? (
-        <p className="text-sm font-semibold text-foreground" role="status">
+        <p className="status-card text-sm font-semibold text-foreground" role="status">
           {status}
         </p>
       ) : null}
@@ -230,7 +230,7 @@ export function DictionaryTermForm({
           ))}
         </div>
         {errors.styles ? (
-          <p id={`${formId}-styles-error`} className="text-sm text-accent-profile-text" role="alert">
+          <p id={`${formId}-styles-error`} className="error-alert text-sm" role="alert">
             {errors.styles}
           </p>
         ) : null}
@@ -316,7 +316,7 @@ export function DictionaryTermForm({
             type="button"
             disabled={saving}
             onClick={onCancel}
-            className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground disabled:opacity-70"
+            className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold text-foreground disabled:opacity-70"
           >
             Cancel
           </button>
@@ -357,7 +357,7 @@ function Field({
       </p>
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-accent-profile-text" role="alert">
+        <p id={`${id}-error`} className="error-alert text-sm" role="alert">
           {error}
         </p>
       ) : null}
@@ -402,7 +402,7 @@ function ListField({
         className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground"
       />
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-accent-profile-text" role="alert">
+        <p id={`${id}-error`} className="error-alert text-sm" role="alert">
           {error}
         </p>
       ) : null}

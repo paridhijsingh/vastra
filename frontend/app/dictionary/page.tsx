@@ -19,7 +19,7 @@ export default async function DictionaryPage({ searchParams }: PageProps) {
   const user = await requireUser(dictionaryListHref(parsed.filters));
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6 pb-8">
       <WorkspaceHeader kicker="Style Dictionary" title="Explore fashion terms" kickerClassName="text-accent-dictionary-text">
         <p className="text-base text-muted">
           Learn about Indian, Western, fusion, and cultural styles, including pairings, occasions, weather, and comfort.

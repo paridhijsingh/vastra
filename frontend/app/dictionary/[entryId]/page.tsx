@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { DictionaryEntryView } from "@/components/DictionaryEntryView";
+import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { requireUser } from "@/lib/auth/require-user";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +19,18 @@ export default async function DictionaryEntryPage({ params, searchParams }: Page
   const user = await requireUser(`/dictionary/${entryId}`);
 
   return (
-    <DictionaryEntryView
-      key={user.id}
-      entryId={entryId}
-      showAddedNotice={added === "1"}
-      startEditing={edit === "1"}
-    />
+    <div className="flex min-w-0 flex-col gap-6 pb-8">
+      <WorkspaceHeader kicker="Style Dictionary" title="Term details" kickerClassName="text-accent-dictionary-text">
+        <Link href="/dictionary" className="text-sm font-semibold text-primary underline">
+          Back to the dictionary
+        </Link>
+      </WorkspaceHeader>
+      <DictionaryEntryView
+        key={user.id}
+        entryId={entryId}
+        showAddedNotice={added === "1"}
+        startEditing={edit === "1"}
+      />
+    </div>
   );
 }

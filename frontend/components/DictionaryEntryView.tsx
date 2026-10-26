@@ -113,7 +113,7 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
 
   if (loadState === "loading") {
     return (
-      <p className="rounded-md border border-border bg-surface px-4 py-4 text-base text-muted" role="status">
+      <p className="status-card text-base text-muted" role="status">
         Loading dictionary entry…
       </p>
     );
@@ -121,14 +121,12 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
 
   if (loadState === "missing") {
     return (
-      <div className="flex max-w-2xl flex-col gap-4" role="status">
-        <h1 className="font-display text-3xl font-semibold text-foreground sm:text-4xl">
-          {MISSING_ENTRY_TITLE}
-        </h1>
-        <p className="text-lg text-muted">{MISSING_ENTRY_BODY}</p>
+      <div className="status-card flex max-w-2xl flex-col gap-3" role="status">
+        <h2 className="font-display text-2xl font-semibold text-foreground">{MISSING_ENTRY_TITLE}</h2>
+        <p className="text-base text-muted">{MISSING_ENTRY_BODY}</p>
         <Link
           href="/dictionary"
-          className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+          className="text-sm font-semibold text-primary underline"
         >
           Back to the dictionary
         </Link>
@@ -138,12 +136,12 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
 
   if (loadState === "error" || !entry) {
     return (
-      <div className="flex max-w-2xl flex-col gap-3 rounded-md border border-[#b94732]/40 bg-[#b94732]/10 px-4 py-3" role="alert">
-        <p className="text-sm text-accent-profile-text">{error ?? DICTIONARY_LOAD_ERROR}</p>
+      <div className="error-alert flex max-w-2xl flex-col gap-3" role="alert">
+        <p className="text-sm">{error ?? DICTIONARY_LOAD_ERROR}</p>
         <button
           type="button"
           onClick={() => void load()}
-          className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+          className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
         >
           Retry
         </button>
@@ -254,45 +252,47 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
   return (
     <article className="flex max-w-2xl min-w-0 flex-col gap-6">
       {savedNotice ? (
-        <p className="text-base font-semibold text-foreground" role="status">
+        <p className="status-card text-base font-semibold text-foreground" role="status">
           {savedNotice}
         </p>
       ) : null}
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-dictionary-text">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-dictionary-text">
           {DICTIONARY_KIND_LABELS[entry.kind]}
         </p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground break-words sm:text-4xl md:text-5xl">
+        <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground break-words sm:text-4xl">
           {entry.term}
-        </h1>
+        </h2>
         <p className="text-lg text-foreground">{entry.definition}</p>
         {entry.styles.length > 0 ? (
-          <p className="text-base text-foreground">Broad styles: {entry.styles.join(", ")}</p>
+          <p className="text-base text-muted">Broad styles: {entry.styles.join(", ")}</p>
         ) : null}
         {manageable ? (
-          <p className="text-sm text-muted">{DICTIONARY_PRIVACY_NOTE}</p>
+          <p className="status-card text-sm text-muted">{DICTIONARY_PRIVACY_NOTE}</p>
         ) : null}
         <p className="text-sm text-muted">General guidance</p>
       </div>
 
       {manageable && editing && formValues ? (
-        <DictionaryTermForm
-          values={formValues}
-          errors={fieldErrors}
-          formError={formError}
-          status={formStatus}
-          saving={saving}
-          submitLabel="Save changes"
-          onChange={setFormValues}
-          onSubmit={() => void onSave()}
-          onCancel={() => {
-            setEditing(false);
-            setFormError(null);
-            setFormStatus(null);
-            setFieldErrors({});
-            setFormValues(entryToForm(entry));
-          }}
-        />
+        <div className="studio-fieldset">
+          <DictionaryTermForm
+            values={formValues}
+            errors={fieldErrors}
+            formError={formError}
+            status={formStatus}
+            saving={saving}
+            submitLabel="Save changes"
+            onChange={setFormValues}
+            onSubmit={() => void onSave()}
+            onCancel={() => {
+              setEditing(false);
+              setFormError(null);
+              setFormStatus(null);
+              setFieldErrors({});
+              setFormValues(entryToForm(entry));
+            }}
+          />
+        </div>
       ) : null}
 
       {manageable && !editing ? (
@@ -312,7 +312,7 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
             <button
               type="button"
               onClick={beginEdit}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground"
+              className="btn-secondary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold text-foreground"
             >
               Edit
             </button>
@@ -322,7 +322,7 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
                 setConfirmingDelete(true);
                 setDeleteError(null);
               }}
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text"
+              className="inline-flex min-h-12 items-center justify-center rounded-md border border-[#b94732]/50 px-5 text-base font-semibold text-accent-profile-text hover:bg-[#b94732]/10"
             >
               Delete
             </button>
@@ -345,9 +345,9 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
 
       <NoteList title="Also called" items={entry.aliases} />
       {entry.cultural_context ? (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-display text-xl font-semibold text-foreground">Cultural context</h2>
-          <p className="text-base text-foreground">{entry.cultural_context}</p>
+        <section className="studio-garment">
+          <h3 className="font-display text-xl font-semibold text-foreground">Cultural context</h3>
+          <p className="text-base text-foreground break-words">{entry.cultural_context}</p>
         </section>
       ) : null}
       <NoteList title="Pairing suggestions" items={entry.pairing_suggestions} />
@@ -362,7 +362,7 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
 
       <Link
         href="/dictionary"
-        className="inline-flex min-h-12 w-fit items-center justify-center rounded-md border border-border bg-surface px-5 text-base font-semibold text-foreground"
+        className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold text-foreground"
       >
         Back to the dictionary
       </Link>
@@ -373,11 +373,13 @@ export function DictionaryEntryView({ entryId, showAddedNotice, startEditing }: 
 function NoteList({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
+    <section className="studio-garment">
+      <h3 className="font-display text-xl font-semibold text-foreground">{title}</h3>
       <ul className="flex list-disc flex-col gap-1 pl-5 text-base text-foreground">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item} className="break-words">
+            {item}
+          </li>
         ))}
       </ul>
     </section>
