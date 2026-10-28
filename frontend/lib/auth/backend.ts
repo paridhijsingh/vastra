@@ -8,6 +8,7 @@ export type BackendErrorKind =
   | "unauthorized"
   | "unavailable"
   | "not_found"
+  | "conflict"
   | "unknown";
 
 export type BackendResult<T> =
@@ -132,6 +133,48 @@ export async function backendLogin(
       status: 401,
     };
   }
+  return { ok: false, ...mapped, status: response.status };
+}
+
+export async function backendDemoLogin(): Promise<BackendResult<{ accessToken: string }>> {
+  let response: Response;
+  try {
+    response = await fetch(`${getApiUrl()}/auth/demo`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+  } catch {
+    return {
+      ok: false,
+      kind: "unavailable",
+      message: "The authentication service is unavailable. Please try again later.",
+      status: 503,
+    };
+  }
+
+  if (response.ok) {
+    const data = (await response.json()) as { access_token?: string };
+    if (!data.access_token || typeof data.access_token !== "string") {
+      return {
+        ok: false,
+        kind: "unknown",
+        message: "Something went wrong. Please try again.",
+        status: 502,
+      };
+    }
+    return { ok: true, data: { accessToken: data.access_token }, status: response.status };
+  }
+
+  const detail = await readDetail(response);
+  if (response.status === 503) {
+    const message =
+      typeof detail === "string" && detail.trim()
+        ? detail
+        : "Demo sign-in is not available right now.";
+    return { ok: false, kind: "unavailable", message, status: 503 };
+  }
+  const mapped = mapError(response.status, detail);
   return { ok: false, ...mapped, status: response.status };
 }
 

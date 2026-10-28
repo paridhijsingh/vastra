@@ -33,3 +33,7 @@ services:
         value: nvidia/nemotron-3-super-120b-a12b
       - key: NEMOTRON_TIMEOUT_SECONDS
         value: "60"
+      - key: DEMO_EMAIL
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false

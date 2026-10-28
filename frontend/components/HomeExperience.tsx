@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 
+import { TryDemoButton } from "@/components/TryDemoButton";
 import {
   HOME_ROOM_ALT,
   HOME_ROOM_PORTRAIT,
@@ -18,7 +19,11 @@ import {
 } from "@/lib/home/room";
 import { useEntrance } from "@/lib/studio/entrance-context";
 
-export function HomeExperience() {
+type Props = {
+  signedIn?: boolean;
+};
+
+export function HomeExperience({ signedIn = false }: Props) {
   const { replayEntrance } = useEntrance();
   const panelId = useId();
   const tutorialTitleId = useId();
@@ -104,6 +109,20 @@ export function HomeExperience() {
           })}
         </ul>
       </div>
+
+      {signedIn ? null : (
+        <div className="home-panel flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-accent-wardrobe-text">
+              Judge shortcut
+            </p>
+            <p className="text-sm text-foreground sm:text-base">
+              Open a working dinner outfit without registering or typing a wardrobe.
+            </p>
+          </div>
+          <TryDemoButton className="btn-primary inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto disabled:cursor-not-allowed disabled:opacity-70" />
+        </div>
+      )}
 
       <DestinationPanel selected={selected} panelId={panelId} />
 

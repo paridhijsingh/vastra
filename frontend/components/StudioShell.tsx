@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
 import { LogoutButton } from "@/components/LogoutButton";
+import { TryDemoButton } from "@/components/TryDemoButton";
 import { WardrobeEntrance } from "@/components/WardrobeEntrance";
 import { HOME_HOTSPOTS_WIDE } from "@/lib/home/room";
 import type { PublicUser } from "@/lib/auth/cookies";
@@ -58,7 +59,7 @@ export function StudioShell({ user, children }: Props) {
               )}
             </div>
             <div className="flex min-w-0 items-center gap-2">
-              <AccountLinks user={user} />
+              <AccountLinks user={user} showDemo={pathname !== "/register"} />
               <button
                 type="button"
                 onClick={() => setHelpOpen(true)}
@@ -145,7 +146,7 @@ function BrandLink({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function AccountLinks({ user }: { user: PublicUser | null }) {
+function AccountLinks({ user, showDemo }: { user: PublicUser | null; showDemo: boolean }) {
   if (user) {
     return (
       <>
@@ -158,6 +159,7 @@ function AccountLinks({ user }: { user: PublicUser | null }) {
   }
   return (
     <>
+      {showDemo ? <TryDemoButton /> : null}
       <Link href="/signin" className="inline-flex min-h-11 items-center px-2 text-sm font-medium">
         Sign in
       </Link>

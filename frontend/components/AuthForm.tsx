@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { TryDemoButton } from "@/components/TryDemoButton";
+
 type Mode = "register" | "signin";
 
 type Props = {
@@ -109,8 +111,12 @@ export function AuthForm({ mode, nextPath = "/", initialMessage }: Props) {
       <p className="text-base text-muted">
         {mode === "register"
           ? "Choose a username and password. You will sign in after registering."
-          : "Sign in to access your Style Profile and Wardrobe."}
+          : "Sign in to access your Style Profile and Wardrobe. Judges can skip this and use Try the demo."}
       </p>
+
+      {mode === "signin" ? (
+        <TryDemoButton className="btn-primary inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-70" />
+      ) : null}
 
       {info ? (
         <p className="status-card text-sm" role="status">

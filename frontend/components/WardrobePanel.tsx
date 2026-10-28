@@ -50,6 +50,7 @@ export function WardrobePanel({ userId }: Props) {
   const [original, setOriginal] = useState<WardrobeItemPublic | null>(null);
   const [form, setForm] = useState<WardrobeItemCreate>({ ...EMPTY_ITEM_FORM });
   const [saving, setSaving] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +231,46 @@ export function WardrobePanel({ userId }: Props) {
     }
   }
 
+  async function onLoadDemo() {
+    if (saving || loadingDemo || deletingId) return;
+    setError(null);
+    setSuccess(null);
+    setLoadingDemo(true);
+    try {
+      const response = await fetch("/api/wardrobe/demo", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      const body = (await response.json().catch(() => ({}))) as {
+        items?: WardrobeItemPublic[];
+        error?: string;
+      };
+      if (response.status === 401) {
+        setError(body.error ?? "Your session has expired. Please sign in again.");
+        router.push("/signin?next=/wardrobe");
+        router.refresh();
+        return;
+      }
+      if (!response.ok) {
+        setError(
+          body.error ??
+            (response.status === 409
+              ? "Demo clothes are only added to an empty wardrobe."
+              : "Could not load the demo wardrobe. Please try again."),
+        );
+        return;
+      }
+      setSuccess("Demo wardrobe loaded. These items are synthetic sample clothes.");
+      await loadItems(filter);
+      router.refresh();
+    } catch {
+      setError("The wardrobe service is unavailable. Please try again later.");
+    } finally {
+      setLoadingDemo(false);
+    }
+  }
+
   async function onDelete(item: WardrobeItemPublic) {
     if (saving || deletingId) return;
     const confirmed = window.confirm(
@@ -284,7 +325,7 @@ export function WardrobePanel({ userId }: Props) {
     }
   }
 
-  const busy = saving || Boolean(deletingId);
+  const busy = saving || loadingDemo || Boolean(deletingId);
   const visible = useMemo(
     () => visibleWardrobeItems(items, query, sort),
     [items, query, sort],
@@ -430,13 +471,24 @@ export function WardrobePanel({ userId }: Props) {
               Your wardrobe is empty. Your style profile stores your preferences;
               add your clothing and accessories here.
             </p>
-            <button
-              type="button"
-              onClick={scrollToForm}
-              className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
-            >
-              Add your first item
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void onLoadDemo()}
+                disabled={busy}
+                className="btn-primary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {loadingDemo ? "Loading demo wardrobe…" : "Load demo wardrobe"}
+              </button>
+              <button
+                type="button"
+                onClick={scrollToForm}
+                disabled={busy}
+                className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
+              >
+                Add your first item
+              </button>
+            </div>
           </div>
         ) : null}
 

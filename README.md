@@ -17,6 +17,8 @@ Open the app with no local install and no key of your own:
 
 The frontend host is set with only `API_URL=https://vastra-api-c5gx.onrender.com` and `AUTH_COOKIE_MAX_AGE_HOURS=72`. Backend secrets stay on Render. After idle, the first API request may take about a minute while the service wakes up.
 
+**Judges (no account, no wardrobe typing):** Skip intro → **Try the demo** → **Generate outfit**. Occasion is prefilled as dinner with friends. Demo clothes are synthetic (`Demo — …`) and private to the demo user.
+
 For local development, use the [Local setup](#local-setup) env names (`API_URL`, `AUTH_COOKIE_MAX_AGE_HOURS`) against `http://127.0.0.1:8000` instead of these URLs.
 
 ## Project status
@@ -266,6 +268,8 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 cp .env.example .env
 # Edit .env and set SECRET_KEY to a long random string (required).
+# Optional judge demo: set DEMO_EMAIL and DEMO_PASSWORD, then:
+python scripts/seed_demo.py
 uvicorn vastra.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -446,6 +450,27 @@ Nebius credentials stay in the root backend `.env`. Do not copy `NEBIUS_API_KEY`
 
 Never commit `.env`, `.env.local`, API keys, authentication secrets, or personal database files.
 
+### Testing the demo
+
+Demo credentials are **never hardcoded**. Set them in the backend `.env` (and on Render for the live API):
+
+```
+DEMO_EMAIL=demo@vastra.example
+DEMO_PASSWORD=choose-your-own-demo-password
+```
+
+`DEMO_EMAIL` is the demo username. Then seed (idempotent):
+
+```bash
+python scripts/seed_demo.py
+```
+
+That creates a style profile plus 15 synthetic wardrobe items (`Demo — …`), including two marked in laundry. The demo user cannot read or edit another user's records.
+
+- **Judges:** https://vastra-one-beryl.vercel.app → Skip intro → **Try the demo** → **Generate outfit**. No registration and no wardrobe typing. The password is not shown in the browser.
+- **Signed-in testers with an empty closet:** `/wardrobe` → **Load demo wardrobe** copies the same synthetic items into that account only.
+- Manual login (local only): username `demo@vastra.example` and the `DEMO_PASSWORD` you set. Do not commit that password.
+
 ## Verification goals
 
 - Saved records survive application restarts.
@@ -463,7 +488,7 @@ Never commit `.env`, `.env.local`, API keys, authentication secrets, or personal
 
 ## Demo
 
-Live URLs are in [Live demo](#live-demo).
+Live URLs are in [Live demo](#live-demo). Judge clicks are in [Testing the demo](#testing-the-demo).
 
 The planned demonstration will show:
 

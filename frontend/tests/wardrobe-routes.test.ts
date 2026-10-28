@@ -13,6 +13,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
+import { POST as loadDemoWardrobe } from "@/app/api/wardrobe/demo/route";
 import {
   GET as listWardrobe,
   POST as createWardrobe,
@@ -307,5 +308,64 @@ describe("DELETE /api/wardrobe/[itemId]", () => {
       { params: Promise.resolve({ itemId: "item-a" }) },
     );
     expect(response.status).toBe(403);
+  });
+});
+
+describe("POST /api/wardrobe/demo", () => {
+  it("copies demo items for the signed-in user and omits the token from the body", async () => {
+    cookieState.token = "valid-token";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json(
+          [
+            {
+              id: "demo-1",
+              owner_id: "user-1",
+              name: "Demo — Navy blazer",
+              category: "outerwear",
+              color: "Navy",
+              notes: "Synthetic sample",
+              availability: "available",
+            },
+          ],
+          { status: 201 },
+        ),
+      ),
+    );
+
+    const response = await loadDemoWardrobe(
+      new Request("http://localhost:3000/api/wardrobe/demo", {
+        method: "POST",
+        headers: sameOriginHeaders(),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await response.json();
+    expect(body.items[0].name).toBe("Demo — Navy blazer");
+    expect(JSON.stringify(body)).not.toContain("valid-token");
+  });
+
+  it("maps a non-empty wardrobe as a conflict", async () => {
+    cookieState.token = "valid-token";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json(
+          { detail: "Demo clothes are only added to an empty wardrobe." },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    const response = await loadDemoWardrobe(
+      new Request("http://localhost:3000/api/wardrobe/demo", {
+        method: "POST",
+        headers: sameOriginHeaders(),
+      }),
+    );
+    expect(response.status).toBe(409);
+    const body = await response.json();
+    expect(body.kind).toBe("conflict");
   });
 });

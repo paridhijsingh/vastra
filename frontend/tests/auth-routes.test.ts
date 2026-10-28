@@ -13,6 +13,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
+import { POST as demoPost } from "@/app/api/auth/demo/route";
 import { POST as loginPost } from "@/app/api/auth/login/route";
 import { POST as logoutPost } from "@/app/api/auth/logout/route";
 import { GET as meGet } from "@/app/api/auth/me/route";
@@ -171,5 +172,50 @@ describe("auth API routes", () => {
     const cookie = response.cookies.get(AUTH_COOKIE_NAME);
     expect(cookie?.value).toBe("");
     expect(cookie?.maxAge).toBe(0);
+  });
+
+  it("signs in to the demo account without sending a password from the browser", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          access_token: "demo-token-value",
+          token_type: "bearer",
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({ id: "demo-user", username: "demo@vastra.example" }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await demoPost(
+      new Request("http://localhost:3000/api/auth/demo", {
+        method: "POST",
+        headers: sameOriginHeaders(),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.user).toEqual({ id: "demo-user", username: "demo@vastra.example" });
+    expect(JSON.stringify(body)).not.toContain("demo-token-value");
+    expect(JSON.stringify(body)).not.toMatch(/password/i);
+    expect(fetchMock.mock.calls[0]?.[1]).not.toHaveProperty("body");
+    const cookie = response.cookies.get(AUTH_COOKIE_NAME);
+    expect(cookie?.value).toBe("demo-token-value");
+    expect(cookie?.httpOnly).toBe(true);
+  });
+
+  it("rejects cross-origin demo sign-in", async () => {
+    const response = await demoPost(
+      new Request("http://localhost:3000/api/auth/demo", {
+        method: "POST",
+        headers: {
+          host: "localhost:3000",
+          origin: "https://evil.example",
+        },
+      }),
+    );
+    expect(response.status).toBe(403);
   });
 });

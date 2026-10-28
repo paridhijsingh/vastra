@@ -241,3 +241,58 @@ export async function backendDeleteWardrobeItem(
 
   return { ok: true, data: null, status: 204 };
 }
+
+export async function backendLoadDemoWardrobe(
+  accessToken: string,
+): Promise<BackendResult<WardrobeItemPublic[]>> {
+  let response: Response;
+  try {
+    response = await fetch(`${getApiUrl()}/wardrobe/demo`, {
+      method: "POST",
+      cache: "no-store",
+      headers: authHeaders(accessToken, true),
+    });
+  } catch {
+    return unavailable();
+  }
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      kind: "unauthorized",
+      message: "Your session has expired. Please sign in again.",
+      status: 401,
+    };
+  }
+  if (response.status === 409) {
+    const detail = await readDetail(response);
+    return {
+      ok: false,
+      kind: "conflict",
+      message:
+        typeof detail === "string" && detail.trim()
+          ? detail
+          : "Demo clothes are only added to an empty wardrobe.",
+      status: 409,
+    };
+  }
+  if (!response.ok) {
+    return {
+      ok: false,
+      kind: "unknown",
+      message: "Could not load the demo wardrobe. Please try again.",
+      status: response.status,
+    };
+  }
+
+  const data = (await response.json()) as WardrobeItemPublic[];
+  if (!Array.isArray(data)) {
+    return {
+      ok: false,
+      kind: "unknown",
+      message: "Could not load the demo wardrobe. Please try again.",
+      status: 502,
+    };
+  }
+  return { ok: true, data, status: response.status };
+}

@@ -13,6 +13,13 @@ from sqlalchemy.orm import Session
 
 from vastra.auth import create_access_token, get_current_user, hash_password, verify_password
 from vastra.db import get_db, init_db
+from vastra.demo import (
+    DemoNotConfiguredError,
+    DemoNotSeededError,
+    DemoWardrobeOccupiedError,
+    authenticate_demo_user,
+    copy_demo_wardrobe,
+)
 from vastra.dictionary import find_dictionary_entry, load_dictionary, search_dictionary
 from vastra.events import create_event, delete_event, get_event, list_events, update_event
 from vastra.looks import create_look, delete_look, get_look, list_looks, update_look
@@ -134,6 +141,24 @@ def login(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    return TokenResponse(access_token=create_access_token(user_id=user.id))
+
+
+@app.post("/auth/demo", response_model=TokenResponse)
+def demo_login(db: Annotated[Session, Depends(get_db)]) -> TokenResponse:
+    """Sign in as the seeded demo user. Credentials stay on the server."""
+    try:
+        user = authenticate_demo_user(db)
+    except DemoNotConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=exc.message,
+        ) from None
+    except DemoNotSeededError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=exc.message,
+        ) from None
     return TokenResponse(access_token=create_access_token(user_id=user.id))
 
 
@@ -421,6 +446,25 @@ def create_wardrobe_item(
     db.commit()
     db.refresh(item)
     return item
+
+
+@app.post("/wardrobe/demo", response_model=list[WardrobeItemPublic], status_code=status.HTTP_201_CREATED)
+def load_demo_wardrobe(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[WardrobeItem]:
+    """Copy synthetic demo items into the signed-in user's empty wardrobe."""
+    try:
+        items = copy_demo_wardrobe(db, current_user.id)
+    except DemoWardrobeOccupiedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.message,
+        ) from None
+    db.commit()
+    for item in items:
+        db.refresh(item)
+    return items
 
 
 @app.get("/wardrobe/{item_id}", response_model=WardrobeItemPublic)

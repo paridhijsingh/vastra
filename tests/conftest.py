@@ -28,6 +28,8 @@ def block_live_model_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     must not construct the real OpenAI client.
     """
     monkeypatch.setenv("NEBIUS_API_KEY", TEST_NEBIUS_API_KEY)
+    monkeypatch.setenv("DEMO_EMAIL", "")
+    monkeypatch.setenv("DEMO_PASSWORD", "")
     clear_settings_cache()
     monkeypatch.setattr("vastra.nemotron.OpenAI", _refuse_live_model_client)
     monkeypatch.setattr("vastra.nemotron.build_client", _refuse_live_model_client)
