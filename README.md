@@ -8,6 +8,17 @@ Vastra (Sanskrit for clothing) helps you dress for everyday occasions, celebrati
 
 Built for the **NVIDIA × Nebius Global AI Hackathon — Best Apps and Agents track**.
 
+## Live demo
+
+Open the app with no local install and no key of your own:
+
+- **App (Vercel):** https://vastra-one-beryl.vercel.app
+- **API (Render):** https://vastra-api-c5gx.onrender.com — `GET /health` returns `{"status":"ok"}`
+
+The frontend host is set with only `API_URL=https://vastra-api-c5gx.onrender.com` and `AUTH_COOKIE_MAX_AGE_HOURS=72`. Backend secrets stay on Render. After idle, the first API request may take about a minute while the service wakes up.
+
+For local development, use the [Local setup](#local-setup) env names (`API_URL`, `AUTH_COOKIE_MAX_AGE_HOURS`) against `http://127.0.0.1:8000` instead of these URLs.
+
 ## Project status
 
 Rebuilding from scratch. Features below are **planned** unless noted.
@@ -412,9 +423,9 @@ Frontend auth pages:
 - `/wardrobe` — wardrobe manager with availability filters (requires sign-in)
 - `/dictionary` — style dictionary search, plus add, edit, and delete for your own terms (requires sign-in; shared catalog is empty)
 
-Frontend configuration (server-only in `.env.local`):
+Frontend configuration (server-only in `.env.local` locally, or Vercel project env in production):
 
-- `API_URL` — FastAPI base URL (default `http://127.0.0.1:8000`)
+- `API_URL` — FastAPI base URL (local default `http://127.0.0.1:8000`; live demo uses `https://vastra-api-c5gx.onrender.com`)
 - `AUTH_COOKIE_MAX_AGE_HOURS` — session cookie lifetime; keep aligned with backend `JWT_EXPIRE_HOURS` (default `72`)
 
 The access token is stored only in an HttpOnly, SameSite=Lax cookie set by Next.js route handlers. It is not placed in `localStorage`, `sessionStorage`, client JavaScript, URLs, or client response bodies. Logout clears the browser cookie; it does **not** revoke the JWT on the FastAPI backend.
@@ -452,7 +463,7 @@ Never commit `.env`, `.env.local`, API keys, authentication secrets, or personal
 
 ## Demo
 
-Coming soon.
+Live URLs are in [Live demo](#live-demo).
 
 The planned demonstration will show:
 
