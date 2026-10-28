@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from vastra.config import get_settings
 
@@ -39,9 +40,13 @@ def get_engine() -> Engine:
         settings = get_settings()
         ensure_database_dir(settings.database_url)
         connect_args: dict[str, object] = {}
+        engine_kwargs: dict[str, object] = {"connect_args": connect_args}
         if settings.database_url.startswith("sqlite"):
             connect_args["check_same_thread"] = False
-        _engine = create_engine(settings.database_url, connect_args=connect_args)
+        elif settings.database_url.startswith("postgresql+psycopg://"):
+            connect_args["prepare_threshold"] = None
+            engine_kwargs["poolclass"] = NullPool
+        _engine = create_engine(settings.database_url, **engine_kwargs)
 
         @event.listens_for(_engine, "connect")
         def _set_sqlite_pragma(dbapi_connection, connection_record) -> None:  # noqa: ANN001

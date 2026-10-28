@@ -1,1 +1,317 @@
-[]
+[
+  {
+    "id": "a-line",
+    "term": "A-line",
+    "aliases": ["A line"],
+    "definition": "A silhouette that is closer at the top and opens gradually toward the hem. The same outline can appear on tunics, dresses, skirts, and jackets.",
+    "kind": "silhouette",
+    "styles": ["Western", "fusion"],
+    "style_tags": ["Western"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a simple belt at the waist; leaving it unmarked is also fine.",
+      "A fitted layer over the top can sit under a more open hem if you want contrast.",
+      "These are pairing ideas, not a required outline."
+    ],
+    "occasions": ["everyday", "daytime event"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "A lighter lining and a hem that does not cling can feel easier in warm rooms. Comfort still depends on fabric and personal preference."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "blazer",
+    "term": "Blazer",
+    "aliases": ["sport coat"],
+    "definition": "A tailored jacket that can be worn open or closed. It is not limited by gender and can sit over many kinds of tops.",
+    "kind": "garment",
+    "styles": ["Western", "fusion"],
+    "style_tags": ["Western"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a collared shirt; a knit top is another option.",
+      "Straight trousers or a long tunic can both sit under the same jacket.",
+      "These combinations are suggestions, not a dress code."
+    ],
+    "occasions": ["office", "smart gathering"],
+    "weather_notes": [
+      "Unlined or lightweight cloth is often easier in heat. Comfort still depends on fabric weight, construction, and preference."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  },
+  {
+    "id": "breathable-fabric",
+    "term": "Breathable fabric",
+    "aliases": ["open weave"],
+    "definition": "Cloth that lets air and moisture move more readily than a dense, coated weave. Breathability is a material quality, not a promise of comfort for every climate.",
+    "kind": "fabric",
+    "styles": ["Indian", "Western", "fusion"],
+    "style_tags": ["comfort"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a loose top in an open weave over a closer layer.",
+      "A breathable lining can sit under a heavier outer cloth.",
+      "Choose the weave you prefer; this is not a rule."
+    ],
+    "occasions": ["hot weather", "long day"],
+    "weather_notes": [
+      "Open weaves can feel easier in humidity, but wind and personal preference still matter. They are not a guarantee of coolness."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  },
+  {
+    "id": "colour-blocking",
+    "term": "Colour blocking",
+    "aliases": ["color blocking"],
+    "definition": "Placing two or more distinct colour fields next to each other rather than blending them. The effect can be quiet or high-contrast depending on the colours you choose.",
+    "kind": "styling_technique",
+    "styles": ["Western", "fusion"],
+    "style_tags": ["Western"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a solid top against a solid bottom in a different hue.",
+      "A third colour in shoes or a scarf can stay smaller if you want the two main fields to lead.",
+      "These are suggestions, not a required palette."
+    ],
+    "occasions": ["daytime event", "everyday"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "Choosing colours you already like to wear can feel easier than forcing a high-contrast pair. Preference leads here."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "festive",
+    "term": "Festive",
+    "aliases": ["festive dressing"],
+    "definition": "Dressing for a celebration by choosing cloth, colour, or ornament you associate with the occasion. Festive does not require a particular garment or a formal dress code.",
+    "kind": "styling_technique",
+    "styles": ["Indian", "Western", "fusion"],
+    "style_tags": ["celebration"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a usual everyday silhouette in a richer cloth.",
+      "A small piece of jewellery or a brighter dupatta can mark the occasion without changing the whole outfit.",
+      "These are ideas, not rules for any festival."
+    ],
+    "occasions": ["celebration", "wedding guest"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "If you expect to stand or sit for a long time, a familiar fit and a breathable cloth can feel easier. Comfort is personal."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "kurta",
+    "term": "Kurta",
+    "aliases": ["kurta shirt"],
+    "definition": "A tunic-length top with a straight or slightly shaped body and a front opening or placket. People of any gender wear kurtas for everyday and celebration.",
+    "kind": "garment",
+    "styles": ["Indian", "fusion"],
+    "style_tags": ["Indian", "South Asian"],
+    "cultural_context": "Worn across South Asia in cotton, silk, and mixed fibres.",
+    "pairing_suggestions": [
+      "One option is straight trousers; palazzo pants or jeans are other options.",
+      "A light shawl or jacket can sit over the same kurta in cooler rooms.",
+      "These pairings are suggestions, not a required set."
+    ],
+    "occasions": ["everyday", "celebration"],
+    "weather_notes": [
+      "Lighter cotton is often easier in heat. Comfort still depends on fabric weight, fit, and preference."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  },
+  {
+    "id": "layering",
+    "term": "Layering",
+    "aliases": ["layered dressing"],
+    "definition": "Wearing more than one garment so that edges, lengths, or textures show in combination. Layers can be added or removed as the room or weather changes.",
+    "kind": "styling_technique",
+    "styles": ["Indian", "Western", "fusion"],
+    "style_tags": ["practical"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a close top under an open jacket or shawl.",
+      "A longer kurta over slim trousers can read as two layers without extra bulk.",
+      "These are suggestions, not a stacking rule."
+    ],
+    "occasions": ["everyday", "variable weather"],
+    "weather_notes": [
+      "Thin inner layers are often easier to add or remove when indoor and outdoor temperatures differ. This is not a guarantee of warmth."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  },
+  {
+    "id": "lehenga",
+    "term": "Lehenga",
+    "aliases": ["lehenga skirt"],
+    "definition": "A gathered or paneled skirt, often worn with a separate top and an optional drape. It is not limited by gender and can be made in many lengths and weights.",
+    "kind": "garment",
+    "styles": ["Indian", "fusion"],
+    "style_tags": ["Indian", "South Asian"],
+    "cultural_context": "Common at South Asian celebrations, with many regional cuts and names.",
+    "pairing_suggestions": [
+      "One option is a fitted or straight blouse; a kurta-length top is another option.",
+      "A dupatta can be draped, left off, or replaced with a jacket.",
+      "These are suggestions, not a required three-piece set."
+    ],
+    "occasions": ["celebration", "wedding guest"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "A lighter inner cloth and a waist that you can sit in can feel easier over a long event. Choose the weight and drawstring you prefer."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "linen",
+    "term": "Linen",
+    "aliases": ["flax cloth"],
+    "definition": "A plant-fibre cloth that wrinkles readily and lets air through more than many dense weaves. Linen appears in shirts, kurtas, trousers, and home textiles.",
+    "kind": "fabric",
+    "styles": ["Indian", "Western", "fusion"],
+    "style_tags": ["natural fibre"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a linen shirt with cotton trousers so both layers stay relatively open.",
+      "A linen kurta can sit over a closer knit if you want a second layer.",
+      "These are suggestions, not a required fibre mix."
+    ],
+    "occasions": ["hot weather", "everyday"],
+    "weather_notes": [
+      "Linen often feels easier in dry heat; in damp air it can cling. Comfort still depends on weave, finish, and preference."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  },
+  {
+    "id": "monochrome",
+    "term": "Monochrome",
+    "aliases": ["one colour"],
+    "definition": "Dressing in one colour family from top to bottom, including close tints and shades of that colour. It is a styling choice, not a requirement for formality.",
+    "kind": "styling_technique",
+    "styles": ["Western", "fusion"],
+    "style_tags": ["Western"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is matching a top and bottom in the same hue with a slightly different texture.",
+      "Shoes or a belt in a nearby shade can stay inside the family without matching exactly.",
+      "These are ideas, not a uniform."
+    ],
+    "occasions": ["office", "evening"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "Staying with a colour you already wear often can feel easier than introducing a new palette. Preference leads here."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "relaxed-fit",
+    "term": "Relaxed fit",
+    "aliases": ["easy fit"],
+    "definition": "A cut that leaves space between the cloth and the body rather than following every contour. Relaxed is a fit description, not a judgment of shape.",
+    "kind": "silhouette",
+    "styles": ["Indian", "Western", "fusion"],
+    "style_tags": ["comfort"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a relaxed top with a straighter lower garment if you want contrast.",
+      "Two relaxed pieces can also be worn together.",
+      "These are suggestions, not a required balance."
+    ],
+    "occasions": ["everyday", "travel"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "Extra ease can feel helpful in heat or during long sitting. How much ease you want is personal."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "saree-drape",
+    "term": "Saree drape",
+    "aliases": ["sari drape"],
+    "definition": "A way of wrapping a long unstitched length of cloth around the body, with many regional methods. No single drape is the only correct one.",
+    "kind": "styling_technique",
+    "styles": ["Indian", "fusion"],
+    "style_tags": ["Indian", "South Asian"],
+    "cultural_context": "Draping methods vary widely across South Asia and in diaspora practice.",
+    "pairing_suggestions": [
+      "One option is a stitched blouse; a close knit or a shirt can also sit under the drape.",
+      "The free end can rest over a shoulder, a belt, or a jacket.",
+      "These are suggestions, not a required drape."
+    ],
+    "occasions": ["celebration", "formal gathering"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "A drape you already know how to walk and sit in can feel easier than a new wrap on a long day. Comfort depends on cloth, tuck, and preference."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "silk",
+    "term": "Silk",
+    "aliases": ["silken cloth"],
+    "definition": "A smooth animal-fibre cloth with a slight sheen. Weight ranges from airy to dense, so silk is not automatically warm or cool.",
+    "kind": "fabric",
+    "styles": ["Indian", "Western", "fusion"],
+    "style_tags": ["natural fibre"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a silk top with a matte cotton or linen lower garment.",
+      "A silk dupatta can sit over a simpler everyday outfit.",
+      "These are suggestions, not a required mix of sheen."
+    ],
+    "occasions": ["celebration", "evening"],
+    "weather_notes": [
+      "Lightweight silk can feel easier in mild weather; heavier silk holds more warmth. Comfort still depends on lining, weave, and preference."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  },
+  {
+    "id": "smart-casual",
+    "term": "Smart casual",
+    "aliases": ["neat casual"],
+    "definition": "A mix of informal pieces with one more considered item, such as a jacket, a leather shoe, or a pressed cloth. It is a loose description, not a fixed uniform.",
+    "kind": "styling_technique",
+    "styles": ["Western", "fusion"],
+    "style_tags": ["Western"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a blazer over a simple knit and trousers.",
+      "A kurta with tailored pants can read in the same range.",
+      "These are suggestions, not an office rule."
+    ],
+    "occasions": ["office", "daytime event"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "Keeping one familiar comfortable piece in the mix can feel easier than changing every layer. Preference still leads."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "trench-coat",
+    "term": "Trench coat",
+    "aliases": ["trench"],
+    "definition": "A long, belted outer coat with a collar and often a storm flap. It can be worn by people of any gender over many outfits.",
+    "kind": "garment",
+    "styles": ["Western", "fusion"],
+    "style_tags": ["Western"],
+    "cultural_context": null,
+    "pairing_suggestions": [
+      "One option is a simple top and trousers so the coat stays the outer layer.",
+      "A kurta or long tunic can sit underneath if the coat has enough ease.",
+      "These are suggestions, not a required inner outfit."
+    ],
+    "occasions": ["commute", "cool weather"],
+    "weather_notes": [
+      "A water-resistant finish can help in light rain; it is not a guarantee in heavy weather. Comfort still depends on lining, length, and preference."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  }
+]

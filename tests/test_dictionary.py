@@ -113,7 +113,7 @@ def _use_fixture(
     monkeypatch.setattr("vastra.dictionary.packaged_dictionary_path", _path)
 
 
-def test_packaged_dictionary_is_empty_valid_and_path_is_package_relative(
+def test_packaged_dictionary_is_seeded_valid_and_path_is_package_relative(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -123,10 +123,43 @@ def test_packaged_dictionary_is_empty_valid_and_path_is_package_relative(
     assert path == package_dir / "dictionary.json"
     assert path.is_file()
 
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(raw, list)
+    assert len(raw) == 15
+
     entries = load_dictionary()
-    assert entries == []
+    assert len(entries) == 15
+    assert all(entry.origin == "shared" for entry in entries)
     ids = [entry.id for entry in entries]
     assert len(ids) == len(set(ids))
+    assert {entry.term for entry in entries} == {
+        "A-line",
+        "Blazer",
+        "Breathable fabric",
+        "Colour blocking",
+        "Festive",
+        "Kurta",
+        "Layering",
+        "Lehenga",
+        "Linen",
+        "Monochrome",
+        "Relaxed fit",
+        "Saree drape",
+        "Silk",
+        "Smart casual",
+        "Trench coat",
+    }
+    assert {entry.kind for entry in entries} == {
+        "garment",
+        "fabric",
+        "silhouette",
+        "styling_technique",
+    }
+    assert {style for entry in entries for style in entry.styles} == {
+        "Indian",
+        "Western",
+        "fusion",
+    }
 
 
 def test_fixture_entries_match_schema_and_reject_duplicate_ids(tmp_path: Path) -> None:
@@ -151,7 +184,10 @@ def test_dictionary_requires_authentication(client: TestClient) -> None:
     assert client.get("/dictionary/kurta", headers=invalid).status_code == 401
 
 
-def test_empty_dictionary_returns_empty_list(client: TestClient) -> None:
+def test_empty_dictionary_returns_empty_list(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _use_fixture(monkeypatch, tmp_path, [])
     headers = _register_and_login(client, "dictempty")
     listed = client.get("/dictionary", headers=headers)
     assert listed.status_code == 200
@@ -159,6 +195,25 @@ def test_empty_dictionary_returns_empty_list(client: TestClient) -> None:
     missing = client.get("/dictionary/kurta", headers=headers)
     assert missing.status_code == 404
     assert missing.json()["detail"] == "Dictionary entry not found"
+
+
+def test_seeded_catalog_lists_entries_and_finds_linen(client: TestClient) -> None:
+    headers = _register_and_login(client, "dicseed")
+    listed = client.get("/dictionary", headers=headers)
+    assert listed.status_code == 200
+    payload = listed.json()
+    assert len(payload) == 15
+    assert all(row["origin"] == "shared" for row in payload)
+    terms = [row["term"] for row in payload]
+    assert terms == sorted(terms, key=str.casefold)
+    linen = client.get("/dictionary", headers=headers, params={"q": "linen"})
+    assert linen.status_code == 200
+    linen_rows = linen.json()
+    assert any(row["id"] == "linen" and row["term"] == "Linen" for row in linen_rows)
+    one = client.get("/dictionary/linen", headers=headers)
+    assert one.status_code == 200
+    assert one.json()["term"] == "Linen"
+    assert one.json()["origin"] == "shared"
 
 
 def test_list_detail_search_and_filters(

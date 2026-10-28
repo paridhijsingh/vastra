@@ -30,7 +30,7 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Style Profile UI** is implemented (load/save/delete).
 - **Confirmed preferences** are reviewed and saved at `/preferences`. They are guidance for later Stylist, Emergency Fit, and Rescue requests. They do not change ownership or availability.
 - **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
-- **Style Dictionary** has a shared empty catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
+- **Style Dictionary** has a shared seeded catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
 - **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
 - **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Suggestions are saved only when you choose Save a look. Image generation is post-v1.
 - **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Suggestions are saved only when you choose Save a look.
@@ -67,7 +67,7 @@ Cultural styling choices will reflect the user's preferences and context rather 
 
 ### Style Dictionary (private entries on the API)
 
-The shared catalog is a version-controlled JSON file inside the `vastra` package and currently contains no entries. Personal entries are stored in the user database and are visible only to their owner.
+The shared catalog is a version-controlled JSON file inside the `vastra` package. Shared entries are read-only. Personal entries are stored in the user database and are visible only to their owner.
 
 Authenticated endpoints:
 
@@ -425,7 +425,7 @@ Frontend auth pages:
 - `/signin` — establish a browser session
 - `/profile` — style profile form (requires sign-in)
 - `/wardrobe` — wardrobe manager with availability filters (requires sign-in)
-- `/dictionary` — style dictionary search, plus add, edit, and delete for your own terms (requires sign-in; shared catalog is empty)
+- `/dictionary` — style dictionary search, plus add, edit, and delete for your own terms (requires sign-in; shared entries are read-only)
 
 Frontend configuration (server-only in `.env.local` locally, or Vercel project env in production):
 

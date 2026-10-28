@@ -1,8 +1,7 @@
 """Read-only Style Dictionary loaded from package data.
 
-The shipped catalog is an empty list. Approved entries, when added later,
-belong in ``dictionary.json`` next to this module. Suggested terms are not
-loaded from this file. A suggestion stays a draft until a person reviews and
+Approved shared entries belong in ``dictionary.json`` next to this module.
+Suggested terms are not loaded from this file. A suggestion stays a draft until a person reviews and
 approves it. Do not describe a suggestion as verified or currently trending
 unless a dated source supports that claim.
 
