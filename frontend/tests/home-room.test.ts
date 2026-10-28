@@ -28,6 +28,8 @@ const REQUIRED_ROUTES = [
   "/dictionary",
 ] as const;
 
+const NAV_ROUTES = [...REQUIRED_ROUTES, "/trends"] as const;
+
 function assertHotspots(hotspots: readonly { href: string; label: string; hint: string; object: string; left: number; top: number }[]) {
   const hrefs = hotspots.map((hotspot) => hotspot.href);
   expect(new Set(hrefs).size).toBe(REQUIRED_ROUTES.length);
@@ -79,7 +81,7 @@ describe("studio navigation", () => {
   it("keeps every existing route in the compact shell", () => {
     const hrefs = NAV_ITEMS.map((item) => item.href);
     expect(hrefs).toContain("/");
-    for (const route of REQUIRED_ROUTES) {
+    for (const route of NAV_ROUTES) {
       expect(hrefs).toContain(route);
     }
   });

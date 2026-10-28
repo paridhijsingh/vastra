@@ -36,6 +36,12 @@ class Settings(BaseSettings):
         default="nvidia/nemotron-3-super-120b-a12b",
         validation_alias="STYLIST_MODEL",
     )
+    # Token Factory catalog ID for Trend Stylist synthesis.
+    trend_model: str = Field(
+        default="nvidia/Nemotron-3-Ultra-550b-a55b",
+        validation_alias="TREND_MODEL",
+    )
+    tavily_api_key: str | None = Field(default=None, validation_alias="TAVILY_API_KEY")
     nemotron_timeout_seconds: float = Field(default=60, validation_alias="NEMOTRON_TIMEOUT_SECONDS")
     # Optional judge demo account. DEMO_EMAIL is stored as the username.
     demo_email: str | None = Field(default=None, validation_alias="DEMO_EMAIL")

@@ -34,6 +34,7 @@ from vastra.preferences import (
     update_preference,
 )
 from vastra.stylist import StylistRequestError, chat_with_stylist
+from vastra.trends import TrendRequestError, recommend_trend_outfit
 from vastra.schemas import (
     AvailabilityStatus,
     DictionaryEntry,
@@ -46,6 +47,8 @@ from vastra.schemas import (
     RescueOutfitPublic,
     StylistChatRequest,
     StylistChatResponse,
+    TrendOutfitPublic,
+    TrendRequest,
     EventCreate,
     EventPublic,
     EventUpdate,
@@ -313,6 +316,18 @@ def rescue_outfit(
     try:
         return recommend_rescue_outfit(db, current_user, body)
     except OutfitRequestError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
+
+
+@app.post("/trends", response_model=TrendOutfitPublic)
+def trend_stylist(
+    body: TrendRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> TrendOutfitPublic:
+    """One outfit idea from a live Tavily search plus Nemotron Ultra. Does not save the result."""
+    try:
+        return recommend_trend_outfit(body)
+    except TrendRequestError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
 
 

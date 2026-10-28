@@ -37,6 +37,7 @@ Rebuilding from scratch. Features below are **planned** unless noted.
 - **Saved Looks** stores a named plan at `/looks`. Emergency Fit and Rescue call the model only when you generate or rescue an outfit.
 - **Saved Events** stores a dated plan at `/events`. It can point at a Saved Look without copying wardrobe items. There is no location, weather, or reminder.
 - **Stylist chat** is `POST /stylist/chat` and the signed-in page `/stylist`. It answers from the saved profile and available wardrobe. The conversation stays in the browser tab and is not stored.
+- **Trend Stylist** is `POST /trends` and the signed-in page `/trends`. It runs a live Tavily search, then asks Nemotron Ultra for one outfit idea from those sources. If Tavily or Nemotron fails, the page shows that trend search is unavailable and does not invent trends.
 - Smart Shopping remains excluded.
 
 Emergency Fit, Rescue My Outfit, Saved Looks, and Events can be used from their signed-in pages. A look is stored only when you choose Save a look.
@@ -55,6 +56,7 @@ Emergency Fit, Rescue My Outfit, Saved Looks, and Events can be used from their 
 | **Saved Looks**                        | Save a named outfit plan from owned wardrobe items for later recall                             | Working |
 | **Saved Events**                       | Save a dated plan and optionally attach one Saved Look                                          | Working |
 | **Stylist chat**                       | Conversational outfit planning from saved clothes and what you describe                         | Working (API + UI) |
+| **Trend Stylist**                      | One outfit idea from a live Tavily search plus Nemotron Ultra, with source links and retrieval date | Working |
 | **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
 | **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
 | **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
@@ -187,11 +189,20 @@ Unconfirmed or dismissed proposals will not become lasting instructions. Deleted
 - Occasion Translator and One Item, Three Ways
 - MCP tooling (deferred; continue with FastAPI)
 
-### Stretch feature
+### Trend Stylist
 
-**Trend Stylist** may be considered only after the core workflow is reliable and deployed.
+The signed-in page is `/trends`. It asks for an occasion, vibe, and budget, then calls `POST /trends`.
 
-Claims about current trends must use dated, retrieved sources. Retrieval and permitted scraping remain stretch work.
+That endpoint:
+
+1. Builds a Tavily search query from occasion, vibe, and the current northern-hemisphere season and year.
+2. Makes a live `POST https://api.tavily.com/search` call (`search_depth=basic`).
+3. Sends the returned titles, URLs, published/retrieved dates, and snippets to Nemotron Ultra (`nvidia/Nemotron-3-Ultra-550b-a55b` on Nebius Token Factory).
+4. Returns one outfit idea plus those source links and the retrieval date.
+
+The UI labels the idea as `based on retrieved sources from <date>` and lists only Tavily URLs. It does not show a price, product link, or trend claim that did not come from that search. If Tavily or Nemotron fails, or Tavily returns no usable results, the page shows **Trend search unavailable right now** and does not invent a look.
+
+`TAVILY_API_KEY` stays in the backend `.env` (and as a server-side env var on the API host). Do not put it in frontend env files, chat, or git. Get a free key at [https://app.tavily.com](https://app.tavily.com) (it starts with `tvly-`). Budget is a user constraint for the model; it is not added to the Tavily query.
 
 ## Proposed technology
 
@@ -353,7 +364,9 @@ Optional Nebius settings in the root `.env` (the API starts without a key):
 - `NEBIUS_BASE_URL` — default `https://api.tokenfactory.nebius.com/v1/`
 - `NEMOTRON_MODEL` — default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`. Emergency Fit and Rescue use this model.
 - `STYLIST_MODEL` — default `nvidia/nemotron-3-super-120b-a12b`. Stylist chat uses this model.
-- `NEMOTRON_TIMEOUT_SECONDS` — default `60`, shared by those calls.
+- `NEMOTRON_TIMEOUT_SECONDS` — default `60`, shared by Emergency Fit, Rescue, and Stylist.
+- `TAVILY_API_KEY` — required for Trend Stylist. Server-side only. Empty placeholder in `.env.example`.
+- `TREND_MODEL` — default `nvidia/Nemotron-3-Ultra-550b-a55b`. Trend Stylist uses this Token Factory catalog ID.
 
 Emergency Fit and Rescue send `chat_template_kwargs.enable_thinking` set to false for Nano. Stylist sends that same body only on its own requests. Five observed Nebius calls with Super and that body returned `reasoning_tokens` 0. That does not show that every Nebius endpoint honors the control. Stylist still caps output at 1024 tokens, uses the shared timeout, rejects invalid replies, and does not retry. A response that stops because it reached the cap is rejected, including when the partial text is JSON.
 
@@ -366,6 +379,16 @@ Stylist chat (requires `Authorization: Bearer <token>`):
 ```
 
 `message` is required. `history` is optional and accepts only `user` and `assistant` turns. A message is at most 2000 characters, history is at most 12 turns, and the combined text is at most 8000 characters. The server loads the signed-in profile and wardrobe. Saved available rows and saved unavailable rows are separate lists, and only an available id can be selected. A reply is `clarification` or `proposal`. Clarification is for the case with no occasion and no usable preference or piece. Otherwise the reply is a proposal and unknowns stay in the note. The prompt does not require body type, size, or gender. It keeps the user's style wording. Clothes described in chat stay separate from saved rows, including when the names match. A proposal contains one outfit. The server builds the proposal title and message from the validated pieces. The model returns a saved id, a user-turn index plus an exact phrase, or a short suggested description. Python checks the phrase against that user turn. The match records where the words came from and does not prove ownership or the category. Assistant turns are not numbered. It rejects a suggestion with competing bottoms or a repeated saved id instead of dropping a piece. Prompt rules for layering, fusion, and breathability still need live evaluation. A proposal can include suggestions whose pieces are `saved_wardrobe`, `described`, or `suggested`. Saved pieces use current wardrobe details. Described and suggested pieces have no wardrobe id. This is separate from Saved Looks. Mocked tests check this prompt and schema. They do not establish live conversational quality.
+
+Trend Stylist (requires `Authorization: Bearer <token>`):
+
+- `POST /trends` — one outfit idea from a live Tavily search plus Nemotron Ultra. Does not save the idea or change the profile, wardrobe, looks, events, or dictionary. The signed-in page is http://127.0.0.1:3000/trends.
+
+```json
+{"occasion": "dinner with friends", "vibe": "relaxed", "budget": "no shopping"}
+```
+
+`occasion`, `vibe`, and `budget` are required. The Tavily query is built from occasion, vibe, and the current season/year. Budget is sent only to the model. A missing Tavily or Nebius key, a Tavily failure, empty results, or a Nemotron failure returns 503 with `Trend search unavailable right now`.
 
 Manual smoke test (one paid chat completion; not part of pytest):
 
@@ -426,6 +449,7 @@ Frontend auth pages:
 - `/profile` — style profile form (requires sign-in)
 - `/wardrobe` — wardrobe manager with availability filters (requires sign-in)
 - `/dictionary` — style dictionary search, plus add, edit, and delete for your own terms (requires sign-in; shared entries are read-only)
+- `/trends` — Trend Stylist form (requires sign-in; live Tavily search plus Nemotron Ultra)
 
 Frontend configuration (server-only in `.env.local` locally, or Vercel project env in production):
 
@@ -434,7 +458,7 @@ Frontend configuration (server-only in `.env.local` locally, or Vercel project e
 
 The access token is stored only in an HttpOnly, SameSite=Lax cookie set by Next.js route handlers. It is not placed in `localStorage`, `sessionStorage`, client JavaScript, URLs, or client response bodies. Logout clears the browser cookie; it does **not** revoke the JWT on the FastAPI backend.
 
-Backend secrets and Nebius credentials must stay on the FastAPI server. Do not add them to frontend env files.
+Backend secrets, Nebius credentials, and `TAVILY_API_KEY` must stay on the FastAPI server. Do not add them to frontend env files.
 
 Run frontend checks:
 
@@ -446,7 +470,7 @@ npm run typecheck
 npm run build
 ```
 
-Nebius credentials stay in the root backend `.env`. Do not copy `NEBIUS_API_KEY` into frontend env files. Outfit generation is not wired to the model yet.
+Nebius credentials and `TAVILY_API_KEY` stay in the root backend `.env`. Do not copy them into frontend env files.
 
 Never commit `.env`, `.env.local`, API keys, authentication secrets, or personal database files.
 

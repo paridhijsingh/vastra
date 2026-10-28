@@ -243,6 +243,37 @@ class EmergencyOutfitPublic(BaseModel):
     limitations: str
 
 
+BudgetText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=200),
+]
+
+
+class TrendRequest(BaseModel):
+    """Occasion, vibe, and budget for one retrieved-source outfit idea."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    occasion: OccasionText
+    vibe: OccasionText
+    budget: BudgetText
+
+
+class TrendSourcePublic(BaseModel):
+    """One Tavily result. URLs are copied from the search response."""
+
+    title: str
+    url: str
+    published_date: str | None = None
+    retrieved_date: str
+
+
+class TrendOutfitPublic(BaseModel):
+    outfit_idea: str
+    retrieval_date: str
+    sources: list[TrendSourcePublic]
+
+
 ChangeRequestText = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=300),

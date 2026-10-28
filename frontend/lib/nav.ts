@@ -7,6 +7,7 @@ export type NavItem = {
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", label: "Home", accent: "home" },
   { href: "/stylist", label: "Stylist", accent: "home" },
+  { href: "/trends", label: "Trend Stylist", accent: "home" },
   { href: "/wardrobe", label: "Wardrobe", accent: "wardrobe" },
   { href: "/looks", label: "Saved Looks", accent: "home" },
   { href: "/events", label: "Events", accent: "wardrobe" },
@@ -30,6 +31,7 @@ export function showsAppNav(pathname: string): boolean {
 export function compactNavLabel(item: NavItem): string {
   if (item.href === "/looks") return "Looks";
   if (item.href === "/emergency-fit") return "Emergency";
+  if (item.href === "/trends") return "Trends";
   return item.label;
 }
 
