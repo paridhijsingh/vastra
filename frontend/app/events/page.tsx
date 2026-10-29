@@ -1,6 +1,7 @@
 import { EventsPanel } from "@/components/EventsPanel";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { requireUser } from "@/lib/auth/require-user";
+import { PAGE_DESCRIPTIONS } from "@/lib/help";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,7 @@ export default async function EventsPage({ searchParams }: PageProps) {
   return (
     <div className="flex min-w-0 flex-col gap-6 pb-8">
       <WorkspaceHeader kicker="Events" title="Dates you want to dress for" kickerClassName="text-accent-wardrobe-text">
-        <p className="text-base text-muted">
-          Keep occasions you want to dress for, optionally attach a saved look, and open Emergency Fit when you need an
-          outfit.
-        </p>
+        <p className="text-base text-muted">{PAGE_DESCRIPTIONS.events}</p>
       </WorkspaceHeader>
       <EventsPanel key={user.id} userId={user.id} showDeleted={deleted === "1"} />
     </div>

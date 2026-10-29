@@ -3,6 +3,7 @@ import Link from "next/link";
 import { EventDetail } from "@/components/EventDetail";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { requireUser } from "@/lib/auth/require-user";
+import { PAGE_DESCRIPTIONS } from "@/lib/help";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function EventPage({ params }: PageProps) {
   return (
     <div className="flex min-w-0 flex-col gap-6 pb-8">
       <WorkspaceHeader kicker="Events" title="Event details" kickerClassName="text-accent-wardrobe-text">
+        <p className="text-base text-muted">{PAGE_DESCRIPTIONS.events}</p>
         <Link href="/events" className="text-sm font-semibold text-primary underline">
           Back to Events
         </Link>

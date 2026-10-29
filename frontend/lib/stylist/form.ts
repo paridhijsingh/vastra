@@ -14,6 +14,9 @@ export const STYLIST_EXAMPLE_PROMPTS = [
   "Replace the shirt with something cooler. Keep the pants.",
 ] as const;
 
+export const STYLIST_INPUT_PLACEHOLDER =
+  "Ask anything — a wedding, a beach picnic, a first day at work…";
+
 export const MIXED_OUTFIT_SAVE_MESSAGE =
   "Save a look can only store outfits made entirely from saved wardrobe pieces. This outfit includes a garment you described or a suggested addition, so it cannot be saved yet.";
 

@@ -7,6 +7,7 @@ import {
   wardrobeGate,
   type WardrobeGate,
 } from "@/lib/emergency/form";
+import { PAGE_DESCRIPTIONS } from "@/lib/help";
 
 export { AI_SUGGESTION_NOTE, categoryLabel, wardrobeGate };
 export type { WardrobeGate };
@@ -14,8 +15,7 @@ export type { WardrobeGate };
 export const CHANGE_REQUEST_MAX = 300;
 export const OUTFIT_ITEM_MAX = 8;
 
-export const RESCUE_EXPLANATION =
-  "Replace one piece while keeping the rest. Uses available items from your wardrobe. Suggestions are saved only when you choose Save a look.";
+export const RESCUE_EXPLANATION = PAGE_DESCRIPTIONS.rescue;
 export const SAME_CATEGORY_NOTE =
   "Replacements must be another available item of the same category.";
 export const FINDING_REPLACEMENT_MESSAGE = "Asking Nemotron…";

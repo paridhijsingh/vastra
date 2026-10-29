@@ -1,6 +1,7 @@
 import { StylistPanel } from "@/components/StylistPanel";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { requireUser } from "@/lib/auth/require-user";
+import { PAGE_DESCRIPTIONS } from "@/lib/help";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +11,7 @@ export default async function StylistPage() {
   return (
     <div className="stylist-page">
       <WorkspaceHeader kicker="Stylist" title="Your personal stylist">
-        <p className="text-base text-muted">
-          Ask for Indian, Western, fusion, or cultural outfits from your saved profile and wardrobe.
-          This conversation stays in this tab and is not saved.
-        </p>
+        <p className="text-base text-muted">{PAGE_DESCRIPTIONS.stylist}</p>
       </WorkspaceHeader>
       <StylistPanel key={user.id} userId={user.id} />
     </div>

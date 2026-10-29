@@ -5,6 +5,7 @@ import {
   dictionaryListHref,
   filtersFromSearchParams,
 } from "@/lib/dictionary/types";
+import { PAGE_DESCRIPTIONS } from "@/lib/help";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,7 @@ export default async function DictionaryPage({ searchParams }: PageProps) {
   return (
     <div className="flex min-w-0 flex-col gap-6 pb-8">
       <WorkspaceHeader kicker="Style Dictionary" title="Explore fashion terms" kickerClassName="text-accent-dictionary-text">
-        <p className="text-base text-muted">
-          Learn about Indian, Western, fusion, and cultural styles, including pairings, occasions, weather, and comfort.
-        </p>
+        <p className="text-base text-muted">{PAGE_DESCRIPTIONS.dictionary}</p>
       </WorkspaceHeader>
       <DictionaryBrowser
         key={user.id}

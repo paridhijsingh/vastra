@@ -1,3 +1,5 @@
+import { PAGE_DESCRIPTIONS } from "@/lib/help";
+
 export const OCCASION_MAX = 200;
 export const VIBE_MAX = 200;
 export const BUDGET_MAX = 200;
@@ -6,8 +8,7 @@ export const TREND_UNAVAILABLE_MESSAGE = "Trend search unavailable right now";
 export const SEARCHING_TRENDS_MESSAGE = "Searching retrieved sources…";
 export const BUDGET_PARSE_MESSAGE =
   "Enter a number for budget, with an optional currency such as USD, or write no shopping.";
-export const TREND_PAGE_EXPLANATION =
-  "Looks up current fashion coverage for your occasion and vibe, then asks Nemotron Ultra for one outfit idea. Sources and the retrieval date are shown. Prices, product links, and trend claims appear only when they came from that search.";
+export const TREND_PAGE_EXPLANATION = PAGE_DESCRIPTIONS.trends;
 
 const CURRENCY_NAMES: Record<string, string> = {
   usd: "USD",

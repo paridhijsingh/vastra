@@ -7,8 +7,9 @@ import { useEffect, useId, useState } from "react";
 import { LogoutButton } from "@/components/LogoutButton";
 import { TryDemoButton } from "@/components/TryDemoButton";
 import { WardrobeEntrance } from "@/components/WardrobeEntrance";
-import { HOME_HOTSPOTS_WIDE } from "@/lib/home/room";
 import type { PublicUser } from "@/lib/auth/cookies";
+import { HELP_SECTIONS, HELP_TITLE } from "@/lib/help";
+import { HOME_HOTSPOTS_WIDE } from "@/lib/home/room";
 import {
   MOBILE_PRIMARY_NAV,
   NAV_GROUPS,
@@ -213,13 +214,22 @@ function HelpDialog({ onClose, onReplay }: { onClose: () => void; onReplay: () =
     <div className="studio-help" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <div className="studio-help-card">
         <h2 id={titleId} className="font-display text-2xl font-semibold text-foreground">
-          Navigation help
+          {HELP_TITLE}
         </h2>
-        <p className="mt-2 text-base text-muted">
+        <div className="mt-3 flex min-w-0 flex-col gap-4">
+          {HELP_SECTIONS.map((section) => (
+            <section key={section.title}>
+              <h3 className="font-display text-lg font-semibold text-foreground">{section.title}</h3>
+              <p className="mt-1 text-base text-muted">{section.body}</p>
+            </section>
+          ))}
+        </div>
+        <p className="mt-5 text-sm font-semibold text-foreground">Go to a page</p>
+        <p className="mt-1 text-base text-muted">
           Home is a dressing room. Pins mark destinations. Other pages use the sidebar or Menu. Every route stays
           reachable from this list.
         </p>
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {HOME_HOTSPOTS_WIDE.map((hotspot) => (
             <li key={hotspot.id}>
               <Link

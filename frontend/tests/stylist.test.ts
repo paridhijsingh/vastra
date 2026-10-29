@@ -20,6 +20,8 @@ import {
   SOURCE_LABELS,
   STYLIST_EXAMPLE_PROMPTS,
   STYLIST_HISTORY_MAX,
+  STYLIST_INPUT_PLACEHOLDER,
+  messageError,
   historyForRequest,
   replyFromApi,
   type StylistTurn,
@@ -95,6 +97,9 @@ describe("stylist reply parsing", () => {
     expect(reply?.suggestions[0]?.lookItemIds).toBeNull();
     expect(MIXED_OUTFIT_SAVE_MESSAGE).toContain("entirely from saved wardrobe pieces");
     expect(STYLIST_EXAMPLE_PROMPTS.length).toBeGreaterThan(0);
+    expect(STYLIST_INPUT_PLACEHOLDER).toMatch(/ask anything/i);
+    expect(messageError("   ")).toBe("Enter a message.");
+    expect(messageError("What should I wear for a beach picnic?")).toBeNull();
   });
 
   it("maps a proposal of saved pieces to wardrobe ids", () => {

@@ -11,6 +11,7 @@ import { generateFailureMessage, garmentWhyLine, incompleteOutfitNote } from "@/
 import {
   MIXED_OUTFIT_SAVE_MESSAGE,
   STYLIST_EXAMPLE_PROMPTS,
+  STYLIST_INPUT_PLACEHOLDER,
   STYLIST_MESSAGE_MAX,
   historyForRequest,
   messageError,
@@ -138,10 +139,9 @@ export function StylistPanel({ userId }: Props) {
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">Consultation</p>
             <p className="font-display text-xl font-semibold text-foreground">Start a conversation</p>
             <p className="text-base text-muted">
-              Describe the occasion, a garment you already own, or a style you want to keep. Choose an
-              example below to fill the message box, then send when you are ready.
+              Type any occasion in your own words — a wedding, a beach picnic, a first day at work — then
+              send. The examples under the box are starters, not the only questions you can ask.
             </p>
-            <ExamplePrompts disabled={pending} onSelect={fillExample} />
           </div>
         ) : (
           <ol className="flex flex-col gap-5" aria-live="polite">
@@ -182,16 +182,14 @@ export function StylistPanel({ userId }: Props) {
       </aside>
 
       <form onSubmit={onSubmit} className="stylist-composer" aria-busy={pending}>
-        {entries.length > 0 ? (
-          <ExamplePrompts disabled={pending} onSelect={fillExample} compact />
-        ) : null}
+        <ExamplePrompts disabled={pending} onSelect={fillExample} compact={entries.length > 0} />
 
         <div className="flex min-w-0 flex-col gap-2">
           <label htmlFor={`${formId}-message`} className="text-base font-semibold text-foreground">
             Message
           </label>
           <p id={`${formId}-message-hint`} className="text-sm text-muted">
-            Ask for an outfit. The stylist replies only when you send a message.
+            Ask anything. The stylist replies when you send.
           </p>
           <textarea
             ref={composerRef}
@@ -206,8 +204,13 @@ export function StylistPanel({ userId }: Props) {
               fieldError ? `${formId}-message-hint ${formId}-message-error` : `${formId}-message-hint`
             }
             onChange={(event) => setMessage(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }}
             className="min-h-[4.75rem] w-full rounded-lg border border-border bg-background px-3 py-3 text-base text-foreground transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-70 sm:min-h-28 sm:bg-surface"
-            placeholder="Describe the occasion or the clothes you want to style…"
+            placeholder={STYLIST_INPUT_PLACEHOLDER}
           />
         </div>
 
@@ -229,7 +232,7 @@ export function StylistPanel({ userId }: Props) {
           </p>
           <button
             type="submit"
-            disabled={pending}
+            disabled={pending || !message.trim()}
             className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto"
           >
             Send
