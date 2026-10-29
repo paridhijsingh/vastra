@@ -146,7 +146,7 @@ export const HOME_TUTORIAL_STEPS: readonly HomeTutorialStep[] = [
   {
     id: "welcome",
     title: "Welcome to your dressing room",
-    body: "Each labeled pin marks a real object. Hover, focus, or tap a pin to read it, then use Open. Help lists every destination if you prefer a list.",
+    body: "Each labeled pin marks a real object. Tap a pin to open that part of the room. Help lists every destination if you prefer a list.",
   },
   {
     id: "wardrobe",
@@ -168,6 +168,8 @@ export const HOME_TUTORIAL_STEPS: readonly HomeTutorialStep[] = [
 ];
 
 export const TUTORIAL_STORAGE_KEY = "vastra-home-tutorial-done";
+
+export const HOME_PIN_HINT = "Tap a pin to open that part of your wardrobe room.";
 
 export function hotspotsForViewport(portrait: boolean): readonly HomeHotspot[] {
   return portrait ? HOME_HOTSPOTS_PORTRAIT : HOME_HOTSPOTS_WIDE;

@@ -358,7 +358,9 @@ a {
   box-shadow: 0 2px 8px rgba(36, 36, 36, 0.14);
 }
 
-.home-pin.is-selected .home-pin-label {
+.home-pin.is-selected .home-pin-label,
+.home-pin:hover .home-pin-label,
+.home-pin:focus-visible .home-pin-label {
   border-color: var(--primary);
 }
 

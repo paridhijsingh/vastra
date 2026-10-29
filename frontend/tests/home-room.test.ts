@@ -5,6 +5,7 @@ import { HOME_FLOW_CARDS, HOME_HEADLINE, HOME_PROBLEM, INTRO_TAGLINE } from "@/l
 import {
   HOME_HOTSPOTS_PORTRAIT,
   HOME_HOTSPOTS_WIDE,
+  HOME_PIN_HINT,
   HOME_ROOM_PORTRAIT,
   HOME_ROOM_WIDE,
   HOME_TUTORIAL_STEPS,
@@ -56,6 +57,9 @@ describe("home dressing room", () => {
     expect(HOME_HEADLINE).toBe("Ready, set, styled.");
     expect(HOME_PROBLEM).toMatch(/clothes you already own/i);
     expect(HOME_FLOW_CARDS.map((card) => card.href)).toEqual(["/emergency-fit", "/rescue", "/stylist"]);
+    expect(HOME_PIN_HINT).toMatch(/tap a pin to open/i);
+    expect(HOME_TUTORIAL_STEPS[0]?.body).toMatch(/tap a pin to open/i);
+    expect(HOME_TUTORIAL_STEPS.some((step) => /then use Open/i.test(step.body))).toBe(false);
     expect(HOME_FLOW_CARDS.every((card) => card.blurb.trim().length > 0)).toBe(true);
     expect(HOW_IT_WORKS_INTRO).toMatch(/Token Factory/i);
     expect(HOW_IT_WORKS_MODELS.map((model) => model.tier)).toEqual(["Nano", "Super", "Ultra"]);

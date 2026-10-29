@@ -8,6 +8,7 @@ import { TryDemoButton } from "@/components/TryDemoButton";
 import { HOW_IT_WORKS_INTRO, HOW_IT_WORKS_MODELS } from "@/lib/ai";
 import { HOME_FLOW_CARDS, HOME_HEADLINE, HOME_PROBLEM } from "@/lib/home/hero";
 import {
+  HOME_PIN_HINT,
   HOME_ROOM_ALT,
   HOME_ROOM_PORTRAIT,
   HOME_ROOM_WIDE,
@@ -17,7 +18,6 @@ import {
   accentTextClass,
   hotspotById,
   hotspotsForViewport,
-  type HomeHotspot,
 } from "@/lib/home/room";
 import { useEntrance } from "@/lib/studio/entrance-context";
 
@@ -27,10 +27,9 @@ type Props = {
 
 export function HomeExperience({ signedIn = false }: Props) {
   const { replayEntrance } = useEntrance();
-  const panelId = useId();
   const tutorialTitleId = useId();
   const [portrait, setPortrait] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
 
@@ -51,7 +50,7 @@ export function HomeExperience({ signedIn = false }: Props) {
   const hotspots = hotspotsForViewport(portrait);
   const art = portrait ? HOME_ROOM_PORTRAIT : HOME_ROOM_WIDE;
   const step = HOME_TUTORIAL_STEPS[tutorialStep];
-  const selected = hotspotById(selectedId ?? (tutorialOpen ? step?.hotspotId : null), portrait);
+  const preview = hotspotById(previewId ?? (tutorialOpen ? step?.hotspotId : null), portrait);
 
   function closeTutorial() {
     localStorage.setItem(TUTORIAL_STORAGE_KEY, "1");
@@ -65,7 +64,7 @@ export function HomeExperience({ signedIn = false }: Props) {
     }
     const next = tutorialStep + 1;
     setTutorialStep(next);
-    setSelectedId(HOME_TUTORIAL_STEPS[next]?.hotspotId ?? null);
+    setPreviewId(HOME_TUTORIAL_STEPS[next]?.hotspotId ?? null);
   }
 
   return (
@@ -101,21 +100,18 @@ export function HomeExperience({ signedIn = false }: Props) {
         />
         <ul className="absolute inset-0" aria-label="Dressing room shortcuts">
           {hotspots.map((hotspot) => {
-            const isSelected = selected?.id === hotspot.id;
+            const isSelected = preview?.id === hotspot.id;
             return (
               <li key={hotspot.id}>
-                <button
-                  type="button"
+                <Link
+                  href={hotspot.href}
                   aria-label={`${hotspot.label}, ${hotspot.object}`}
-                  aria-describedby={isSelected ? panelId : undefined}
-                  aria-pressed={isSelected}
-                  onClick={() => setSelectedId(hotspot.id)}
-                  onFocus={() => setSelectedId(hotspot.id)}
-                  onMouseEnter={() => setSelectedId(hotspot.id)}
+                  onFocus={() => setPreviewId(hotspot.id)}
+                  onMouseEnter={() => setPreviewId(hotspot.id)}
                   className={[
                     "home-pin",
                     isSelected ? "is-selected" : "",
-                    tutorialOpen && selected && !isSelected ? "opacity-40" : "",
+                    tutorialOpen && preview && !isSelected ? "opacity-40" : "",
                   ].join(" ")}
                   style={{ left: `${hotspot.left}%`, top: `${hotspot.top}%` }}
                 >
@@ -125,14 +121,14 @@ export function HomeExperience({ signedIn = false }: Props) {
                       {hotspot.label}
                     </span>
                   </span>
-                </button>
+                </Link>
               </li>
             );
           })}
         </ul>
       </div>
 
-      <DestinationPanel selected={selected} panelId={panelId} />
+      <p className="home-panel text-sm text-muted sm:text-base">{HOME_PIN_HINT}</p>
 
       <footer className="home-how">
         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-accent-wardrobe-text">How it works</p>
@@ -156,34 +152,6 @@ export function HomeExperience({ signedIn = false }: Props) {
           onReplay={replayEntrance}
         />
       ) : null}
-    </div>
-  );
-}
-
-function DestinationPanel({ selected, panelId }: { selected: HomeHotspot | null; panelId: string }) {
-  if (!selected) {
-    return (
-      <div id={panelId} className="home-panel" role="status">
-        <p className="text-sm text-muted sm:text-base">
-          Hover, focus, or tap a pin. Open stays in this panel so it works without hovering.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div id={panelId} className="home-panel home-panel-selected">
-      <div className="min-w-0">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted">{selected.object}</p>
-        <h2 className="font-display text-xl font-semibold text-foreground sm:text-2xl">{selected.label}</h2>
-        <p className="text-sm text-muted">{selected.hint}</p>
-      </div>
-      <Link
-        href={selected.href}
-        className="btn-primary inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto"
-      >
-        Open {selected.label}
-      </Link>
     </div>
   );
 }
