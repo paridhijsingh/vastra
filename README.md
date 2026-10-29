@@ -21,47 +21,78 @@ The frontend host is set with only `API_URL=https://vastra-api-c5gx.onrender.com
 
 For local development, use the [Local setup](#local-setup) env names (`API_URL`, `AUTH_COOKIE_MAX_AGE_HOURS`) against `http://127.0.0.1:8000` instead of these URLs.
 
+## How Nemotron is used
+
+All inference goes through Nebius Token Factory (`https://api.tokenfactory.nebius.com/v1/`). The backend is an OpenAI-compatible client. Outfit generation **is** wired to these models. The Stylist page is shipped. Image generation is not used.
+
+| Flow | Model (Token Factory catalog ID) | Why that model |
+| --- | --- | --- |
+| Emergency Fit (`POST /outfits/emergency`) | Nemotron Nano — `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` (`NEMOTRON_MODEL`) | Fast structured JSON for one occasion from available owned clothes. Fits a live demo click. |
+| Rescue My Outfit (`POST /outfits/rescue`) | Same Nano as Emergency Fit | Same latency budget for a same-category swap. Super is not needed for a one-piece revision. |
+| Stylist chat (`POST /stylist/chat`, page `/stylist`) | Nemotron Super — `nvidia/nemotron-3-super-120b-a12b` (`STYLIST_MODEL`) | Multi-turn planning from saved clothes plus garments you describe. Super follows a longer prompt better than Nano in our comparison runs. |
+| Trend Stylist / Trend Lite (`POST /trends`, page `/trends`) | Nemotron Ultra — `nvidia/Nemotron-3-Ultra-550b-a55b` (`TREND_MODEL`) | Synthesizes one outfit idea from retrieved Tavily snippets. Ultra is the reasoning pass over sources; it does not invent prices or store links. |
+
+Requests send `chat_template_kwargs.enable_thinking: false` (vLLM extra body). See [Feedback on Token Factory / Nemotron](#feedback-on-token-factory--nemotron) for what we observed.
+
+## Nebius services used
+
+| Service | Used for |
+| --- | --- |
+| **Nebius Token Factory** | All Nemotron calls (Nano, Super, Ultra) with one API key and base URL. |
+| **Tavily** | Prompt 5 Trend Lite live search. Titles, URLs, dates, and snippets are sent to Ultra. `TAVILY_API_KEY` stays on the FastAPI host only. |
+
+No other Nebius product (Studio notebooks, GPU VMs, object storage) is in this app.
+
+## Feedback on Token Factory / Nemotron
+
+Token Factory made it straightforward to point one OpenAI-compatible client at Nano, Super, and Ultra with a shared key and base URL; swapping models was an env var, not a new SDK. Nano is fast enough that Emergency Fit and Rescue feel like a demo click. Super for Stylist chat is slower (often 15–30 seconds per turn, and we time out at 60 seconds), so a cold Render box plus a Super call can look hung until the reply lands. NVIDIA documents `enable_thinking: false` for these models; Token Factory has not confirmed it honors that vLLM flag. We send it anyway. Super sometimes returns `reasoning_tokens` 0, which is not proof the control works on every endpoint. Provider errors are sanitized to short 503 copy (“Model unavailable — try again in a minute”, “Trend search unavailable right now”) instead of raw HTTP bodies, which is safer for users and awkward when debugging a bad catalog ID.
+
+## Try the demo
+
+Judges do not need an account, a password, or a wardrobe.
+
+1. Open https://vastra-one-beryl.vercel.app (first API request after idle can take about a minute).
+2. **Skip intro** (or tap **Try the demo** on the wardrobe doors).
+3. On Emergency Fit, tap **Try the demo** if you skipped the intro button.
+4. Tap **Generate outfit**. Occasion is prefilled as dinner with friends.
+
+Demo clothes are synthetic (`Demo — …`) and private to the demo user. The demo password is **not** published in this README or in the browser; the button calls `POST /api/auth/demo`. Local and Render operators set `DEMO_EMAIL` / `DEMO_PASSWORD` in server env and run `python scripts/seed_demo.py`. Never commit those values.
+
 ## Project status
 
-Rebuilding from scratch. Features below are **planned** unless noted.
+This is the submission build. Outfit generation **is** wired to Nemotron. The Stylist page **ships**. Demo sign-in is **Try the demo**, not “coming soon”. Prompt 5 Trend Stylist ships as **Trend Lite**.
 
-- **Backend auth, style profile, and wardrobe APIs** are implemented and tested.
-- **Frontend authentication** is implemented (register, sign in, HttpOnly session cookie).
-- **Style Profile UI** is implemented (load/save/delete).
-- **Confirmed preferences** are reviewed and saved at `/preferences`. They are guidance for later Stylist, Emergency Fit, and Rescue requests. They do not change ownership or availability.
-- **Wardrobe UI** is implemented (list/add/edit/delete with availability filters).
-- **Style Dictionary** has a shared seeded catalog and private entry create/edit/delete on the API and in the Next.js page. AI term suggestions and live trend retrieval are pending.
-- **Nebius / Nemotron** settings are optional. A manual smoke-test script can make one styling check. Emergency Fit uses that connection on the API.
-- **Emergency Fit** recommends one outfit from available owned clothes. The page is at `/emergency-fit`. Suggestions are saved only when you choose Save a look. Image generation is post-v1.
-- **Rescue My Outfit** replaces one available piece with another owned item of the same category. The page is at `/rescue`. Suggestions are saved only when you choose Save a look.
-- **Saved Looks** stores a named plan at `/looks`. Emergency Fit and Rescue call the model only when you generate or rescue an outfit.
-- **Saved Events** stores a dated plan at `/events`. It can point at a Saved Look without copying wardrobe items. There is no location, weather, or reminder.
-- **Stylist chat** is `POST /stylist/chat` and the signed-in page `/stylist`. It answers from the saved profile and available wardrobe. The conversation stays in the browser tab and is not stored.
-- **Trend Stylist** is `POST /trends` and the signed-in page `/trends`. It runs a live Tavily search, then asks Nemotron Ultra for one outfit idea from those sources. If Tavily or Nemotron fails, the page shows that trend search is unavailable and does not invent trends.
-- Smart Shopping remains excluded.
+- **Auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue, Saved Looks, Saved Events, Stylist chat, and Trend Stylist** have FastAPI endpoints and Next.js pages.
+- **Confirmed preferences** are reviewed and saved at `/preferences`. They guide Stylist, Emergency Fit, and Rescue. They do not change ownership or availability. There is **no** automatic path from outfit feedback to a preference proposal.
+- **Emergency Fit** (`/emergency-fit`) uses Nemotron Nano on available owned clothes. Save a look is optional. Image generation is post-v1.
+- **Rescue My Outfit** (`/rescue`) replaces one available piece of the same category. Save a look is optional.
+- **Stylist chat** (`/stylist`, `POST /stylist/chat`) uses Nemotron Super. Type any occasion or tap a starter. The tab is not stored.
+- **Trend Stylist / Trend Lite** (`/trends`, `POST /trends`) runs a live Tavily search, then Nemotron Ultra. Sources and dates are shown. If Tavily or Nemotron fails, the page says trend search is unavailable and does not invent trends.
+- **Smart Shopping** is excluded.
 
-Emergency Fit, Rescue My Outfit, Saved Looks, and Events can be used from their signed-in pages. A look is stored only when you choose Save a look.
+A look is stored only when you choose Save a look.
 
-## Planned features
+## Feature table
 
-| Feature                                | What it does                                                                                    | Status  |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------- | ------- |
-| **Style profile**                      | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid                  | Working (API + UI) |
-| **My wardrobe**                        | Manually add, view, edit, and delete clothing and accessories                                   | Working (API + UI) |
-| **Wardrobe availability**              | Mark items available, in the laundry, or packed away                                            | Working (API + UI) |
-| **Style Dictionary**                   | Searchable fashion terms, pairing guidance, occasions, and comfort-aware alternatives           | Working (API + manual entry UI) |
-| **Emergency Fit**                      | Recommend an outfit for an occasion using available owned items                                 | Working |
-| **Rescue My Outfit**                   | Replace one available piece with another of the same category and keep the rest locked          | Working |
-| **Weather-aware styling**              | Optional weather context for outfit advice; location used only on explicit request              | Planned |
-| **Saved Looks**                        | Save a named outfit plan from owned wardrobe items for later recall                             | Working |
-| **Saved Events**                       | Save a dated plan and optionally attach one Saved Look                                          | Working |
-| **Stylist chat**                       | Conversational outfit planning from saved clothes and what you describe                         | Working (API + UI) |
-| **Trend Stylist**                      | One outfit idea from a live Tavily search plus Nemotron Ultra, with source links and retrieval date | Working |
-| **Styling explanations**               | Explain outfit choices and offer optional hair or makeup tips                                   | Planned |
-| **Outfit feedback**                    | Save ratings and comments separately from lasting preferences                                   | Planned |
-| **Confirmed memory**                   | Ask before remembering a lasting preference; support approval, editing, dismissal, and deletion | Planned |
-| **Authentication and private storage** | Restrict saved records to their owner                                                           | Working (API + frontend sign-in) |
-| **Data controls**                      | Export and delete saved personal records                                                        | Planned |
+| Feature | What it does | Status |
+| --- | --- | --- |
+| **Style profile** | Save preferred styles, colors, fit, comfort preferences, and clothing to avoid | Shipped |
+| **My wardrobe** | Manually add, view, edit, and delete clothing and accessories | Shipped |
+| **Wardrobe availability** | Mark items available, in the laundry, or packed away | Shipped |
+| **Style Dictionary** | Searchable fashion terms; Indian / Western / fusion lanes; “What’s this?” on item names | Shipped |
+| **Emergency Fit** | Recommend an outfit for an occasion using available owned items (Nemotron Nano) | Shipped |
+| **Rescue My Outfit** | Replace one available piece of the same category; keep the rest locked (Nemotron Nano) | Shipped |
+| **Saved Looks** | Save a named outfit plan from owned wardrobe items | Shipped |
+| **Saved Events** | Save a dated plan and optionally attach one Saved Look | Shipped |
+| **Stylist chat** | Free-form conversational planning from saved clothes and what you describe (Nemotron Super) | Shipped |
+| **Trend Stylist** | Trend Lite (retrieved sources only, see `/trends`) — Tavily + Nemotron Ultra | Shipped (Prompt 5) |
+| **Confirmed preferences** | Manual guidance at `/preferences` for later wardrobe outfits | Shipped |
+| **Outfit feedback → preference proposals** | Rate an outfit and confirm a lasting preference from that feedback | Planned, not built |
+| **Styling explanations** | Extra hair or makeup tips as a separate product surface | Planned, not built |
+| **Weather-aware styling** | Optional weather context | Planned, not built |
+| **Data controls** | Export and delete all saved personal records in one place | Planned, not built |
+| **Smart Shopping** | Store links, product prices, purchases | Excluded |
+| **Authentication and private storage** | Restrict saved records to their owner | Shipped |
 
 Support Indian, Western, and fusion styles, with men, women, and unisex styling preferences.
 
@@ -136,9 +167,9 @@ If no other available item in that category exists, the API explains that and do
 
 ## Feedback and confirmed memory
 
-Feedback about one outfit should not automatically become a permanent preference.
+**Planned, not built.** You can save confirmed preferences by hand at `/preferences`. Outfit ratings do not open a preference proposal.
 
-For example:
+The intended flow (not in this build):
 
 1. You give feedback about uncomfortable shoes.
 2. Vastra proposes:
@@ -160,8 +191,8 @@ Unconfirmed or dismissed proposals will not become lasting instructions. Deleted
 5. Request an outfit for an occasion.
 6. Review the validated recommendation.
 7. Use Rescue My Outfit to replace one piece.
-8. Give feedback and review any proposed preference.
-9. Make another request using your confirmed preferences.
+8. (Planned, not built) Give feedback and review any proposed preference.
+9. Optionally save confirmed preferences at `/preferences` and make another request.
 
 ## Recommendation rules
 
@@ -216,21 +247,19 @@ The UI labels the idea as `based on retrieved sources from <date>` and lists onl
 | AI model           | NVIDIA Nemotron                           |
 | Inference provider | Nebius Token Factory                      |
 
-**Model choice:** Use Nemotron through Nebius Token Factory, not Gemini, for outfit recommendations.
+**Model choice:** Use Nemotron through Nebius Token Factory, not Gemini, for outfit recommendations. Catalog IDs are in [How Nemotron is used](#how-nemotron-is-used).
 
-The exact model identifier and API configuration will be verified during integration.
-
-The backend will own database access and model credentials. Shared deployment requires verified authentication, user isolation, and durable storage. Do not put Nebius keys or other backend secrets in the Next.js frontend.
+The backend owns database access and model credentials. Shared deployment uses authenticated, owner-scoped records. Do not put Nebius keys or other backend secrets in the Next.js frontend.
 
 ## Personal AI workflows
 
-Vastra will implement three reusable workflows:
+Vastra implements two reusable workflows today. A third is planned.
 
-- **Emergency Fit:** retrieve personal context and recommend a validated outfit.
-- **Rescue My Outfit:** replace one selected piece while preserving the others.
-- **Confirmed memory:** propose a preference and save it only after approval.
+- **Emergency Fit:** retrieve personal context and recommend a validated outfit. Shipped.
+- **Rescue My Outfit:** replace one selected piece while preserving the others. Shipped.
+- **Confirmed memory:** propose a preference from outfit feedback and save it only after approval. Planned, not built. Manual confirmed preferences at `/preferences` are shipped.
 
-Persistent records will include the style profile, wardrobe, outfit history, feedback, and confirmed preferences.
+Persistent records today are the style profile, wardrobe, saved looks, saved events, dictionary entries, and confirmed preferences. Outfit-feedback history is not stored.
 
 The model will propose recommendations. Backend checks will enforce ownership, availability, and locked-item rules.
 
@@ -278,11 +307,14 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 cp .env.example .env
-# Edit .env and set SECRET_KEY to a long random string (required).
+python3 -c "import secrets; from pathlib import Path; p=Path('.env'); p.write_text(p.read_text().replace('SECRET_KEY=','SECRET_KEY='+secrets.token_urlsafe(64),1))"
+# Optional paid features: set NEBIUS_API_KEY and TAVILY_API_KEY in .env.
 # Optional judge demo: set DEMO_EMAIL and DEMO_PASSWORD, then:
-python scripts/seed_demo.py
+# python scripts/seed_demo.py
 uvicorn vastra.api:app --reload --host 127.0.0.1 --port 8000
 ```
+
+If port 8000 is already in use, pass another, for example `--port 8010`.
 
 Then open:
 
@@ -440,7 +472,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+Open http://localhost:3000. If 3000 is already in use, Next.js tries 3001, 3002, and so on, or you can run `npm run dev -- --port 3010`.
 
 Frontend auth pages:
 
@@ -449,7 +481,13 @@ Frontend auth pages:
 - `/profile` — style profile form (requires sign-in)
 - `/wardrobe` — wardrobe manager with availability filters (requires sign-in)
 - `/dictionary` — style dictionary search, plus add, edit, and delete for your own terms (requires sign-in; shared entries are read-only)
-- `/trends` — Trend Stylist form (requires sign-in; live Tavily search plus Nemotron Ultra)
+- `/emergency-fit` — Emergency Fit (requires sign-in)
+- `/rescue` — Rescue My Outfit (requires sign-in)
+- `/stylist` — Stylist chat (requires sign-in)
+- `/trends` — Trend Stylist / Trend Lite (requires sign-in; live Tavily search plus Nemotron Ultra)
+- `/looks` — Saved Looks (requires sign-in)
+- `/events` — Saved Events (requires sign-in)
+- `/preferences` — confirmed preferences (requires sign-in)
 
 Frontend configuration (server-only in `.env.local` locally, or Vercel project env in production):
 
@@ -512,29 +550,32 @@ That creates a style profile plus 15 synthetic wardrobe items (`Demo — …`), 
 
 ## Demo
 
-Live URLs are in [Live demo](#live-demo). Judge clicks are in [Testing the demo](#testing-the-demo).
+Live URLs are in [Live demo](#live-demo). Judge clicks are in [Try the demo](#try-the-demo).
 
-The planned demonstration will show:
+The live demonstration shows:
 
-1. A saved profile and available wardrobe
-2. A dinner outfit recommendation
-3. A shoe replacement with other pieces preserved
-4. Explicit approval of a preference for flats when standing
-5. A later recommendation using that preference
+1. A synthetic demo wardrobe (Try the demo)
+2. A dinner outfit from Emergency Fit
+3. Optional: Rescue My Outfit to replace one piece
+4. Optional: Stylist chat and Trend Stylist (`/trends`)
+
+Outfit-feedback → preference approval is **not** in the demo (planned, not built).
 
 ## Hackathon submission
 
-Planned materials:
+See [SUBMISSION.md](SUBMISSION.md) for the Devpost title, track, 150-word description, testing steps, video placeholder, and checklist.
 
-- Working demo or test-build URL
-- Public source repository with an open-source license
-- README with verified setup and run instructions
-- English project description
-- Public YouTube demonstration under three minutes
-- Documentation of actual NVIDIA and Nebius integration
-- Requested platform feedback
+Materials:
 
-The finished application will be reviewed against the full track requirements. Background or always-on behavior will not be claimed unless implemented.
+- Live demo: https://vastra-one-beryl.vercel.app
+- Public source repository with MIT license ([LICENSE](LICENSE))
+- This README (setup verified from a fresh clone; see SUBMISSION.md)
+- English project description in SUBMISSION.md
+- Public YouTube demonstration under three minutes (URL in SUBMISSION.md)
+- [How Nemotron is used](#how-nemotron-is-used) and [Nebius services used](#nebius-services-used)
+- [Feedback on Token Factory / Nemotron](#feedback-on-token-factory--nemotron)
+
+Background or always-on behavior is not claimed.
 
 [Official hackathon rules](https://nebiusglobalaihackathon.devpost.com/rules)
 

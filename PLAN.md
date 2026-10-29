@@ -2,8 +2,8 @@
 
 **Ready, set, styled.**
 
-Updated: October 14, 2026  
-Status: FastAPI auth/profile/wardrobe APIs, Emergency Fit, Rescue My Outfit, Saved Looks, Saved Events, and Stylist chat working; Next.js auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue, Saved Looks, and Events pages working; the Stylist chat page is pending; image generation is post-v1  
+Updated: October 29, 2026  
+Status: Shipped for submission — FastAPI plus Next.js for auth, Style Profile, Wardrobe, Style Dictionary, Emergency Fit, Rescue My Outfit, Saved Looks, Saved Events, Stylist chat (free-form + starter prompts), and Trend Stylist / Trend Lite (`/trends`, Tavily + Nemotron Ultra). Image generation is post-v1. Outfit-feedback → preference proposals are planned, not built. Smart Shopping is excluded.  
 Hackathon: NVIDIA × Nebius Global AI Hackathon — Best Apps and Agents track  
 Submission deadline: October 30, 2026, at 10 AM PDT  
 Target submission readiness: October 29, 2026
@@ -456,8 +456,8 @@ If behind schedule:
 
 ## Next action
 
-Wardrobe UI, the Style Dictionary page, Emergency Fit, Rescue My Outfit, Saved Looks, Events, and the Stylist page are in place. Stylist chat does not store the conversation. Suggestions from Emergency Fit and Rescue are saved only when you choose Save a look. A Stylist proposal can use that same form only when every piece is a saved wardrobe item. The shared catalog is still empty. Image generation is post-v1. Weather and shopping stay deferred.
+Wardrobe UI, the Style Dictionary page (shared catalog plus personal entries), Emergency Fit, Rescue My Outfit, Saved Looks, Events, Stylist chat, and Trend Stylist / Trend Lite are in place. Stylist chat does not store the conversation. Suggestions from Emergency Fit and Rescue are saved only when you choose Save a look. A Stylist proposal can use that same form only when every piece is a saved wardrobe item. Image generation is post-v1. Weather and shopping stay deferred. Outfit-feedback → preference proposals are planned, not built.
 
-Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources) and live trend retrieval.
+Pending for the dictionary: AI term suggestions (drafts until reviewed; never mark them verified or currently trending without supporting sources). Live trend retrieval ships as Trend Stylist / Trend Lite (`/trends`), not as dictionary auto-fill.
 
 Do not implement weather lookups, shopping, or MCP yet.

@@ -1,5 +1,7 @@
 # Devpost draft — Vastra (वस्त्र)
 
+Canonical submission copy is in [SUBMISSION.md](SUBMISSION.md). This file is a short testing note.
+
 English project description and testing instructions for the NVIDIA × Nebius Global AI Hackathon.
 
 ## Project description
