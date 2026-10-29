@@ -1,3 +1,4 @@
+import { ADD_AVAILABLE_ITEM_MESSAGE } from "@/lib/ai";
 import {
   AI_SUGGESTION_NOTE,
   OCCASION_MAX,
@@ -17,14 +18,13 @@ export const RESCUE_EXPLANATION =
   "Replace one piece while keeping the rest. Uses available items from your wardrobe. Suggestions are saved only when you choose Save a look.";
 export const SAME_CATEGORY_NOTE =
   "Replacements must be another available item of the same category.";
-export const FINDING_REPLACEMENT_MESSAGE = "Finding a replacement…";
+export const FINDING_REPLACEMENT_MESSAGE = "Asking Nemotron…";
 export const NO_CANDIDATE_MESSAGE =
   "No other available item in that category can replace this piece.";
 export const ITEMS_CHANGED_MESSAGE =
   "Those wardrobe items may have changed. Reload your wardrobe and try again.";
 export const WARDROBE_LOAD_ERROR = "Could not load your wardrobe. Please try again.";
-export const EMPTY_WARDROBE_MESSAGE =
-  "Available wardrobe items are needed before an outfit can be changed.";
+export const EMPTY_WARDROBE_MESSAGE = ADD_AVAILABLE_ITEM_MESSAGE;
 
 export type RescueField = "occasion" | "change_request" | "comfort_needs" | "item_ids" | "replace_item_id";
 

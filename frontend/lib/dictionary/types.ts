@@ -2,6 +2,13 @@
 export const DICTIONARY_STYLES = ["Indian", "Western", "fusion"] as const;
 export type DictionaryStyle = (typeof DICTIONARY_STYLES)[number];
 
+export const DICTIONARY_LANES: readonly { value: DictionaryStyle | ""; label: string }[] = [
+  { value: "", label: "All" },
+  { value: "Indian", label: "Indian" },
+  { value: "Western", label: "Western" },
+  { value: "fusion", label: "Fusion" },
+];
+
 export const DICTIONARY_KINDS = [
   "garment",
   "fabric",
@@ -16,6 +23,27 @@ export const DICTIONARY_KIND_LABELS: Record<DictionaryKind, string> = {
   silhouette: "Silhouette",
   styling_technique: "Styling technique",
 };
+
+export const DICTIONARY_KIND_GROUP_LABELS: Record<DictionaryKind, string> = {
+  garment: "Garments",
+  fabric: "Fabrics",
+  silhouette: "Silhouettes",
+  styling_technique: "Styling techniques",
+};
+
+export type DictionaryKindGroup = {
+  kind: DictionaryKind;
+  label: string;
+  entries: DictionaryEntry[];
+};
+
+export function groupDictionaryByKind(entries: readonly DictionaryEntry[]): DictionaryKindGroup[] {
+  return DICTIONARY_KINDS.flatMap((kind) => {
+    const grouped = entries.filter((entry) => entry.kind === kind);
+    if (grouped.length === 0) return [];
+    return [{ kind, label: DICTIONARY_KIND_GROUP_LABELS[kind], entries: grouped }];
+  });
+}
 
 export const DICTIONARY_FILTER_NOTE =
   "Browse broad styles, or filter by a specific cultural or style tag.";

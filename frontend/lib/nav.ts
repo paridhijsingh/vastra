@@ -4,19 +4,53 @@ export type NavItem = {
   accent: "home" | "profile" | "wardrobe" | "dictionary";
 };
 
-export const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/", label: "Home", accent: "home" },
-  { href: "/stylist", label: "Stylist", accent: "home" },
-  { href: "/trends", label: "Trend Stylist", accent: "home" },
-  { href: "/wardrobe", label: "Wardrobe", accent: "wardrobe" },
-  { href: "/looks", label: "Saved Looks", accent: "home" },
-  { href: "/events", label: "Events", accent: "wardrobe" },
-  { href: "/dictionary", label: "Style Dictionary", accent: "dictionary" },
-  { href: "/profile", label: "Style Profile", accent: "profile" },
-  { href: "/preferences", label: "Preferences", accent: "profile" },
-  { href: "/emergency-fit", label: "Emergency Fit", accent: "home" },
-  { href: "/rescue", label: "Rescue", accent: "home" },
+export type NavGroup = {
+  id: string;
+  label: string | null;
+  items: readonly NavItem[];
+};
+
+export const NAV_GROUPS: readonly NavGroup[] = [
+  {
+    id: "home",
+    label: null,
+    items: [{ href: "/", label: "Home", accent: "home" }],
+  },
+  {
+    id: "style",
+    label: "Style",
+    items: [
+      { href: "/emergency-fit", label: "Emergency Fit", accent: "home" },
+      { href: "/rescue", label: "Rescue My Outfit", accent: "home" },
+      { href: "/stylist", label: "Stylist chat", accent: "home" },
+      { href: "/trends", label: "Trend Stylist", accent: "home" },
+    ],
+  },
+  {
+    id: "closet",
+    label: "My closet",
+    items: [
+      { href: "/wardrobe", label: "Wardrobe", accent: "wardrobe" },
+      { href: "/looks", label: "Saved Looks", accent: "home" },
+      { href: "/events", label: "Saved Events", accent: "wardrobe" },
+    ],
+  },
+  {
+    id: "learn",
+    label: "Learn",
+    items: [{ href: "/dictionary", label: "Style Dictionary", accent: "dictionary" }],
+  },
+  {
+    id: "account",
+    label: null,
+    items: [
+      { href: "/profile", label: "Style Profile", accent: "profile" },
+      { href: "/preferences", label: "Preferences", accent: "profile" },
+    ],
+  },
 ] as const;
+
+export const NAV_ITEMS: readonly NavItem[] = NAV_GROUPS.flatMap((group) => [...group.items]);
 
 export const MOBILE_PRIMARY_NAV: readonly string[] = ["/", "/stylist", "/wardrobe", "/emergency-fit"];
 
@@ -32,6 +66,9 @@ export function compactNavLabel(item: NavItem): string {
   if (item.href === "/looks") return "Looks";
   if (item.href === "/emergency-fit") return "Emergency";
   if (item.href === "/trends") return "Trends";
+  if (item.href === "/rescue") return "Rescue";
+  if (item.href === "/stylist") return "Stylist";
+  if (item.href === "/events") return "Events";
   return item.label;
 }
 

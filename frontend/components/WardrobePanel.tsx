@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 
 import { WardrobeCard } from "@/components/WardrobeCard";
 import {
+  groupWardrobeByCategory,
   recentlyAdded,
   visibleWardrobeItems,
   wardrobeCountLabel,
@@ -334,6 +335,7 @@ export function WardrobePanel({ userId }: Props) {
     () => (query.trim() ? [] : recentlyAdded(items)),
     [items, query],
   );
+  const grouped = useMemo(() => groupWardrobeByCategory(visible), [visible]);
   const emptyWardrobe = loadState === "ready" && filter === "all" && items.length === 0;
   const emptyFilter =
     loadState === "ready" && filter !== "all" && items.length === 0;
@@ -374,32 +376,9 @@ export function WardrobePanel({ userId }: Props) {
       ) : null}
 
       {featured.length > 0 ? (
-        <section className="flex min-w-0 flex-col gap-3" aria-labelledby="wardrobe-featured-heading">
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
-              Recently added
-            </p>
-            <h2 id="wardrobe-featured-heading" className="font-display text-2xl font-semibold text-foreground">
-              Latest pieces
-            </h2>
-            <p className="text-sm text-muted">
-              The newest garments in this list, in the order they were saved. They also appear in the collection below.
-            </p>
-          </div>
-          <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-            {featured.map((item) => (
-              <li key={`featured-${item.id}`}>
-                <WardrobeCard
-                  item={item}
-                  busy={busy}
-                  deleting={deletingId === item.id}
-                  onEdit={startEdit}
-                  onDelete={(entry) => void onDelete(entry)}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <p className="wardrobe-latest-strip" role="status">
+          Newest: {featured.map((item) => item.name).join(" · ")}
+        </p>
       ) : null}
 
       <section className="flex min-w-0 flex-col gap-4" aria-labelledby="wardrobe-collection-heading">
@@ -504,20 +483,29 @@ export function WardrobePanel({ userId }: Props) {
           </p>
         ) : null}
 
-        {visible.length > 0 ? (
-          <ul className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
-            {visible.map((item) => (
-              <li key={item.id}>
-                <WardrobeCard
-                  item={item}
-                  busy={busy}
-                  deleting={deletingId === item.id}
-                  onEdit={startEdit}
-                  onDelete={(entry) => void onDelete(entry)}
-                />
-              </li>
+        {grouped.length > 0 ? (
+          <div className="flex min-w-0 flex-col gap-6">
+            {grouped.map((group) => (
+              <section key={group.category} className="flex min-w-0 flex-col gap-3" aria-labelledby={`wardrobe-${group.category}`}>
+                <h3 id={`wardrobe-${group.category}`} className="wardrobe-category-heading">
+                  {group.label}
+                </h3>
+                <ul className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
+                  {group.items.map((item) => (
+                    <li key={item.id}>
+                      <WardrobeCard
+                        item={item}
+                        busy={busy}
+                        deleting={deletingId === item.id}
+                        onEdit={startEdit}
+                        onDelete={(entry) => void onDelete(entry)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         ) : null}
       </section>
 

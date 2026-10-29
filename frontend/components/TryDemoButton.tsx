@@ -6,11 +6,13 @@ import { useState } from "react";
 type Props = {
   nextPath?: string;
   className?: string;
+  onSuccess?: () => void;
 };
 
 export function TryDemoButton({
   nextPath = "/emergency-fit",
   className,
+  onSuccess,
 }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -36,6 +38,7 @@ export function TryDemoButton({
         return;
       }
       const destination = nextPath.startsWith("/") ? nextPath : "/emergency-fit";
+      onSuccess?.();
       router.push(destination);
       router.refresh();
     } catch {

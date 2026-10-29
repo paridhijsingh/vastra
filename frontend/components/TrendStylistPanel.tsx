@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
 
+import { AskingNemotron } from "@/components/AskingNemotron";
+import { ModelBadge } from "@/components/ModelBadge";
 import {
   BUDGET_MAX,
   OCCASION_MAX,
-  SEARCHING_TRENDS_MESSAGE,
   TREND_UNAVAILABLE_MESSAGE,
   VIBE_MAX,
+  fillBudgetInIdea,
   generationRequest,
   ideaFromProxy,
   type TrendFieldErrors,
@@ -31,6 +33,7 @@ export function TrendStylistPanel({ userId }: Props) {
   const [errors, setErrors] = useState<TrendFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [result, setResult] = useState<TrendIdeaView | null>(null);
+  const [submittedBudget, setSubmittedBudget] = useState("no shopping");
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,6 +89,7 @@ export function TrendStylistPanel({ userId }: Props) {
         return;
       }
       setResult(idea);
+      setSubmittedBudget(decision.body.budget);
     } catch {
       setFormError(TREND_UNAVAILABLE_MESSAGE);
     } finally {
@@ -155,7 +159,7 @@ export function TrendStylistPanel({ userId }: Props) {
             Budget
           </label>
           <p id={`${formId}-budget-hint`} className="text-sm text-muted">
-            Used only as a constraint. The page will not invent a price.
+            Used only as a constraint. Enter a number with optional currency, or write no shopping. The page will not invent a price.
           </p>
           <input
             id={`${formId}-budget`}
@@ -181,11 +185,7 @@ export function TrendStylistPanel({ userId }: Props) {
             {formError}
           </p>
         ) : null}
-        {pending ? (
-          <p role="status" className="status-card text-sm font-semibold text-primary">
-            {SEARCHING_TRENDS_MESSAGE}
-          </p>
-        ) : null}
+        {pending ? <AskingNemotron /> : null}
 
         <button
           type="submit"
@@ -196,21 +196,24 @@ export function TrendStylistPanel({ userId }: Props) {
         </button>
       </form>
 
-      {result ? <TrendIdeaCard key={`${userId}-${result.retrievalDate}`} idea={result} /> : null}
+      {result ? (
+        <TrendIdeaCard key={`${userId}-${result.retrievalDate}`} idea={result} budget={submittedBudget} />
+      ) : null}
     </div>
   );
 }
 
-function TrendIdeaCard({ idea }: { idea: TrendIdeaView }) {
+function TrendIdeaCard({ idea, budget }: { idea: TrendIdeaView; budget: string }) {
   return (
     <section className="status-card flex max-w-2xl min-w-0 flex-col gap-4" aria-labelledby="trend-idea-heading">
       <div className="flex flex-col gap-1">
         <h2 id="trend-idea-heading" className="font-display text-xl font-semibold text-foreground">
           Outfit idea
         </h2>
+        <ModelBadge tier="Ultra" />
         <p className="text-sm text-muted">{idea.basedOn}</p>
       </div>
-      <p className="text-base text-foreground">{idea.outfitIdea}</p>
+      <p className="text-base text-foreground">{fillBudgetInIdea(idea.outfitIdea, budget)}</p>
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-foreground">Sources</h3>
         <ul className="flex flex-col gap-2">

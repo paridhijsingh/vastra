@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 
 import { TryDemoButton } from "@/components/TryDemoButton";
+import { HOW_IT_WORKS_INTRO, HOW_IT_WORKS_MODELS } from "@/lib/ai";
+import { HOME_FLOW_CARDS, HOME_HEADLINE, HOME_PROBLEM } from "@/lib/home/hero";
 import {
   HOME_ROOM_ALT,
   HOME_ROOM_PORTRAIT,
@@ -68,6 +70,26 @@ export function HomeExperience({ signedIn = false }: Props) {
 
   return (
     <div className="home-studio">
+      <section className="home-hero" aria-labelledby="home-headline">
+        <h1 id="home-headline" className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          {HOME_HEADLINE}
+        </h1>
+        <p className="max-w-2xl text-base text-muted sm:text-lg">{HOME_PROBLEM}</p>
+        <ul className="home-flow-grid">
+          {HOME_FLOW_CARDS.map((card) => (
+            <li key={card.href}>
+              <Link href={card.href} className="home-flow-card">
+                <span className="font-display text-lg font-semibold text-foreground">{card.title}</span>
+                <span className="text-sm text-muted">{card.blurb}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {signedIn ? null : (
+          <TryDemoButton className="btn-primary inline-flex min-h-12 w-full items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto disabled:cursor-not-allowed disabled:opacity-70" />
+        )}
+      </section>
+
       <div className={portrait ? "home-art home-art-portrait" : "home-art home-art-wide"}>
         <Image
           src={art.src}
@@ -110,21 +132,20 @@ export function HomeExperience({ signedIn = false }: Props) {
         </ul>
       </div>
 
-      {signedIn ? null : (
-        <div className="home-panel flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-accent-wardrobe-text">
-              Judge shortcut
-            </p>
-            <p className="text-sm text-foreground sm:text-base">
-              Open a working dinner outfit without registering or typing a wardrobe.
-            </p>
-          </div>
-          <TryDemoButton className="btn-primary inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-md px-5 text-base font-semibold sm:w-auto disabled:cursor-not-allowed disabled:opacity-70" />
-        </div>
-      )}
-
       <DestinationPanel selected={selected} panelId={panelId} />
+
+      <footer className="home-how">
+        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-accent-wardrobe-text">How it works</p>
+        <p className="mt-1 text-sm text-foreground">{HOW_IT_WORKS_INTRO}</p>
+        <ul className="mt-2 flex min-w-0 flex-col gap-1 text-sm text-muted">
+          {HOW_IT_WORKS_MODELS.map((model) => (
+            <li key={model.tier}>
+              <span className="font-semibold text-foreground">Nemotron {model.tier}</span>
+              {` — ${model.use}, via Nebius Token Factory.`}
+            </li>
+          ))}
+        </ul>
+      </footer>
 
       {tutorialOpen ? (
         <TutorialPanel

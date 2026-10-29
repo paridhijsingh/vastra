@@ -222,7 +222,7 @@ describe("POST /api/outfits/emergency", () => {
     vi.stubGlobal("fetch", fetchMock);
     const conflict = await createEmergencyOutfit(sameOrigin({ occasion: "dinner" }));
     expect(conflict.status).toBe(409);
-    expect((await conflict.json()).error).toMatch(/available wardrobe items/i);
+    expect((await conflict.json()).error).toBe("Add at least one available item first");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     fetchMock.mockResolvedValueOnce(Response.json({ detail: "nope" }, { status: 502 }));

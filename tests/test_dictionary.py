@@ -125,24 +125,28 @@ def test_packaged_dictionary_is_seeded_valid_and_path_is_package_relative(
 
     raw = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(raw, list)
-    assert len(raw) == 15
+    assert len(raw) == 19
 
     entries = load_dictionary()
-    assert len(entries) == 15
+    assert len(entries) == 19
     assert all(entry.origin == "shared" for entry in entries)
     ids = [entry.id for entry in entries]
     assert len(ids) == len(set(ids))
     assert {entry.term for entry in entries} == {
         "A-line",
+        "Anarkali",
         "Blazer",
         "Breathable fabric",
         "Colour blocking",
         "Festive",
+        "Jhumka",
         "Kurta",
         "Layering",
         "Lehenga",
         "Linen",
         "Monochrome",
+        "Nehru jacket",
+        "Palazzo pants",
         "Relaxed fit",
         "Saree drape",
         "Silk",
@@ -202,7 +206,7 @@ def test_seeded_catalog_lists_entries_and_finds_linen(client: TestClient) -> Non
     listed = client.get("/dictionary", headers=headers)
     assert listed.status_code == 200
     payload = listed.json()
-    assert len(payload) == 15
+    assert len(payload) == 19
     assert all(row["origin"] == "shared" for row in payload)
     terms = [row["term"] for row in payload]
     assert terms == sorted(terms, key=str.casefold)

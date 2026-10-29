@@ -46,6 +46,25 @@ def test_demo_catalog_is_synthetic_and_covers_required_shapes() -> None:
     notes = " ".join(item["notes"].lower() for item in DEMO_WARDROBE_ITEMS)
     for occasion in ("dinner", "wedding", "interview", "festive"):
         assert occasion in notes
+    joined = " ".join(names).lower()
+    for token in (
+        "kurta",
+        "palazzo",
+        "shawl",
+        "jhumka",
+        "anarkali",
+        "blazer",
+        "oxford shirt",
+        "trousers",
+        "oxfords",
+        "wrap dress",
+        "denim jacket",
+        "sneakers",
+        "pearl",
+        "sandals",
+        "nehru",
+    ):
+        assert token in joined
     for style in ("indian", "western", "fusion"):
         assert style in notes
     assert DEMO_PROFILE["styling_preference"] == "unisex"

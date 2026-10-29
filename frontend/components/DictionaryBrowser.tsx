@@ -15,10 +15,11 @@ import {
 import {
   DICTIONARY_KIND_LABELS,
   DICTIONARY_KINDS,
+  DICTIONARY_LANES,
+  groupDictionaryByKind,
   DICTIONARY_FILTER_NOTE,
   DICTIONARY_LOAD_ERROR,
   DICTIONARY_PRIVACY_NOTE,
-  DICTIONARY_STYLES,
   EMPTY_DICTIONARY_BODY,
   EMPTY_DICTIONARY_TITLE,
   NO_MATCH_TITLE,
@@ -323,60 +324,64 @@ export function DictionaryBrowser({
           />
         </div>
 
-        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="dictionary-style" className="text-sm font-semibold text-foreground">
-              Style
-            </label>
-            <select
-              id="dictionary-style"
-              name="style"
-              value={style}
-              onChange={(event) => {
-                const value = event.target.value;
-                setStyle(
-                  value === "Indian" || value === "Western" || value === "fusion" ? value : "",
-                );
-              }}
-              className="min-h-12 w-full min-w-0 rounded-md border border-border bg-background px-3 text-base text-foreground"
-            >
-              <option value="">All styles</option>
-              {DICTIONARY_STYLES.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-col gap-2">
+          <p id="dictionary-lanes-label" className="text-sm font-semibold text-foreground">
+            Style lane
+          </p>
+          <div className="flex min-w-0 flex-wrap gap-2" role="group" aria-labelledby="dictionary-lanes-label">
+            {DICTIONARY_LANES.map((lane) => {
+              const active = style === lane.value;
+              return (
+                <button
+                  key={lane.label}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setStyle(lane.value);
+                    router.push(dictionaryListHref({ q, style: lane.value, kind, tag }));
+                  }}
+                  className={[
+                    "inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-semibold transition-colors",
+                    active
+                      ? "border-transparent bg-primary text-primary-foreground"
+                      : "border-border bg-surface text-foreground hover:bg-black/5",
+                  ].join(" ")}
+                >
+                  {lane.label}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="dictionary-kind" className="text-sm font-semibold text-foreground">
-              Type
-            </label>
-            <select
-              id="dictionary-kind"
-              name="kind"
-              value={kind}
-              onChange={(event) => {
-                const value = event.target.value;
-                setKind(
-                  value === "garment" ||
-                    value === "fabric" ||
-                    value === "silhouette" ||
-                    value === "styling_technique"
-                    ? value
-                    : "",
-                );
-              }}
-              className="min-h-12 w-full min-w-0 rounded-md border border-border bg-background px-3 text-base text-foreground"
-            >
-              <option value="">All types</option>
-              {DICTIONARY_KINDS.map((value) => (
-                <option key={value} value={value}>
-                  {DICTIONARY_KIND_LABELS[value]}
-                </option>
-              ))}
-            </select>
-          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="dictionary-kind" className="text-sm font-semibold text-foreground">
+            Type
+          </label>
+          <select
+            id="dictionary-kind"
+            name="kind"
+            value={kind}
+            onChange={(event) => {
+              const value = event.target.value;
+              setKind(
+                value === "garment" ||
+                  value === "fabric" ||
+                  value === "silhouette" ||
+                  value === "styling_technique"
+                  ? value
+                  : "",
+              );
+            }}
+            className="min-h-12 w-full min-w-0 rounded-md border border-border bg-background px-3 text-base text-foreground"
+          >
+            <option value="">All types</option>
+            {DICTIONARY_KINDS.map((value) => (
+              <option key={value} value={value}>
+                {DICTIONARY_KIND_LABELS[value]}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -443,8 +448,14 @@ export function DictionaryBrowser({
       ) : null}
 
       {loadState === "ready" && entries.length > 0 ? (
-        <ul className="flex min-w-0 flex-col gap-4">
-          {entries.map((entry) => (
+        <div className="flex min-w-0 flex-col gap-8">
+          {groupDictionaryByKind(entries).map((group) => (
+            <section key={group.kind} className="flex min-w-0 flex-col gap-4" aria-labelledby={`dictionary-${group.kind}`}>
+              <h2 id={`dictionary-${group.kind}`} className="wardrobe-category-heading">
+                {group.label}
+              </h2>
+              <ul className="flex min-w-0 flex-col gap-4">
+                {group.entries.map((entry) => (
             <li key={entry.id}>
               <article className="studio-garment">
                 <Link
@@ -454,9 +465,9 @@ export function DictionaryBrowser({
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-dictionary-text">
                     {DICTIONARY_KIND_LABELS[entry.kind]}
                   </p>
-                  <h2 className="font-display text-2xl font-semibold leading-snug text-foreground break-words underline">
+                  <h3 className="font-display text-2xl font-semibold leading-snug text-foreground break-words underline">
                     {entry.term}
-                  </h2>
+                  </h3>
                   <p className="text-base text-foreground line-clamp-3">{entry.definition}</p>
                   {entry.styles.length > 0 ? (
                     <p className="text-sm text-muted">{entry.styles.join(" · ")}</p>
@@ -509,8 +520,11 @@ export function DictionaryBrowser({
                 ) : null}
               </article>
             </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       ) : null}
     </div>
   );

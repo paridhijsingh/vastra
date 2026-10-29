@@ -11,6 +11,7 @@ import { HOME_HOTSPOTS_WIDE } from "@/lib/home/room";
 import type { PublicUser } from "@/lib/auth/cookies";
 import {
   MOBILE_PRIMARY_NAV,
+  NAV_GROUPS,
   NAV_ITEMS,
   compactNavLabel,
   isAuthPath,
@@ -172,30 +173,37 @@ function AccountLinks({ user, showDemo }: { user: PublicUser | null; showDemo: b
 
 function NavList({ pathname }: { pathname: string }) {
   return (
-    <ul className="flex flex-col gap-1">
-      {NAV_ITEMS.map((item) => {
-        const active = isActivePath(pathname, item.href);
-        return (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={[
-                "flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-foreground hover:bg-black/5",
-                active ? "bg-black/5" : "",
-              ].join(" ")}
-            >
-              <span
-                className="h-2 w-2 shrink-0 rounded-full"
-                style={{ backgroundColor: navAccentVar(item.accent) }}
-                aria-hidden="true"
-              />
-              {item.label}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="flex flex-col gap-4">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.id} className="flex flex-col gap-1">
+          {group.label ? <p className="nav-group-label">{group.label}</p> : null}
+          <ul className="flex flex-col gap-1">
+            {group.items.map((item) => {
+              const active = isActivePath(pathname, item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={[
+                      "flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-foreground hover:bg-black/5",
+                      active ? "bg-black/5" : "",
+                    ].join(" ")}
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: navAccentVar(item.accent) }}
+                      aria-hidden="true"
+                    />
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
 

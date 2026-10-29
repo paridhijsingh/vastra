@@ -12,7 +12,7 @@ const KNOWN_DETAILS = new Set([
   "The stylist reply could not be used. Please try again.",
   "The stylist request timed out. Please try again.",
   "The model service rate-limited the request. Try again later.",
-  "Outfit suggestions are temporarily unavailable. Please try again later.",
+  "Model unavailable — try again in a minute",
 ]);
 
 function failure(kind: StylistFailureKind, message: string, status: number): StylistBackendResult {
@@ -42,7 +42,7 @@ export async function backendStylistChat(
     if (isProxyTimeoutError(error)) {
       return failure("timeout", "The stylist request timed out. Please try again.", 504);
     }
-    return failure("unavailable", "Outfit suggestions are temporarily unavailable. Please try again later.", 503);
+    return failure("unavailable", "Model unavailable — try again in a minute", 503);
   }
 
   if (response.status === 401) {
@@ -58,7 +58,7 @@ export async function backendStylistChat(
     return failure("timeout", known ?? "The stylist request timed out. Please try again.", 504);
   }
   if (response.status === 503) {
-    return failure("unavailable", known ?? "Outfit suggestions are temporarily unavailable. Please try again later.", 503);
+    return failure("unavailable", known ?? "Model unavailable — try again in a minute", 503);
   }
   if (!response.ok) {
     return failure("failed", known ?? "The stylist reply could not be used. Please try again.", response.status === 502 ? 502 : 502);

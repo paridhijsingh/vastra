@@ -16,11 +16,14 @@ vi.mock("next/headers", () => ({
 import { POST as createTrendIdea } from "@/app/api/trends/route";
 import { TRENDS_PROXY_TIMEOUT_MS } from "@/lib/trends/backend";
 import {
+  BUDGET_PARSE_MESSAGE,
   TREND_UNAVAILABLE_MESSAGE,
   basedOnRetrievedSources,
+  fillBudgetInIdea,
   generationRequest,
   ideaFromApi,
   ideaFromProxy,
+  parseBudgetInput,
   trendRequestBody,
 } from "@/lib/trends/form";
 
@@ -81,6 +84,38 @@ describe("trend stylist form", () => {
         budget: "no shopping",
       }),
     ).toEqual({ status: "blocked" });
+  });
+
+  it("sanitizes numeric budget text and names the fix when it cannot parse", () => {
+    expect(parseBudgetInput("40, USD")).toEqual({ ok: true, budget: "40 USD" });
+    expect(parseBudgetInput("  no shopping  ")).toEqual({ ok: true, budget: "no shopping" });
+    expect(parseBudgetInput("forty dollars")).toEqual({ ok: false, error: BUDGET_PARSE_MESSAGE });
+    const invalid = generationRequest({
+      pending: false,
+      occasion: "dinner with friends",
+      vibe: "relaxed",
+      budget: "40, USD extra words",
+    });
+    expect(invalid.status).toBe("invalid");
+    if (invalid.status === "invalid") {
+      expect(invalid.errors.budget).toBe(BUDGET_PARSE_MESSAGE);
+    }
+    const ready = generationRequest({
+      pending: false,
+      occasion: "dinner with friends",
+      vibe: "relaxed",
+      budget: "40, USD",
+    });
+    expect(ready).toEqual({
+      status: "ready",
+      body: { occasion: "dinner with friends", vibe: "relaxed", budget: "40 USD" },
+    });
+  });
+
+  it("fills a blank priced-at clause with the submitted budget and currency", () => {
+    expect(fillBudgetInIdea("A cream knit priced at or near , for dinner.", "40 USD")).toBe(
+      "A cream knit priced at or near 40 USD for dinner.",
+    );
   });
 
   it("keeps field errors without starting a request", () => {

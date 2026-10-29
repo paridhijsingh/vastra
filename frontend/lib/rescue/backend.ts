@@ -60,7 +60,7 @@ export async function backendRescueOutfit(
     }
     return failure(
       "unavailable",
-      "Outfit suggestions are temporarily unavailable. Please try again later.",
+      "Model unavailable — try again in a minute",
       503,
     );
   }
@@ -90,7 +90,7 @@ export async function backendRescueOutfit(
   if (response.status === 503) {
     return failure(
       "unavailable",
-      "Outfit suggestions are temporarily unavailable. Please try again later.",
+      "Model unavailable — try again in a minute",
       503,
     );
   }

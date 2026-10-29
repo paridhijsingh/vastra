@@ -4,16 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { SaveLookForm } from "@/components/SaveLookForm";
+import { AskingNemotron } from "@/components/AskingNemotron";
+import { ModelBadge } from "@/components/ModelBadge";
+import { OutfitNextActions } from "@/components/OutfitNextActions";
 import { StudioGarmentCard } from "@/components/StudioGarmentCard";
+import { generateFailureMessage, garmentWhyLine, incompleteOutfitNote } from "@/lib/ai";
 import { emergencyFitFields, type EventFitContext } from "@/lib/emergency/event-fit";
 import {
-  AI_SUGGESTION_NOTE,
-  CREATING_OUTFIT_MESSAGE,
   NO_AVAILABLE_ITEMS_MESSAGE,
   PROFILE_MISSING_MESSAGE,
   WARDROBE_LOAD_ERROR,
   canGenerateOutfit,
+  categoryLabel,
   generationRequest,
   renderedOutfitFromProxy,
   wardrobeGate,
@@ -199,9 +201,12 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
             : {};
         setErrors(fields);
         setFormError(
-          typeof record.error === "string" && record.error.trim()
-            ? record.error
-            : "The outfit suggestion could not be used. Please try again.",
+          generateFailureMessage(
+            response.status,
+            typeof record.error === "string" && record.error.trim()
+              ? record.error
+              : "The outfit suggestion could not be used. Please try again.",
+          ),
         );
         return;
       }
@@ -212,7 +217,7 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
       }
       setResult(outfit);
     } catch {
-      setFormError("Outfit suggestions are temporarily unavailable. Please try again later.");
+      setFormError(generateFailureMessage(503, "The outfit suggestion could not be used. Please try again."));
     } finally {
       pendingRef.current = false;
       setPending(false);
@@ -257,14 +262,13 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
           </div>
         ) : null}
         {gate.status === "empty" ? (
-          <div className="status-card flex flex-col gap-3" role="status">
-            <p>{NO_AVAILABLE_ITEMS_MESSAGE}</p>
-            <Link
-              href="/wardrobe"
-              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
-            >
-              Go to Wardrobe
-            </Link>
+          <div className="status-card text-base" role="status">
+            <p>
+              {NO_AVAILABLE_ITEMS_MESSAGE}.{" "}
+              <Link href="/wardrobe" className="font-semibold text-primary underline">
+                Wardrobe
+              </Link>
+            </p>
           </div>
         ) : null}
         {profileMissing ? (
@@ -356,13 +360,17 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
         {formError ? (
           <p role="alert" className="error-alert text-sm">
             {formError}
+            {formError === NO_AVAILABLE_ITEMS_MESSAGE ? (
+              <>
+                {" "}
+                <Link href="/wardrobe" className="font-semibold underline">
+                  Wardrobe
+                </Link>
+              </>
+            ) : null}
           </p>
         ) : null}
-        {pending ? (
-          <p role="status" className="status-card text-sm font-semibold text-primary">
-            {CREATING_OUTFIT_MESSAGE}
-          </p>
-        ) : null}
+        {pending ? <AskingNemotron /> : null}
 
         <button
           type="submit"
@@ -379,23 +387,25 @@ export function EmergencyFitPanel({ userId, returnPath, event = null }: Props) {
 }
 
 function OutfitResult({ outfit, event }: { outfit: EmergencyOutfitView; event: EventFitContext | null }) {
+  const incomplete =
+    outfit.limitations.trim() || incompleteOutfitNote(outfit.items.map((item) => item.category));
   return (
     <section aria-labelledby="emergency-result-title" className="studio-outfit scroll-mt-4">
       <div className="studio-outfit-hero">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
-          Proposed look
+          {incomplete ? "Incomplete look" : "Proposed look"}
         </p>
         <h2
           id="emergency-result-title"
-          className="font-display text-3xl font-semibold tracking-tight text-foreground break-words"
+          className="font-display text-2xl font-semibold tracking-tight text-foreground break-words sm:text-3xl"
         >
           {outfit.title}
         </h2>
-        <p className="text-base leading-relaxed text-foreground">{outfit.explanation}</p>
+        <ModelBadge tier="Nano" />
       </div>
-      {outfit.limitations ? (
-        <p role="status" className="status-card max-w-2xl text-base font-semibold text-foreground">
-          {outfit.limitations}
+      {incomplete ? (
+        <p role="status" className="error-alert max-w-2xl text-sm font-semibold">
+          {incomplete}
         </p>
       ) : null}
       <ul className="studio-garment-grid">
@@ -406,33 +416,22 @@ function OutfitResult({ outfit, event }: { outfit: EmergencyOutfitView; event: E
               category={item.category}
               color={item.color}
               notes={item.notes}
+              availability="Available"
+              why={garmentWhyLine({
+                categoryLabel: categoryLabel(item.category),
+                color: item.color,
+                notes: item.notes,
+              })}
             />
           </li>
         ))}
       </ul>
-      {outfit.styling_tips.length > 0 ? (
-        <div className="flex max-w-2xl flex-col gap-2">
-          <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">Styling tips</h3>
-          <ul className="list-disc pl-5 text-base text-foreground">
-            {outfit.styling_tips.map((tip, index) => (
-              <li key={`${index}-${tip}`}>{tip}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      <p className="text-sm text-muted">{AI_SUGGESTION_NOTE}</p>
-      <div className="studio-save">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
-          Save a look
-        </p>
-        <SaveLookForm
-          key={`${outfit.itemIds.join("|")}::${outfit.title}`}
-          itemIds={outfit.itemIds}
-          defaultName={outfit.title}
-          defaultOccasion={outfit.title}
-          attachEvent={event}
-        />
-      </div>
+      <OutfitNextActions
+        itemIds={outfit.itemIds}
+        defaultName={outfit.title}
+        defaultOccasion={outfit.title}
+        attachEvent={event}
+      />
     </section>
   );
 }

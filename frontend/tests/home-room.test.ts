@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { HOW_IT_WORKS_INTRO, HOW_IT_WORKS_MODELS, NEMOTRON_NANO_BADGE, NEMOTRON_SUPER_BADGE } from "@/lib/ai";
+import { HOME_FLOW_CARDS, HOME_HEADLINE, HOME_PROBLEM, INTRO_TAGLINE } from "@/lib/home/hero";
 import {
   HOME_HOTSPOTS_PORTRAIT,
   HOME_HOTSPOTS_WIDE,
@@ -10,6 +12,7 @@ import {
 } from "@/lib/home/room";
 import {
   MOBILE_PRIMARY_NAV,
+  NAV_GROUPS,
   NAV_ITEMS,
   compactNavLabel,
   isAuthPath,
@@ -48,6 +51,18 @@ function assertHotspots(hotspots: readonly { href: string; label: string; hint: 
 }
 
 describe("home dressing room", () => {
+  it("keeps the above-the-fold headline, problem line, and three flow cards", () => {
+    expect(INTRO_TAGLINE).toMatch(/styled by Nemotron/i);
+    expect(HOME_HEADLINE).toBe("Ready, set, styled.");
+    expect(HOME_PROBLEM).toMatch(/clothes you already own/i);
+    expect(HOME_FLOW_CARDS.map((card) => card.href)).toEqual(["/emergency-fit", "/rescue", "/stylist"]);
+    expect(HOME_FLOW_CARDS.every((card) => card.blurb.trim().length > 0)).toBe(true);
+    expect(HOW_IT_WORKS_INTRO).toMatch(/Token Factory/i);
+    expect(HOW_IT_WORKS_MODELS.map((model) => model.tier)).toEqual(["Nano", "Super", "Ultra"]);
+    expect(NEMOTRON_NANO_BADGE).toBe("Styled by Nemotron Nano via Nebius Token Factory");
+    expect(NEMOTRON_SUPER_BADGE).toBe("Styled by Nemotron Super via Nebius Token Factory");
+  });
+
   it("maps every existing feature on wide and portrait layouts", () => {
     assertHotspots(HOME_HOTSPOTS_WIDE);
     assertHotspots(HOME_HOTSPOTS_PORTRAIT);
@@ -94,6 +109,19 @@ describe("studio navigation", () => {
     expect(emergency).toBeDefined();
     expect(compactNavLabel(emergency!)).toBe("Emergency");
     expect(emergency?.label).toBe("Emergency Fit");
+    expect(NAV_GROUPS.map((group) => group.label)).toEqual([null, "Style", "My closet", "Learn", null]);
+    expect(NAV_GROUPS.find((group) => group.label === "Style")?.items.map((item) => item.href)).toEqual([
+      "/emergency-fit",
+      "/rescue",
+      "/stylist",
+      "/trends",
+    ]);
+    expect(NAV_GROUPS.find((group) => group.label === "My closet")?.items.map((item) => item.href)).toEqual([
+      "/wardrobe",
+      "/looks",
+      "/events",
+    ]);
+    expect(NAV_GROUPS.find((group) => group.label === "Learn")?.items.map((item) => item.href)).toEqual(["/dictionary"]);
   });
 
   it("hides app navigation on home and authentication routes", () => {

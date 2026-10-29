@@ -67,6 +67,30 @@ export function sortWardrobeItems(
   });
 }
 
+export const COLLECTION_CATEGORY_ORDER: readonly WardrobeItemPublic["category"][] = [
+  "top",
+  "bottom",
+  "shoes",
+  "outerwear",
+  "accessory",
+  "one_piece",
+  "other",
+];
+
+export type WardrobeCategoryGroup = {
+  category: WardrobeItemPublic["category"];
+  label: string;
+  items: WardrobeItemPublic[];
+};
+
+export function groupWardrobeByCategory(items: readonly WardrobeItemPublic[]): WardrobeCategoryGroup[] {
+  return COLLECTION_CATEGORY_ORDER.flatMap((category) => {
+    const grouped = items.filter((item) => item.category === category);
+    if (grouped.length === 0) return [];
+    return [{ category, label: CATEGORY_LABELS[category], items: grouped }];
+  });
+}
+
 export function visibleWardrobeItems(
   items: readonly WardrobeItemPublic[],
   query: string,

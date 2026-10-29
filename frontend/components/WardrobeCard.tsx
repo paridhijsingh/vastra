@@ -1,5 +1,8 @@
+"use client";
+
 import type { CSSProperties } from "react";
 
+import { ItemTermHint } from "@/components/ItemTermHint";
 import {
   AVAILABILITY_LABELS,
   CATEGORY_LABELS,
@@ -37,9 +40,7 @@ export function WardrobeCard({ item, busy, deleting, onEdit, onDelete }: Props) 
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
             {CATEGORY_LABELS[item.category]}
           </p>
-          <h3 className="font-display text-lg font-semibold leading-snug text-foreground break-words">
-            {item.name}
-          </h3>
+          <ItemTermHint name={item.name} />
           <p className="text-sm text-muted">
             <span className="text-foreground">{item.color}</span>
             <span aria-hidden="true"> · </span>

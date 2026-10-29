@@ -1,14 +1,15 @@
+import { ADD_AVAILABLE_ITEM_MESSAGE, ASKING_NEMOTRON_MESSAGE } from "@/lib/ai";
+
 export const OCCASION_MAX = 200;
 export const VIBE_MAX = 200;
 export const COMFORT_NEED_MAX = 64;
 export const COMFORT_NEED_COUNT_MAX = 16;
 
-export const CREATING_OUTFIT_MESSAGE = "Creating your outfit…";
+export const CREATING_OUTFIT_MESSAGE = ASKING_NEMOTRON_MESSAGE;
 export const AI_SUGGESTION_NOTE = "AI suggestion—check suitability and comfort yourself.";
 export const EMERGENCY_FIT_EXPLANATION =
   "Uses your available wardrobe items and saved style preferences. Suggestions are saved only when you choose Save a look.";
-export const NO_AVAILABLE_ITEMS_MESSAGE =
-  "Available wardrobe items are needed before an outfit can be suggested.";
+export const NO_AVAILABLE_ITEMS_MESSAGE = ADD_AVAILABLE_ITEM_MESSAGE;
 export const WARDROBE_LOAD_ERROR =
   "Could not load your wardrobe. Please try again.";
 export const PROFILE_MISSING_MESSAGE =

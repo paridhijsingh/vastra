@@ -21,6 +21,27 @@
     "guidance_type": "general"
   },
   {
+    "id": "anarkali",
+    "term": "Anarkali",
+    "aliases": ["anarkali suit"],
+    "definition": "A long, flowing, frock-style tunic that is closer through the chest and opens toward the hem. It is usually worn with fitted bottoms and is common at festive occasions.",
+    "kind": "garment",
+    "styles": ["Indian"],
+    "style_tags": ["Indian", "South Asian"],
+    "cultural_context": "Worn across South Asia for celebrations, with many regional lengths and fabrics.",
+    "pairing_suggestions": [
+      "One option is slim trousers or churidar underneath.",
+      "A light dupatta or a jacket can sit over the same tunic.",
+      "These are suggestions, not a required three-piece set."
+    ],
+    "occasions": ["celebration", "wedding guest"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "A lighter lining and a hem that does not catch when you sit can feel easier at a long event. Comfort is personal."
+    ],
+    "guidance_type": "general"
+  },
+  {
     "id": "blazer",
     "term": "Blazer",
     "aliases": ["sport coat"],
@@ -101,6 +122,27 @@
     "weather_notes": [],
     "comfort_notes": [
       "If you expect to stand or sit for a long time, a familiar fit and a breathable cloth can feel easier. Comfort is personal."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "jhumka",
+    "term": "Jhumka",
+    "aliases": ["jhumka earrings", "jhumkas"],
+    "definition": "Bell-shaped dangling earrings with a rounded dome and a hanging drop. They can be worn with many outfits and are not limited by gender.",
+    "kind": "garment",
+    "styles": ["Indian"],
+    "style_tags": ["Indian", "South Asian"],
+    "cultural_context": "A long-standing earring form in South Asian dress, made in many metals and weights.",
+    "pairing_suggestions": [
+      "One option is a kurta or anarkali; an open-neck shirt is another option.",
+      "A simple necklace, or none, can sit with the same earrings.",
+      "These are suggestions, not a required jewellery set."
+    ],
+    "occasions": ["celebration", "wedding guest"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "A lighter pair can feel easier if you expect to wear them for many hours. Weight is personal."
     ],
     "guidance_type": "general"
   },
@@ -206,6 +248,48 @@
     "weather_notes": [],
     "comfort_notes": [
       "Staying with a colour you already wear often can feel easier than introducing a new palette. Preference leads here."
+    ],
+    "guidance_type": "general"
+  },
+  {
+    "id": "nehru-jacket",
+    "term": "Nehru jacket",
+    "aliases": ["nehru"],
+    "definition": "A tailored jacket with a mandarin collar, often sleeveless, worn as a layer over a kurta or shirt. It is not limited by gender.",
+    "kind": "garment",
+    "styles": ["Indian", "fusion"],
+    "style_tags": ["Indian", "South Asian"],
+    "cultural_context": "A structured layer in South Asian and fusion dress, named for a collar style rather than a single occasion.",
+    "pairing_suggestions": [
+      "One option is a kurta underneath; a collared shirt is another option.",
+      "Straight trousers or palazzo pants can both sit with the same jacket.",
+      "These combinations are suggestions, not a dress code."
+    ],
+    "occasions": ["celebration", "festive gathering"],
+    "weather_notes": [
+      "Unlined or lightweight cloth is often easier in heat. Comfort still depends on fabric weight and preference."
+    ],
+    "comfort_notes": [],
+    "guidance_type": "general"
+  },
+  {
+    "id": "palazzo-pants",
+    "term": "Palazzo pants",
+    "aliases": ["palazzo"],
+    "definition": "Wide-leg flowing trousers that fall from the waist or hip with plenty of ease through the leg. They are often worn with a kurta and are not limited by gender.",
+    "kind": "garment",
+    "styles": ["Indian", "fusion"],
+    "style_tags": ["Indian", "South Asian"],
+    "cultural_context": "Common with kurtas and tunics in South Asian everyday and celebratory dress.",
+    "pairing_suggestions": [
+      "One option is a kurta or long tunic; a shorter tucked top is another option.",
+      "A light shawl or fitted jacket can sit over the same trousers.",
+      "These pairings are suggestions, not a required set."
+    ],
+    "occasions": ["everyday", "dinner"],
+    "weather_notes": [],
+    "comfort_notes": [
+      "A lighter cloth and a waist you can sit in can feel easier in heat. Comfort still depends on fabric and preference."
     ],
     "guidance_type": "general"
   },

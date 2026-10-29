@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-import { SaveLookForm } from "@/components/SaveLookForm";
+import { AskingNemotron } from "@/components/AskingNemotron";
+import { ModelBadge } from "@/components/ModelBadge";
+import { OutfitNextActions } from "@/components/OutfitNextActions";
 import { StudioGarmentCard } from "@/components/StudioGarmentCard";
+import { generateFailureMessage, garmentWhyLine, incompleteOutfitNote } from "@/lib/ai";
 import {
-  AI_SUGGESTION_NOTE,
   CHANGE_REQUEST_MAX,
   EMPTY_WARDROBE_MESSAGE,
-  FINDING_REPLACEMENT_MESSAGE,
   ITEMS_CHANGED_MESSAGE,
   NO_CANDIDATE_MESSAGE,
   SAME_CATEGORY_NOTE,
@@ -151,7 +152,10 @@ export function RescuePanel({ userId }: Props) {
           record.fields && typeof record.fields === "object" ? (record.fields as RescueFieldErrors) : {},
         );
         setFormError(
-          typeof record.error === "string" && record.error.trim() ? record.error : ITEMS_CHANGED_MESSAGE,
+          generateFailureMessage(
+            response.status,
+            typeof record.error === "string" && record.error.trim() ? record.error : ITEMS_CHANGED_MESSAGE,
+          ),
         );
         setReloadOffer(response.status === 404 || response.status === 409);
         return;
@@ -169,7 +173,7 @@ export function RescuePanel({ userId }: Props) {
       }
       setForm((current) => ({ ...current, result: view }));
     } catch {
-      setFormError("Outfit suggestions are temporarily unavailable. Please try again later.");
+      setFormError(generateFailureMessage(503, "The outfit suggestion could not be used. Please try again."));
     } finally {
       pendingRef.current = false;
       setPending(false);
@@ -201,14 +205,13 @@ export function RescuePanel({ userId }: Props) {
           </div>
         ) : null}
         {gate.status === "empty" ? (
-          <div className="status-card flex flex-col gap-3" role="status">
-            <p>{EMPTY_WARDROBE_MESSAGE}</p>
-            <Link
-              href="/wardrobe"
-              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
-            >
-              Go to Wardrobe
-            </Link>
+          <div className="status-card text-base" role="status">
+            <p>
+              {EMPTY_WARDROBE_MESSAGE}.{" "}
+              <Link href="/wardrobe" className="font-semibold text-primary underline">
+                Wardrobe
+              </Link>
+            </p>
           </div>
         ) : null}
 
@@ -274,11 +277,8 @@ export function RescuePanel({ userId }: Props) {
         {form.replaceItemId && candidateCount === 0 && gate.status === "ready" ? (
           <div className="status-card flex flex-col gap-3" role="status">
             <p>{NO_CANDIDATE_MESSAGE}</p>
-            <Link
-              href="/wardrobe"
-              className="btn-secondary inline-flex min-h-12 w-fit items-center justify-center rounded-md px-5 text-base font-semibold"
-            >
-              Go to Wardrobe
+            <Link href="/wardrobe" className="font-semibold text-primary underline">
+              Wardrobe
             </Link>
           </div>
         ) : null}
@@ -368,11 +368,7 @@ export function RescuePanel({ userId }: Props) {
             ) : null}
           </div>
         ) : null}
-        {pending ? (
-          <p role="status" className="status-card text-sm font-semibold text-primary">
-            {FINDING_REPLACEMENT_MESSAGE}
-          </p>
-        ) : null}
+        {pending ? <AskingNemotron /> : null}
 
         <button
           type="submit"
@@ -388,24 +384,26 @@ export function RescuePanel({ userId }: Props) {
 }
 
 function RescueResult({ outfit }: { outfit: RescueView }) {
+  const incomplete =
+    outfit.limitations.trim() || incompleteOutfitNote(outfit.cards.map((card) => card.category));
   return (
     <section aria-labelledby="rescue-result-title" className="studio-outfit scroll-mt-4">
       <div className="studio-outfit-hero">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
-          Rescued look
+          {incomplete ? "Incomplete look" : "Rescued look"}
         </p>
         <h2
           id="rescue-result-title"
-          className="font-display text-3xl font-semibold tracking-tight text-foreground break-words"
+          className="font-display text-2xl font-semibold tracking-tight text-foreground break-words sm:text-3xl"
         >
           {outfit.title}
         </h2>
-        <p className="text-base font-semibold text-foreground">{outfit.headline}</p>
-        <p className="text-base leading-relaxed text-foreground">{outfit.explanation}</p>
+        <p className="text-sm font-semibold text-foreground">{outfit.headline}</p>
+        <ModelBadge tier="Nano" />
       </div>
-      {outfit.limitations ? (
-        <p role="status" className="status-card max-w-2xl text-base font-semibold text-foreground">
-          {outfit.limitations}
+      {incomplete ? (
+        <p role="status" className="error-alert max-w-2xl text-sm font-semibold">
+          {incomplete}
         </p>
       ) : null}
       <ul className="studio-garment-grid">
@@ -416,34 +414,19 @@ function RescueResult({ outfit }: { outfit: RescueView }) {
               category={card.category}
               color={card.color}
               notes={card.notes}
+              availability="Available"
+              why={garmentWhyLine({
+                categoryLabel: categoryLabel(card.category),
+                color: card.color,
+                notes: card.notes,
+              })}
               kicker={card.role}
               kickerClassName={card.role === "Replaced" ? "text-primary" : "text-muted"}
             />
           </li>
         ))}
       </ul>
-      {outfit.styling_tips.length > 0 ? (
-        <div className="flex max-w-2xl flex-col gap-2">
-          <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">Styling tips</h3>
-          <ul className="list-disc pl-5 text-base text-foreground">
-            {outfit.styling_tips.map((tip, index) => (
-              <li key={`${index}-${tip}`}>{tip}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      <p className="text-sm text-muted">{AI_SUGGESTION_NOTE}</p>
-      <div className="studio-save">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
-          Save a look
-        </p>
-        <SaveLookForm
-          key={`${outfit.itemIds.join("|")}::${outfit.title}`}
-          itemIds={outfit.itemIds}
-          defaultName={outfit.title}
-          defaultOccasion={outfit.title}
-        />
-      </div>
+      <OutfitNextActions itemIds={outfit.itemIds} defaultName={outfit.title} defaultOccasion={outfit.title} />
     </section>
   );
 }

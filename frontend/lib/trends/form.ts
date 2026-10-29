@@ -4,8 +4,92 @@ export const BUDGET_MAX = 200;
 
 export const TREND_UNAVAILABLE_MESSAGE = "Trend search unavailable right now";
 export const SEARCHING_TRENDS_MESSAGE = "Searching retrieved sources…";
+export const BUDGET_PARSE_MESSAGE =
+  "Enter a number for budget, with an optional currency such as USD, or write no shopping.";
 export const TREND_PAGE_EXPLANATION =
   "Looks up current fashion coverage for your occasion and vibe, then asks Nemotron Ultra for one outfit idea. Sources and the retrieval date are shown. Prices, product links, and trend claims appear only when they came from that search.";
+
+const CURRENCY_NAMES: Record<string, string> = {
+  usd: "USD",
+  eur: "EUR",
+  gbp: "GBP",
+  inr: "INR",
+  rs: "INR",
+  rupee: "INR",
+  rupees: "INR",
+  dollar: "USD",
+  dollars: "USD",
+  euro: "EUR",
+  euros: "EUR",
+  pound: "GBP",
+  pounds: "GBP",
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  $: "USD",
+  "€": "EUR",
+  "£": "GBP",
+  "¥": "JPY",
+  "₹": "INR",
+};
+
+export function parseBudgetInput(
+  raw: string,
+): { ok: true; budget: string } | { ok: false; error: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: false, error: "Budget is required." };
+  if (/^no\s+shopping$/i.test(trimmed)) return { ok: true, budget: "no shopping" };
+  if (trimmed.length > BUDGET_MAX) return { ok: false, error: `Budget must be at most ${BUDGET_MAX} characters.` };
+
+  let currency: string | null = null;
+  let rest = trimmed.replace(/,/g, " ").replace(/\s+/g, " ").trim();
+  const leading = rest[0];
+  if (leading && CURRENCY_SYMBOLS[leading]) {
+    currency = CURRENCY_SYMBOLS[leading];
+    rest = rest.slice(1).trim();
+  }
+
+  const tokens = rest.split(" ").filter(Boolean);
+  const leftover: string[] = [];
+  let amount: string | null = null;
+  for (const token of tokens) {
+    if (/^\d+(?:\.\d+)?$/.test(token)) {
+      if (amount) return { ok: false, error: BUDGET_PARSE_MESSAGE };
+      amount = token;
+      continue;
+    }
+    const glued = token.match(/^(\d+(?:\.\d+)?)([A-Za-z]+)$/);
+    if (glued) {
+      if (amount) return { ok: false, error: BUDGET_PARSE_MESSAGE };
+      amount = glued[1];
+      const named = CURRENCY_NAMES[glued[2].toLowerCase()];
+      if (!named) return { ok: false, error: BUDGET_PARSE_MESSAGE };
+      currency = currency ?? named;
+      continue;
+    }
+    leftover.push(token);
+  }
+
+  if (!amount) return { ok: false, error: BUDGET_PARSE_MESSAGE };
+  for (const token of leftover) {
+    const named = CURRENCY_NAMES[token.toLowerCase()];
+    if (!named) return { ok: false, error: BUDGET_PARSE_MESSAGE };
+    currency = currency ?? named;
+  }
+
+  const budget = currency ? `${amount} ${currency}` : amount;
+  if (budget.length > BUDGET_MAX) return { ok: false, error: `Budget must be at most ${BUDGET_MAX} characters.` };
+  return { ok: true, budget };
+}
+
+export function fillBudgetInIdea(idea: string, budget: string): string {
+  const value = budget.trim();
+  if (!value || /^no\s+shopping$/i.test(value)) return idea;
+  return idea
+    .replace(/priced at or near\s*[,;:]+/gi, `priced at or near ${value}`)
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export type TrendField = "occasion" | "vibe" | "budget";
 export type TrendFieldErrors = Partial<Record<TrendField, string>>;
@@ -44,10 +128,11 @@ export function trendRequestBody(values: {
   vibe: string;
   budget: string;
 }): TrendRequestBody {
+  const parsed = parseBudgetInput(values.budget);
   return {
     occasion: values.occasion.trim(),
     vibe: values.vibe.trim(),
-    budget: values.budget.trim(),
+    budget: parsed.ok ? parsed.budget : values.budget.trim(),
   };
 }
 
@@ -62,6 +147,10 @@ export function fieldError(field: TrendField, value: string): string | undefined
   if (trimmed.length > max) {
     const label = field === "occasion" ? "Occasion" : field === "vibe" ? "Vibe" : "Budget";
     return `${label} must be at most ${max} characters.`;
+  }
+  if (field === "budget") {
+    const parsed = parseBudgetInput(trimmed);
+    if (!parsed.ok) return parsed.error;
   }
   return undefined;
 }

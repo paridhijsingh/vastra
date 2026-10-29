@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   colorWash,
+  groupWardrobeByCategory,
   itemMatchesQuery,
   recentlyAdded,
   sortWardrobeItems,
@@ -75,6 +76,18 @@ describe("search and sort", () => {
   it("filters then sorts without dropping duplicate-name items", () => {
     const visible = visibleWardrobeItems([kurta, silk, shoes], "navy", "name");
     expect(visible.map((entry) => entry.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("groupWardrobeByCategory", () => {
+  it("groups under category headers without flattening shoes into tops", () => {
+    const grouped = groupWardrobeByCategory([
+      item({ id: "a", name: "Kurta", category: "top" }),
+      item({ id: "b", name: "Oxfords", category: "shoes" }),
+      item({ id: "c", name: "Shirt", category: "top" }),
+    ]);
+    expect(grouped.map((group) => group.label)).toEqual(["Top", "Shoes"]);
+    expect(grouped[0].items.map((entry) => entry.id)).toEqual(["a", "c"]);
   });
 });
 

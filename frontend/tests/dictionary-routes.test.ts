@@ -26,6 +26,7 @@ import {
 } from "@/lib/dictionary/form";
 import {
   DICTIONARY_FILTER_NOTE,
+  DICTIONARY_LANES,
   DICTIONARY_LOAD_ERROR,
   DICTIONARY_PRIVACY_NOTE,
   EMPTY_DICTIONARY_BODY,
@@ -88,6 +89,8 @@ describe("dictionary filter URLs and empty copy", () => {
     expect(DICTIONARY_FILTER_NOTE).toBe(
       "Browse broad styles, or filter by a specific cultural or style tag.",
     );
+    expect(DICTIONARY_LANES.map((lane) => lane.label)).toEqual(["All", "Indian", "Western", "Fusion"]);
+    expect(DICTIONARY_LANES.map((lane) => lane.value)).toEqual(["", "Indian", "Western", "fusion"]);
   });
 
   it("does not map an unsupported cultural style onto Indian", () => {

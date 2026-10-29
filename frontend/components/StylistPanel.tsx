@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
-import { SaveLookForm } from "@/components/SaveLookForm";
+import { AskingNemotron } from "@/components/AskingNemotron";
+import { ItemTermHint } from "@/components/ItemTermHint";
+import { ModelBadge } from "@/components/ModelBadge";
+import { OutfitNextActions } from "@/components/OutfitNextActions";
+import { generateFailureMessage, garmentWhyLine, incompleteOutfitNote } from "@/lib/ai";
 import {
   MIXED_OUTFIT_SAVE_MESSAGE,
   STYLIST_EXAMPLE_PROMPTS,
@@ -100,7 +104,12 @@ export function StylistPanel({ userId }: Props) {
       const payload: unknown = await response.json().catch(() => null);
       const record = payload && typeof payload === "object" ? (payload as { error?: unknown; reply?: unknown }) : {};
       if (!response.ok) {
-        setFormError(typeof record.error === "string" ? record.error : "The stylist reply could not be used. Please try again.");
+        setFormError(
+          generateFailureMessage(
+            response.status,
+            typeof record.error === "string" ? record.error : "The stylist reply could not be used. Please try again.",
+          ),
+        );
         return;
       }
       const reply = replyFromApi(record.reply);
@@ -112,7 +121,7 @@ export function StylistPanel({ userId }: Props) {
       setHistory(historyForRequest([...sentHistory, { role: "user", content: trimmed }, { role: "assistant", content: reply.message }], ""));
       setMessage("");
     } catch {
-      setFormError("Outfit suggestions are temporarily unavailable. Please try again later.");
+      setFormError(generateFailureMessage(503, "The stylist reply could not be used. Please try again."));
     } finally {
       pendingRef.current = false;
       setPending(false);
@@ -212,11 +221,7 @@ export function StylistPanel({ userId }: Props) {
             {formError}
           </p>
         ) : null}
-        {pending ? (
-          <p role="status" className="status-card text-sm font-semibold text-primary">
-            Asking the stylist…
-          </p>
-        ) : null}
+        {pending ? <AskingNemotron /> : null}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted" aria-live="polite">
@@ -263,77 +268,70 @@ function ExamplePrompts({
 }
 
 function OutfitCard({ suggestion }: { suggestion: StylistSuggestionView }) {
+  const incomplete = incompleteOutfitNote(
+    suggestion.pieces.filter((piece) => piece.availability === "available").map((piece) => piece.category),
+  );
   return (
     <section
-      className="flex flex-col gap-4 rounded-[0.85rem] border border-border bg-surface px-4 py-4 sm:px-5 sm:py-5"
+      className="flex flex-col gap-3 rounded-[0.85rem] border border-border bg-surface px-4 py-4 sm:px-5"
       aria-label={suggestion.title}
     >
-      <div className="flex flex-col gap-2 border-b border-border pb-4">
+      <div className="flex flex-col gap-2">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
-          Proposed look
+          {incomplete ? "Incomplete look" : "Proposed look"}
         </p>
-        <div className="flex items-start gap-2">
-          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent-wardrobe" aria-hidden="true" />
-          <h3 className="font-display text-2xl font-semibold tracking-tight text-foreground break-words">
-            {suggestion.title}
-          </h3>
-        </div>
-        {suggestion.note ? (
-          <p className="text-base leading-relaxed text-muted">{suggestion.note}</p>
-        ) : null}
+        <h3 className="font-display text-xl font-semibold tracking-tight text-foreground break-words">
+          {suggestion.title}
+        </h3>
+        <ModelBadge tier="Super" />
       </div>
-
-      <div className="flex flex-col gap-3">
-        <h4 className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">Garments</h4>
-        <ul className="flex flex-col gap-3">
-          {suggestion.pieces.map((piece, pieceIndex) => (
-            <GarmentRow key={`${piece.source}-${piece.wardrobeItemId ?? piece.name}-${pieceIndex}`} piece={piece} />
-          ))}
-        </ul>
-      </div>
-
-      <div className="border-t border-border pt-4">
-        {suggestion.lookItemIds ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted">All pieces are from your saved wardrobe. You can save this outfit.</p>
-            <SaveLookForm itemIds={suggestion.lookItemIds} defaultName={suggestion.title} defaultOccasion="" />
-          </div>
-        ) : (
-          <p className="status-card text-base text-muted" role="status">
-            {MIXED_OUTFIT_SAVE_MESSAGE}
-          </p>
-        )}
-      </div>
+      {incomplete ? (
+        <p role="status" className="error-alert text-sm font-semibold">
+          {incomplete}
+        </p>
+      ) : null}
+      <ul className="flex flex-col gap-2">
+        {suggestion.pieces.map((piece, pieceIndex) => (
+          <GarmentRow key={`${piece.source}-${piece.wardrobeItemId ?? piece.name}-${pieceIndex}`} piece={piece} />
+        ))}
+      </ul>
+      <OutfitNextActions
+        itemIds={suggestion.lookItemIds}
+        defaultName={suggestion.title}
+        defaultOccasion=""
+        saveBlockedMessage={suggestion.lookItemIds ? null : MIXED_OUTFIT_SAVE_MESSAGE}
+      />
     </section>
   );
 }
 
 function GarmentRow({ piece }: { piece: StylistPieceView }) {
+  const why =
+    piece.source === "suggested"
+      ? "Suggested addition — not a saved wardrobe item."
+      : piece.source === "described"
+        ? "You described this piece in the chat."
+        : garmentWhyLine({
+            categoryLabel: piece.categoryLabel,
+            color: piece.color,
+            notes: piece.notes,
+          });
   return (
-    <li className="rounded-lg border border-border bg-background px-4 py-3">
-      <p className="font-display text-lg font-semibold text-foreground break-words">{piece.name}</p>
-      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <dt className="font-semibold text-muted">Category</dt>
-          <dd className="text-foreground">{piece.categoryLabel}</dd>
-        </div>
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <dt className="font-semibold text-muted">Color</dt>
-          <dd className="text-foreground">{piece.color ?? "Not listed"}</dd>
-        </div>
-        <div className="flex min-w-0 flex-col gap-0.5 sm:col-span-2">
-          <dt className="font-semibold text-muted">Notes</dt>
-          <dd className="break-words text-foreground">{piece.notes.trim() ? piece.notes : "None"}</dd>
-        </div>
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <dt className="font-semibold text-muted">Source</dt>
-          <dd className="font-semibold text-primary">{piece.sourceLabel}</dd>
-        </div>
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <dt className="font-semibold text-muted">Availability</dt>
-          <dd className="text-foreground">{piece.availabilityLabel}</dd>
-        </div>
-      </dl>
+    <li className="studio-garment bg-background">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <ItemTermHint name={piece.name} as="p" />
+        <p
+          className="availability-badge"
+          data-tone={piece.availability === "available" ? "available" : "unknown"}
+        >
+          {piece.availability === "available" ? "Available" : "Unknown"}
+        </p>
+      </div>
+      <p className="text-sm font-semibold text-muted">{piece.categoryLabel}</p>
+      <p className="studio-garment-why">
+        <span className="font-semibold text-foreground">Why this works. </span>
+        {why}
+      </p>
     </li>
   );
 }
