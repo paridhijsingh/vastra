@@ -35,11 +35,12 @@ export function StylistPanel({ userId }: Props) {
   const router = useRouter();
   const formId = useId();
   const composerRef = useRef<HTMLTextAreaElement>(null);
-  const threadEndRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLElement>(null);
   const pendingRef = useRef(false);
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<StylistTurn[]>([]);
   const [entries, setEntries] = useState<ChatEntry[]>([]);
+  const [pendingUser, setPendingUser] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -65,8 +66,10 @@ export function StylistPanel({ userId }: Props) {
   }, []);
 
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [entries, pending]);
+    const thread = threadRef.current;
+    if (!thread) return;
+    thread.scrollTo({ top: thread.scrollHeight, behavior: "smooth" });
+  }, [entries, pending, pendingUser, formError]);
 
   function fillExample(prompt: string) {
     if (pendingRef.current) return;
@@ -88,6 +91,7 @@ export function StylistPanel({ userId }: Props) {
     const trimmed = message.trim();
     const sentHistory = historyForRequest(history, trimmed);
     pendingRef.current = true;
+    setPendingUser(trimmed);
     setPending(true);
     setFieldError(null);
     setFormError(null);
@@ -126,15 +130,17 @@ export function StylistPanel({ userId }: Props) {
     } finally {
       pendingRef.current = false;
       setPending(false);
+      setPendingUser(null);
     }
   }
 
   const latestOutfit = [...entries].reverse().find((entry) => entry.reply.suggestions.length > 0)?.reply.suggestions[0] ?? null;
+  const showEmpty = entries.length === 0 && !pendingUser && !pending && !formError;
 
   return (
     <div className="stylist-panel" key={userId}>
-      <section className="stylist-thread" aria-label="Conversation">
-        {entries.length === 0 ? (
+      <section ref={threadRef} className="stylist-thread flex min-h-0 flex-col overflow-x-hidden overflow-y-auto" aria-label="Conversation">
+        {showEmpty ? (
           <div className="stylist-empty" role="status">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">Consultation</p>
             <p className="font-display text-xl font-semibold text-foreground">Start a conversation</p>
@@ -144,29 +150,25 @@ export function StylistPanel({ userId }: Props) {
             </p>
           </div>
         ) : (
-          <ol className="flex flex-col gap-5" aria-live="polite">
+          <ol className="flex h-auto min-h-0 flex-col gap-4 overflow-visible" aria-live="polite">
             {entries.map((entry, index) => (
-              <li key={`${index}-${entry.user.slice(0, 24)}`} className="flex min-w-0 flex-col gap-3">
-                <article className="stylist-you" aria-label="Your message">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">You</p>
-                  <p className="mt-2 whitespace-pre-wrap break-words text-base text-foreground">{entry.user}</p>
-                </article>
-                <article
-                  className="stylist-reply"
-                  aria-label={entry.reply.kind === "clarification" ? "Stylist question" : "Stylist reply"}
-                >
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">
-                    Stylist
-                  </p>
-                  <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed text-foreground">
-                    {entry.reply.message}
-                  </p>
-                </article>
-              </li>
+              <TranscriptPair key={`${index}-${entry.user.slice(0, 24)}`} entry={entry} />
             ))}
+            {pendingUser ? <UserBubble text={pendingUser} /> : null}
+            {pending ? (
+              <li className="flex min-w-0 justify-start overflow-visible">
+                <AskingNemotron />
+              </li>
+            ) : null}
+            {formError ? (
+              <li className="flex min-w-0 justify-start overflow-visible">
+                <p className="error-alert h-auto max-h-none max-w-xl overflow-visible whitespace-pre-wrap break-words text-sm" role="alert">
+                  {formError}
+                </p>
+              </li>
+            ) : null}
           </ol>
         )}
-        <div ref={threadEndRef} />
       </section>
 
       <aside className="stylist-outfit" aria-label="Latest outfit">
@@ -219,12 +221,6 @@ export function StylistPanel({ userId }: Props) {
             {fieldError}
           </p>
         ) : null}
-        {formError ? (
-          <p className="error-alert text-sm" role="alert">
-            {formError}
-          </p>
-        ) : null}
-        {pending ? <AskingNemotron /> : null}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted" aria-live="polite">
@@ -240,6 +236,44 @@ export function StylistPanel({ userId }: Props) {
         </div>
       </form>
     </div>
+  );
+}
+
+function TranscriptPair({ entry }: { entry: ChatEntry }) {
+  return (
+    <>
+      <UserBubble text={entry.user} />
+      <StylistBubble reply={entry.reply} />
+    </>
+  );
+}
+
+function UserBubble({ text }: { text: string }) {
+  return (
+    <li className="flex min-w-0 justify-end overflow-visible">
+      <article className="stylist-you h-auto max-h-none overflow-visible" aria-label="Your message">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">You</p>
+        <p className="mt-2 h-auto max-h-none overflow-visible whitespace-pre-wrap break-words text-base text-foreground">
+          {text}
+        </p>
+      </article>
+    </li>
+  );
+}
+
+function StylistBubble({ reply }: { reply: StylistReplyView }) {
+  return (
+    <li className="flex min-w-0 justify-start overflow-visible">
+      <article
+        className="stylist-reply h-auto max-h-none overflow-visible"
+        aria-label={reply.kind === "clarification" ? "Stylist question" : "Stylist reply"}
+      >
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-accent-wardrobe-text">Stylist</p>
+        <p className="mt-3 h-auto max-h-none overflow-visible whitespace-pre-wrap break-words text-base leading-relaxed text-foreground">
+          {reply.message}
+        </p>
+      </article>
+    </li>
   );
 }
 

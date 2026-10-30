@@ -873,7 +873,7 @@ a {
   min-height: 0;
   flex: 1;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(12rem, 1fr) auto auto;
   grid-template-areas:
     "thread"
     "outfit"
@@ -882,7 +882,7 @@ a {
 }
 
 .stylist-panel:not(:has(.stylist-outfit-card)) {
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(12rem, 1fr) auto;
   grid-template-areas:
     "thread"
     "composer";
@@ -891,7 +891,7 @@ a {
 .stylist-thread {
   grid-area: thread;
   min-width: 0;
-  min-height: 0;
+  min-height: 12rem;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -938,8 +938,11 @@ a {
 
 .stylist-you,
 .stylist-reply {
+  height: auto;
+  max-height: none;
   min-width: 0;
   max-width: min(100%, 40rem);
+  overflow: visible;
   border: 1px solid var(--border);
   padding: 0.85rem 1rem;
 }
@@ -1010,7 +1013,7 @@ a {
   .stylist-panel,
   .stylist-panel:not(:has(.stylist-outfit-card)) {
     grid-template-columns: minmax(0, 1fr) minmax(17rem, 26rem);
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(12rem, 1fr) auto;
     grid-template-areas:
       "thread outfit"
       "composer outfit";
