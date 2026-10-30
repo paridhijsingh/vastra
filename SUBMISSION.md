@@ -33,7 +33,7 @@ Local operators set `DEMO_EMAIL` / `DEMO_PASSWORD` on the API host and run `pyth
 
 Public YouTube, under 3:00:
 
-`https://www.youtube.com/watch?v=VIDEO_ID`
+`https://www.youtube.com/watch?v=U5dON28tDy4`
 
 Replace `VIDEO_ID` before submitting.
 
